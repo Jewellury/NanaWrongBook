@@ -132,10 +132,95 @@ model PracticeRecord {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   subject   String?  // e.g. "Math", "Physics"
   difficulty String? // "easy", "medium", "hard", "harder"
   isCorrect Boolean?
-  
+
   createdAt DateTime @default(now())
+}
+
+// ============================================================
+// 知识图谱数据层（个性化数学诊断辅导系统 · 增量）
+// 全部新增表，不改 wrong-notebook 已有模型
+// 对应 TECH_PLAN_v2 §3.5
+// ============================================================
+
+model KnowledgeNode {
+  id            String   @id            // "BG001" / "M1-11" / "M2a-03"
+  name          String
+  layer         String                  // foundation | mainline
+  stage         String                  // 学段，如 "七上" "必修一3.1"
+  judgeCriteria String                  // 一句话判定标准
+  sampleItem    String?                 // 示例题
+  teachingNotes String?                 // 迁移类比/通法步骤/易错点
+  tier          String?                 // A | B | C | D | null（保底层级，调度主键）
+  videoLinks    String?                 // JSON 字符串: [{title,searchKey,uper,duration,role,note}]（SQLite 不支持 Json 类型）
+  edgesOut      KnowledgeEdge[] @relation("src")
+  edgesIn       KnowledgeEdge[] @relation("tgt")
+  mainlines     NodeMainline[]
+  states        StudentNodeState[]
+}
+
+model KnowledgeEdge {
+  sourceId String
+  targetId String
+  type     String                       // prerequisite | tool（transfer 不入图）
+  source   KnowledgeNode @relation("src", fields:[sourceId], references:[id])
+  target   KnowledgeNode @relation("tgt", fields:[targetId], references:[id])
+  @@id([sourceId, targetId])
+}
+
+model Mainline {
+  id       String @id                   // "M0".."M8" / "M2a" / "M2b"
+  name     String
+  priority Int
+  weight   Float?                        // 高考严格年均分值，供 ROI 排序
+  nodes    NodeMainline[]
+}
+
+model NodeMainline {
+  nodeId     String
+  mainlineId String
+  node       KnowledgeNode @relation(fields:[nodeId], references:[id])
+  mainline   Mainline      @relation(fields:[mainlineId], references:[id])
+  @@id([nodeId, mainlineId])
+}
+
+model MainlineBridge {
+  srcMainlineId String
+  tgtMainlineId String
+  type          String                  // prerequisite | tool
+  note          String?                 // 桥接说明（如 "二次方程→定义域"）
+  @@id([srcMainlineId, tgtMainlineId])
+}
+
+model StudentNodeState {
+  studentId    String
+  nodeId       String
+  node         KnowledgeNode @relation(fields:[nodeId], references:[id])
+  masteryProb  Float         @default(0.0)
+  status       String        @default("untested") // stable|uncertain|gap|untested
+  slipFlag     Boolean       @default(false)
+  lastEvidence DateTime?
+  @@id([studentId, nodeId])
+}
+
+model Misconception {
+  id            String   @id @default(cuid())
+  board         String                    // 板块
+  errorType     String                    // 一级标签:概念性|程序性|计算性|符号表示|条件前提缺口|完备性缺口
+  crossTag      String?                   // 跨章复用标签
+  manifestation String                    // 错误的具体表现（最小示例）
+  misbelief     String                    // 背后的概念误解
+  rootNodeId    String?                   // 暴露的真正知识缺口 → KnowledgeNode.id
+  probeCue      String                    // 教师追问/反例
+  evidence      String                    // 证据等级 A|B|C
+}
+
+model MistakeNode {
+  mistakeId String  // → 既有 ErrorItem.id（不改其表）
+  nodeId    String
+  confirmed Boolean @default(false)       // 是否人工确认
+  @@id([mistakeId, nodeId])
 }
