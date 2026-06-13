@@ -5,7 +5,7 @@
  * 节点预计 <400，边 <1000，毫秒级加载。
  *
  * 提供两种构造方式：
- * - fromData(nodes, edges)：从内存数组构造（测试友好，不依赖数据库）
+ * - fromData(nodes, edges, mainlineNodes?)：从内存数组构造（测试友好，不依赖数据库）
  * - load()：从 Prisma 加载全量数据（生产环境用）
  */
 
@@ -36,40 +36,73 @@ const BLACK = 2; // 已出栈
 
 export class KnowledgeGraph {
   private nodes: Map<string, GraphNode>;
-  private outEdges: Map<string, string[]>; // nodeId → 直接后继（target 方向）
-  private inEdges: Map<string, string[]>;  // nodeId → 直接前驱（source 方向）
+
+  // prerequisite 边专用（图遍历 / 祖先传播 / 环检测只走这套）
+  private prereqOutEdges: Map<string, string[]>; // nodeId → 直接后继（仅 prerequisite）
+  private prereqInEdges: Map<string, string[]>;  // nodeId → 直接前驱（仅 prerequisite）
+
+  // 全量边（含 tool，供 getStats / 讲解引用）
+  private allOutCount: number;
+
+  // 主线-节点映射
+  private mainlineNodes: Map<string, Set<string>>; // mainlineId → nodeId[]
 
   private constructor() {
     this.nodes = new Map();
-    this.outEdges = new Map();
-    this.inEdges = new Map();
+    this.prereqOutEdges = new Map();
+    this.prereqInEdges = new Map();
+    this.allOutCount = 0;
+    this.mainlineNodes = new Map();
   }
 
   // ========== 构造方法 ==========
 
   /**
    * 从内存数组直接构造图谱（测试友好，不依赖数据库）
+   *
+   * @param nodes        节点列表
+   * @param edges        边列表（含 prerequisite 和 tool）
+   * @param mainlineNodes 可选的主线-节点映射 { mainlineId: [nodeId, ...] }
    */
-  static fromData(nodes: GraphNode[], edges: GraphEdge[]): KnowledgeGraph {
+  static fromData(
+    nodes: GraphNode[],
+    edges: GraphEdge[],
+    mainlineNodes?: Record<string, string[]>,
+  ): KnowledgeGraph {
     const graph = new KnowledgeGraph();
 
     for (const n of nodes) {
       graph.nodes.set(n.id, { ...n });
-      graph.outEdges.set(n.id, []);
-      graph.inEdges.set(n.id, []);
+      graph.prereqOutEdges.set(n.id, []);
+      graph.prereqInEdges.set(n.id, []);
     }
 
     for (const e of edges) {
-      // 只加载 prerequisite 类型的边（tool 类用在讲解环节，不参与图谱遍历）
-      if (e.type !== 'prerequisite' && e.type !== 'tool') continue;
-      // 确保源和目标节点都存在（防御悬空边）
+      // 防御悬空边
       if (!graph.nodes.has(e.sourceId) || !graph.nodes.has(e.targetId)) continue;
 
-      graph.outEdges.get(e.sourceId)!.push(e.targetId);
-      graph.inEdges.get(e.targetId)!.push(e.sourceId);
+      // tool 边计入总数但不参与图遍历（BKT 祖先传播不能走弱工具边）
+      if (e.type === 'tool') {
+        graph.allOutCount++;
+        continue;
+      }
+
+      // prerequisite 边：入遍历邻接表
+      if (e.type === 'prerequisite') {
+        graph.prereqOutEdges.get(e.sourceId)!.push(e.targetId);
+        graph.prereqInEdges.get(e.targetId)!.push(e.sourceId);
+        graph.allOutCount++;
+      }
     }
 
-    // 检测环
+    // 加载主线-节点映射
+    if (mainlineNodes) {
+      for (const [mlId, nodeIds] of Object.entries(mainlineNodes)) {
+        graph.mainlineNodes.set(mlId, new Set(nodeIds));
+      }
+    }
+
+    // 检测环（只走 prerequisite 边，tool 边不构成诊断意义上的环）
     graph.detectCycles();
 
     return graph;
@@ -88,9 +121,14 @@ export class KnowledgeGraph {
         select: { id: true, name: true, layer: true, tier: true },
       });
 
-      // 加载 prerequisite 边（tool 边也加载，供讲解引用）
+      // 加载所有边（prerequisite + tool）
       const edgeRows = await p.knowledgeEdge.findMany({
         select: { sourceId: true, targetId: true, type: true },
+      });
+
+      // 加载主线-节点关联
+      const nmRows = await p.nodeMainline.findMany({
+        select: { nodeId: true, mainlineId: true },
       });
 
       const nodes: GraphNode[] = nodeRows.map((r) => ({
@@ -106,7 +144,14 @@ export class KnowledgeGraph {
         type: r.type,
       }));
 
-      return KnowledgeGraph.fromData(nodes, edges);
+      // 组装主线-节点映射
+      const mlMap: Record<string, string[]> = {};
+      for (const row of nmRows) {
+        if (!mlMap[row.mainlineId]) mlMap[row.mainlineId] = [];
+        mlMap[row.mainlineId].push(row.nodeId);
+      }
+
+      return KnowledgeGraph.fromData(nodes, edges, mlMap);
     } finally {
       if (shouldDisconnect) await p.$disconnect();
     }
@@ -115,16 +160,16 @@ export class KnowledgeGraph {
   // ========== 查询方法 ==========
 
   /**
-   * 获取直接前置节点列表（沿边反向一步）
+   * 获取直接前置节点列表（仅 prerequisite 边，反向一步）
    */
   prereqsOf(nodeId: string): GraphNode[] {
-    const inList = this.inEdges.get(nodeId);
+    const inList = this.prereqInEdges.get(nodeId);
     if (!inList) return [];
     return inList.map((id) => this.nodes.get(id)!).filter(Boolean);
   }
 
   /**
-   * 递归获取全部前置节点（沿边反向 BFS 闭包）
+   * 递归获取全部前置节点（仅 prerequisite 边，反向 BFS 闭包）
    */
   allPrereqsOf(nodeId: string): GraphNode[] {
     const visited = new Set<string>();
@@ -133,7 +178,7 @@ export class KnowledgeGraph {
 
     while (queue.length > 0) {
       const current = queue.shift()!;
-      const inList = this.inEdges.get(current);
+      const inList = this.prereqInEdges.get(current);
       if (!inList) continue;
 
       for (const preId of inList) {
@@ -151,10 +196,10 @@ export class KnowledgeGraph {
   }
 
   /**
-   * 获取直接依赖当前节点的节点列表（沿边正向一步）
+   * 获取直接依赖当前节点的节点列表（仅 prerequisite 边，正向一步）
    */
   dependentsOf(nodeId: string): GraphNode[] {
-    const outList = this.outEdges.get(nodeId);
+    const outList = this.prereqOutEdges.get(nodeId);
     if (!outList) return [];
     return outList.map((id) => this.nodes.get(id)!).filter(Boolean);
   }
@@ -164,26 +209,35 @@ export class KnowledgeGraph {
    *
    * 算法：
    * 1. 找到该主线下的所有节点
-   * 2. 对每个节点递归收集全部前置
+   * 2. 对每个节点递归收集全部前置（仅 prerequisite 边）
    * 3. 去重返回
    */
   mainlineSubgraph(mainlineId: string): GraphNode[] {
-    // 收集该主线下的节点 ID（需要外部传入，或由 load 时附加主线和节点的映射）
-    // 当前实现：遍历所有节点，通过 NodeMainline 表已知信息不便在纯内存图获取
-    // 因此该方法需要额外的主线-节点映射。返回空数组提示调用方自行组装。
-    //
-    // TODO: 在后续迭代中为 KnowledgeGraph 增加 mainlineNodes 映射
-    console.warn(
-      `[KnowledgeGraph] mainlineSubgraph("${mainlineId}") 暂未实现——图谱当前不持有主线-节点映射。` +
-      '后续迭代中补充 NodeMainline 数据加载。'
-    );
-    return [];
+    const mlNodeIds = this.mainlineNodes.get(mainlineId);
+    if (!mlNodeIds || mlNodeIds.size === 0) {
+      console.warn(
+        `[KnowledgeGraph] mainlineSubgraph("${mainlineId}") — 该主线下无节点（可能未加载 NodeMainline 数据）`
+      );
+      return [];
+    }
+
+    const resultSet = new Set<string>();
+
+    for (const nodeId of mlNodeIds) {
+      resultSet.add(nodeId);
+      const prereqs = this.allPrereqsOf(nodeId);
+      for (const p of prereqs) {
+        resultSet.add(p.id);
+      }
+    }
+
+    return Array.from(resultSet).map((id) => this.nodes.get(id)!).filter(Boolean);
   }
 
   // ========== 环检测 ==========
 
   /**
-   * 检测图中是否有环（DFS 三色标记法）
+   * 检测图中是否有环（DFS 三色标记法，仅 prerequisite 边）
    * @returns true 表示有环，false 表示无环
    */
   detectCycles(): boolean {
@@ -194,12 +248,11 @@ export class KnowledgeGraph {
 
     const dfs = (nodeId: string): boolean => {
       color.set(nodeId, GRAY);
-      const outList = this.outEdges.get(nodeId);
+      const outList = this.prereqOutEdges.get(nodeId);
       if (outList) {
         for (const nextId of outList) {
           const c = color.get(nextId);
           if (c === GRAY) {
-            // 发现环：沿当前节点 -> nextId 回到栈中的节点
             console.warn(`[KnowledgeGraph] ⚠️  检测到环：涉及节点 "${nodeId}" → "${nextId}"`);
             return true;
           }
@@ -228,17 +281,23 @@ export class KnowledgeGraph {
     return Array.from(this.nodes.values());
   }
 
-  /** 获取节点通过 ID */
+  /** 通过 ID 获取节点 */
   getNode(id: string): GraphNode | undefined {
     return this.nodes.get(id);
   }
 
+  /** 获取主线下所属的节点 ID 集合 */
+  getMainlineNodeIds(mainlineId: string): string[] {
+    const s = this.mainlineNodes.get(mainlineId);
+    return s ? Array.from(s) : [];
+  }
+
   /** 获取统计信息 */
   getStats(): { nodeCount: number; edgeCount: number } {
-    let edgeCount = 0;
-    for (const list of this.outEdges.values()) {
-      edgeCount += list.length;
+    let prereqCount = 0;
+    for (const list of this.prereqOutEdges.values()) {
+      prereqCount += list.length;
     }
-    return { nodeCount: this.nodes.size, edgeCount };
+    return { nodeCount: this.nodes.size, edgeCount: this.allOutCount };
   }
 }
