@@ -1,94 +1,39 @@
-# context-mode — MANDATORY routing rules
-
-You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
-
-## BLOCKED commands — do NOT attempt these
-
-### curl / wget — BLOCKED
-Any Bash command containing `curl` or `wget` is intercepted and replaced with an error message. Do NOT retry.
-Instead use:
-- `ctx_fetch_and_index(url, source)` to fetch and index web pages
-- `ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
-
-### Inline HTTP — BLOCKED
-Any Bash command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` is intercepted and replaced with an error message. Do NOT retry with Bash.
-Instead use:
-- `ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
-
-### WebFetch — BLOCKED
-WebFetch calls are denied entirely. The URL is extracted and you are told to use `ctx_fetch_and_index` instead.
-Instead use:
-- `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` to query the indexed content
-
-## REDIRECTED tools — use sandbox equivalents
-
-### Bash (>20 lines output)
-Bash is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
-For everything else, use:
-- `ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
-- `ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
-
-### Read (for analysis)
-If you are reading a file to **Edit** it → Read is correct (Edit needs content in context).
-If you are reading to **analyze, explore, or summarize** → use `ctx_execute_file(path, language, code)` instead. Only your printed summary enters context. The raw file content stays in the sandbox.
-
-### Grep (large results)
-Grep results can flood context. Use `ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
-
-## Tool selection hierarchy
-
-1. **GATHER**: `ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls.
-2. **FOLLOW-UP**: `ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
-3. **PROCESSING**: `ctx_execute(language, code)` | `ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
-4. **WEB**: `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
-5. **INDEX**: `ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
-
-## Subagent routing
-
-When spawning subagents (Agent/Task tool), the routing block is automatically injected into their prompt. Bash-type subagents are upgraded to general-purpose so they have access to MCP tools. You do NOT need to manually instruct subagents about context-mode.
-
-## Output constraints
-
-- Keep responses under 500 words.
-- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
-- When indexing content, use descriptive source labels so others can `ctx_search(source: "label")` later.
-
-## ctx commands
-
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call the `ctx_stats` MCP tool and display the full output verbatim |
-| `ctx doctor` | Call the `ctx_doctor` MCP tool, run the returned shell command, display as checklist |
-| `ctx upgrade` | Call the `ctx_upgrade` MCP tool, run the returned shell command, display as checklist |
-
----
+<!-- 
+  规则优先级（从高到低）：
+  安全铁律 > 三代理门禁 > Git 协作规范
+  当规则互相冲突时，高优先级覆盖低优先级。
+-->
 
 # 三代理协作开发规范
 
-本项目采用「计划 → 执行 → 审计」三代理闭环。通过斜杠命令调用：
+本项目采用「/plan → /execute → /audit」三代理闭环。
 
 - `/plan <需求>` — 启动计划代理，输出 `doc/plan/<feature>-plan.md`
 - `/execute <计划名>` — 启动执行代理，输出 `doc/executionlog/<feature>-log.md`
 - `/audit <计划名>` — 启动审计代理，输出 `doc/auditlog/<feature>-audit.md`
 
-## 流程门禁
+完整规则和产出模板在命令文件中：
+- `.claude/commands/plan.md`
+- `.claude/commands/execute.md`
+- `.claude/commands/audit.md`
 
-1. 计划未经用户确认，执行代理不得启动
-2. 执行代理不可偏离计划；如需偏离，先回到计划代理修订
-3. 审计代理只指出问题，不直接修改代码
-4. 审计不通过 → 问题清单 → 回到执行代理修复 → 再审计 → 直到通过
-5. 审计通过后，更新 `doc/progress.md`（追加记录）和 `doc/active_spec.md`（替换内容）
-
-## 文档规范
+## 文档路径速查
 
 | 文件 | 用途 | 规则 |
 |------|------|------|
 | `doc/spec/` | 技术规格 | 长期保留 |
-| `doc/plan/` | 实施计划 | 长期保留 |
+| `doc/plan/` | 实施计划 | 长期保留，每轮一份 |
 | `doc/executionlog/` | 执行日志 | 长期保留，每轮一份 |
 | `doc/auditlog/` | 审计报告 | 长期保留，每轮一份 |
 | `doc/progress.md` | 项目全程历史轨迹 | 只增不减 |
 | `doc/active_spec.md` | 当前活跃任务 | 每轮替换 |
+
+## 门禁摘要
+
+1. /plan 未经用户确认 → /execute 不得启动
+2. /execute 偏离计划分两级：微调记录后继续，大偏离回 /plan
+3. /audit 只指出问题、不直接改代码，须专门复核所有"偏离记录"中的微调是否真属微调
+4. 审计通过 → 更新 `doc/progress.md`（追加记录）和 `doc/active_spec.md`（替换内容）
 
 ---
 
@@ -121,12 +66,33 @@ When spawning subagents (Agent/Task tool), the routing block is automatically in
 遇到报错、不确定的情况、或需要做大范围改动的想法时，停下来问用户。
 不自作主张做大范围改动或猜测性修复。
 
+## 铁律 6：显式失败，不掩盖
+任何步骤若被静默跳过、未验证、或结果不确定，绝不可宣称"已完成/已通过/正常"。
+主动报告"这一步没做成/不确定/跳过了"，宁可多报问题不少报。
+数据迁移、记录处理类操作尤甚：跳过几条、失败几条，必须明确报数。
+
 ## 高危操作特别警告：git reset --hard
 `git reset --hard` 会永久丢弃改动、无法找回。这是最高危操作：
 - 日常回退优先用 `git revert`（不删历史的安全方式）
 - 只有万不得已才考虑 `git reset --hard`
 - 执行前必须单独、明确地告诉用户"这一步会永久丢掉哪些东西"
 - 等用户明确确认后再执行
+
+---
+
+# 代码修改准则
+
+## 先读后写
+给 wrong-notebook 已有文件或模块增加代码前，先通读相关的现有函数、导出接口、调用方。
+不理解现有代码为何这样写时，先问用户再动手。"看起来跟现有代码没关系"是最危险的判断。
+
+## 遵从既有约定
+严格沿用 wrong-notebook 的现有代码风格和命名约定，即使你有不同偏好。
+不另起一套新范式。确有改进建议先提出讨论，不暗中偏离。
+
+## 暴露冲突不折中
+发现代码库里两套矛盾的模式时，不和稀泥融合。明确选一个（优先更新、更经测试的），
+说明选择理由，把另一个标记为待清理。
 
 ---
 
