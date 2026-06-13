@@ -68,3 +68,26 @@
 - [ ] 集成测试待 Docker 恢复后实际运行
 - [x] 可进入审计阶段
 
+---
+
+## 审计修复（2026-06-14 · commit cf02a18）
+
+外部审计发现 3 个问题，全部修复：
+
+### 修复1 [P1]: mainlineSubgraph() 完整实现
+- load() 同时查询 NodeMainline 表，构建 mainlineId→nodeId[] 映射
+- fromData() 新增可选的 mainlineNodes 参数
+- mainlineSubgraph() 完整实现：取主线节点 + 递归全部前置 + 去重
+- 新增 getMainlineNodeIds() 方法
+- 单元测试 +3（ML1/ML2/不存在主线）、集成测试 +3
+
+### 修复2 [P1]: package-lock.json 同步
+- `npm install --package-lock-only` 更新 lockfile，tsx 已入 devDependencies
+
+### 修复3 [P2]: tool 边遍历语义修正
+- 邻接表拆分为 prereq 专用 + allOutCount 计数
+- prereqsOf/allPrereqsOf/dependentsOf/detectCycles 只走 prerequisite 边
+- tool 边计入 getStats().edgeCount 供讲解引用，不参与图遍历
+- 单元测试 +4（tool 边不暴露为前置 / tool 环不触发环检测）
+- 单元测试总数：12 → 19 用例
+
