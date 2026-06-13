@@ -5,31 +5,29 @@
 
 ---
 
-> 最后更新: 2026-06-13
+> 最后更新: 2026-06-14
 
 ## 🎯 本轮目标
 
-建立三代理协作基建 + Git 三分支模型 + CLAUDE.md 更新
+M1 知识图谱数据层 —— 已完成 ✅，审计通过。
 
 ## ✅ 任务清单
 
-- [x] Git remote 配置（origin + upstream）
-- [x] 三分支创建（dev + main）
-- [x] 首次推送到 origin
-- [x] 创建 doc/ 子目录结构
-- [x] 创建 .claude/commands/ 三个命令文件
-- [x] 创建 doc/progress.md
-- [x] 创建 doc/active_spec.md
-- [x] 修改 CLAUDE.md（三代理规则 + 安全铁律 + Git 规范）
+- [x] Prisma schema 追加 8 张新表 + 迁移
+- [x] 种子导入脚本（幂等 upsert，字段归一化，悬空边过滤）
+- [x] 内存图谱模块（fromData/load + 图遍历 + 环检测）
+- [x] 单元测试（19 用例）
+- [x] 集成测试（代码已写，待 Docker 恢复后运行）
+- [x] 审计修复（mainlineSubgraph 实现 + tool 边隔离 + lockfile 同步）
+- [x] 审计通过
 
 ## 🔗 关联文档
 
-- 规格: doc/spec/三代理协作开发框架方案-v2.md
-- 规格: doc/spec/Git协作方案-v2.md
-- 计划: —
-- 执行日志: —
-- 审计: —
+- 规格: doc/reference/TECH_PLAN_v2.md §3
+- 计划: doc/plan/knowledge-graph-data-layer-plan.md
+- 执行日志: doc/executionlog/knowledge-graph-data-layer-log.md
+- 审计: doc/auditlog/knowledge-graph-data-layer-audit.md ✅ 通过
 
 ## 📝 备注
 
-基建轮，无代码变更，纯文档和配置。
+下一轮：M2 归因流程。待用户确认后启动 /plan。
