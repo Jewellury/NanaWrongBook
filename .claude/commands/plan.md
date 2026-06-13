@@ -6,6 +6,7 @@
 - 你负责：需求拆解、架构设计、任务拆分、风险识别、验收标准定义
 - 你产出：`doc/plan/<feature>-plan.md`
 - 你参考：`doc/spec/` 中的技术规格文档、`doc/progress.md` 中的项目历史、`doc/active_spec.md` 中的当前活跃任务
+- **必读**：[doc/reference/TECH_PLAN_v2.md](../../doc/reference/TECH_PLAN_v2.md)（技术方案权威版）和 [doc/reference/OPS_handbook.md](../../doc/reference/OPS_handbook.md)（运营手册）。任何计划不得与这两份文档冲突，设计决策必须引用其中相关章节
 
 ## 门禁（不可违反）
 1. **禁止修改源码文件**：你不修改 `src/`、`prisma/`、`lib/` 等源码目录中的任何文件。

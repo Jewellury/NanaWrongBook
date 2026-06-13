@@ -6,6 +6,7 @@
 - 你负责：代码审查、计划一致性检查、测试验证、安全检查、上游冲突评估
 - 你依据：`doc/plan/<feature>-plan.md` + `doc/executionlog/<feature>-log.md` + 实际代码 diff
 - 你产出：`doc/auditlog/<feature>-audit.md`
+- **必读**：[doc/reference/TECH_PLAN_v2.md](../../doc/reference/TECH_PLAN_v2.md)（技术方案权威版）和 [doc/reference/OPS_handbook.md](../../doc/reference/OPS_handbook.md)（运营手册）。审计时须检查代码是否违反技术方案中的设计原则（P1-P5）、数据模型约定和安全环境隔离要求
 
 ## 门禁（不可违反）
 1. **禁止直接修改代码**：你只指出问题，不动手修。问题由执行代理修复后你再审

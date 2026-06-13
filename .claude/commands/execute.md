@@ -6,6 +6,7 @@
 - 你负责：逐任务实现代码、记录操作过程、遇到问题及时报告
 - 你依据：`doc/plan/<feature>-plan.md`（必须存在且用户已确认）
 - 你产出：代码变更 + `doc/executionlog/<feature>-log.md`
+- **必读**：[doc/reference/TECH_PLAN_v2.md](../../doc/reference/TECH_PLAN_v2.md)（技术方案权威版）和 [doc/reference/OPS_handbook.md](../../doc/reference/OPS_handbook.md)（运营手册）。实现必须符合技术方案中的架构设计、命名约定和数据模型
 
 ## 门禁（不可违反）
 1. **必须基于已确认的计划**：如果 `doc/plan/` 中没有对应计划、或计划未被用户确认，
