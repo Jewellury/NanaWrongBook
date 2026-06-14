@@ -224,3 +224,52 @@ model MistakeNode {
   confirmed Boolean @default(false)       // 是否人工确认
   @@id([mistakeId, nodeId])
 }
+
+// ============================================================
+// M2 归因流程（个性化数学诊断辅导系统 · 增量）
+// 全部新增表，不改 wrong-notebook 已有模型
+// 对应 TECH_PLAN_v2 §3.5
+// ============================================================
+
+model DiagnosisSession {
+  id        String   @id @default(cuid())
+  studentId String   // → 上游 User.id（不改其表，与 mistakeId 同款处理）
+  kind      String   // "initial" | "weekend"
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  records   ProbeRecord[]
+  errors    ErrorRecord[]
+}
+
+model ProbeRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   DiagnosisSession @relation(fields: [sessionId], references: [id])
+  itemId    String?  // 题目 ID（对应后续 Item 表，本期可为 null）
+  nodeId    String?  // 关联的知识节点 ID
+  correct   Boolean  // 是否答对
+  durationS Int?     // 作答耗时（秒）
+  createdAt DateTime @default(now())
+}
+
+model ErrorRecord {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     DiagnosisSession @relation(fields: [sessionId], references: [id])
+  mistakeId   String?  // → 上游 ErrorItem.id（不改其表，comment 标注）
+  nodeId      String?  // 关联的知识节点 ID
+  newmanStage String?  // "reading" | "comprehension" | "transformation" | "process" | "encoding"
+  errorType   String?  // 一级标签: 概念性 | 程序性 | 计算性 | 符号表示 | 条件前提缺口 | 完备性缺口
+  crossTag    String?  // 跨章复用标签: 定义域优先 | 等价变形守恒 | 完备分类 | 取等可达 | 对象类型意识
+  rootNodeId  String?  // 定位到的病根节点 ID → KnowledgeNode.id
+  dialogueLog String?  // 追问对话链 JSON 字符串（SQLite 不支持 Json 类型，见 M1 videoLinks）
+
+  // P3 双证据挂钩（决策⑦）：概念题 + 隔天同构变式的证据轮次
+  evidenceRound Int?
+
+  // 医生模式复诊验证（决策⑧）：推荐视频后有没有复诊确认
+  followUpVerified String @default("none") // "none" | "pending" | "verified"
+
+  confirmed   String   @default("pending") // "pending" | "slip_confirmed" | "gap_confirmed"
+  createdAt   DateTime @default(now())
+}
