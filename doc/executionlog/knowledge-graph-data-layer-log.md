@@ -91,3 +91,18 @@
 - 单元测试 +4（tool 边不暴露为前置 / tool 环不触发环检测）
 - 单元测试总数：12 → 19 用例
 
+---
+
+## M1 集成测试补验（2026-06-14 · 容器分层方案修正轮）
+
+Docker 恢复后，通过新测试容器完成 M1 补验：
+
+| 测试 | 结果 |
+|------|:--:|
+| `test:graph:unit` | 19/19 ✅ |
+| `test:graph:integration` | 7/7 ✅ |
+| 退出码 | 0 ✅ |
+| `./data/dev.db` LastWriteTime | 不变 ✅ |
+
+验证命令：`docker compose -f docker-compose.test.yml up --abort-on-container-exit`
+
