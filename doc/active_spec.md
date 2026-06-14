@@ -9,32 +9,28 @@
 
 ## 🎯 本轮目标
 
-M2 归因流程骨架 —— 已完成 ✅，审计通过。
+提示词修订 + DB 护栏 —— 已完成 ⚠️（有条件通过）。
 
 ## ✅ 任务清单
 
-- [x] Prisma schema 追加 3 张新表 + 迁移（DiagnosisSession/ProbeRecord/ErrorRecord）
-- [x] 会话状态机（8 步，probe_drill 可选跳转）
-- [x] API 路由（4 个：POST/GET sessions, POST probes, POST errors）
-- [x] 9 条设计决策全部落地（含 evidenceRound/followUpVerified/禁旁路鉴权）
-- [x] 测试：53/53 全部通过（M1 26 + M2 27），安全路径退出码 0
-- [x] 生产库污染清理 + 事故复盘
-- [x] 预防措施：test:all 聚合 + 执行铁律
-- [x] 审计通过
+- [x] DB 护栏断言（guard-db.ts 白名单 + vitest 挂载）
+- [x] audit.md 安全补检（+2 条）
+- [x] plan.md + execute.md TDD 注记
+- [x] 审计通过（挂账：容器复跑待 Docker 网络恢复）
 
 ## 🔗 关联文档
 
-- 计划: doc/plan/M2-attribution-flow-plan.md
-- 执行日志: doc/executionlog/M2-attribution-flow-log.md
-- 事故复盘: doc/reference/M2-prod-contamination-postmortem.md
-- 审计: doc/auditlog/M2-attribution-flow-audit.md ✅ 通过
+- 提案: doc/plan/three-agent-prompt-revision-plan.md
+- 计划: doc/plan/prompt-revision-plan.md
+- 审计: doc/auditlog/prompt-revision-audit.md ⚠️ 有条件通过
 
-## ⚠️ 已知问题
+## ⚠️ 挂账项
 
-- 全仓 `test:unit` 在 `.env.test` 下有 5 个上游测试失败（已有 plan: upstream-test-env-isolation）
-- `data/dev.db.bak-20260614` 备份残留（M2 稳定后可删除）
+| # | 内容 | 解除条件 |
+|---|------|----------|
+| 1 | `docker compose -f docker-compose.test.yml up` 53/53 复跑 | Docker 网络恢复 |
 
 ## 📝 备注
 
-M2 里程碑完整闭环。预防措施（test:all + 执行铁律）已编码到 .claude/commands/execute.md。
-下一轮：M3 初诊+追踪 或 upstream-test-env-isolation。
+M3 可起 /plan。新规已生效（plan TDD 注记、execute 测试先行步骤、audit 安全补检）。
+1B（vitest run 全量）+ upstream-test-env-isolation 仍是独立一条线。
