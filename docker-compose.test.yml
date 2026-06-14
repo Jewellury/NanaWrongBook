@@ -1,0 +1,33 @@
+# 测试专用容器 —— 一次性 test runner
+# 使用方式：
+#   cp .env.test.example .env.test    # 首次使用前创建（已创建则跳过）
+#   docker compose -f docker-compose.test.yml up --abort-on-container-exit
+#   docker compose -f docker-compose.test.yml down -v
+
+services:
+  test:
+    image: node:22-alpine
+    container_name: nana-test-runner
+    working_dir: /app
+    env_file:
+      - .env.test
+    volumes:
+      - .:/app                              # 挂载全部代码
+      - /app/node_modules                   # 匿名卷：依赖隔离，不污染宿主机
+      - ./data/test:/app/data               # 测试数据库独立目录（隔离生产 ./data/dev.db）
+    command: >
+      sh -c "
+        echo '=== 安装依赖 ===' &&
+        npm ci &&
+        echo '=== 生成 Prisma Client ===' &&
+        npx prisma generate &&
+        echo '=== 运行迁移（测试库）===' &&
+        npx prisma migrate deploy &&
+        echo '=== 灌入种子数据 ===' &&
+        npm run seed &&
+        echo '=== 纯单元测试 ===' &&
+        npm run test:unit &&
+        echo '=== 集成测试（连测试库）===' &&
+        npm run test:integration &&
+        echo '=== 全部通过 ✅ ==='
+      "
