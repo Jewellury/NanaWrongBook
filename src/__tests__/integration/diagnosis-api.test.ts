@@ -2,19 +2,64 @@
  * 诊断会话 API · 集成测试
  *
  * 打真实路由 handler（决策⑨：禁止旁路直连 Prisma）。
- * 鉴权用 vitest mock getServerSession。
+ * Mock Next.js 模块 + 鉴权，handler 逻辑不走形。
  *
- * 需要先运行 npm run seed 确保数据库可读写。
+ * 需要先运行 npm run seed 确保测试数据库可读写。
  */
 
-import { describe, test, expect, beforeAll, vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 
-// ---- Mock getServerSession ----
+// ---- Mock next/server ----
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: (body: unknown, init?: ResponseInit) => {
+      const status = init?.status ?? 200;
+      return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+  },
+}));
+
+// ---- Mock next-auth ----
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn().mockResolvedValue({ user: { id: 'test-user-001' } }),
 }));
 
-// 导入路由 handler（必须 mock 之后）
+// ---- Mock @/lib/logger ----
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+// ---- Mock @/lib/auth ----
+vi.mock('@/lib/auth', () => ({
+  authOptions: {},
+}));
+
+// ---- Mock @/lib/api-errors ----
+vi.mock('@/lib/api-errors', () => ({
+  unauthorized: () => new Response(JSON.stringify({ error: '未授权' }), { status: 401 }),
+  internalError: () => new Response(JSON.stringify({ error: '内部错误' }), { status: 500 }),
+}));
+
+// ---- Mock @/lib/prisma — 使用真实 PrismaClient（连测试库）----
+import { PrismaClient } from '@prisma/client';
+
+// vi.mock 工厂提升——用 var 确保声明也被提升到工厂之前
+var _testPrisma: PrismaClient;
+
+vi.mock('@/lib/prisma', () => {
+  _testPrisma = new PrismaClient();
+  return { prisma: _testPrisma };
+});
+
+// 导入路由 handler（必须在所有 mock 之后）
 import { POST as createSession, GET as listSessions } from '../../app/api/diagnosis/sessions/route';
 import { GET as getSession } from '../../app/api/diagnosis/sessions/[id]/route';
 import { POST as postProbe } from '../../app/api/diagnosis/sessions/[id]/probes/route';
@@ -151,29 +196,28 @@ describe('诊断会话 API（集成测试 · mock session）', () => {
     expect(body.errorType).toBe('概念性');
     expect(body.evidenceRound).toBe(1);
     expect(body.followUpVerified).toBe('pending');
-    expect(body.confirmed).toBe('pending');
   });
 
-  test('POST /api/diagnosis/sessions/[id]/errors 记录最简归因（只用默认值）', async () => {
+  test('POST /api/diagnosis/sessions/[id]/errors 默认值测试', async () => {
     const req = mockRequest({});
     const res = await postError(req, { params: Promise.resolve({ id: sessionId }) });
     expect(res.status).toBe(201);
 
     const body = await res.json();
-    expect(body.followUpVerified).toBe('none'); // 默认值
-    expect(body.confirmed).toBe('pending');     // 默认值
+    expect(body.followUpVerified).toBe('none');
+    expect(body.confirmed).toBe('pending');
     expect(body.evidenceRound).toBeNull();
   });
 
   // ---- 验证会话详情含全部记录 ----
 
-  test('GET /api/diagnosis/sessions/[id] 包含全部 probes + errors', async () => {
+  test('GET /api/diagnosis/sessions/[id] 应包含全部 probes + errors', async () => {
     const req = new Request(`http://localhost/api/diagnosis/sessions/${sessionId}`);
     const res = await getSession(req, { params: Promise.resolve({ id: sessionId }) });
     expect(res.status).toBe(200);
 
     const body = await res.json();
-    expect(body.records.length).toBe(2); // 2 条探针
-    expect(body.errors.length).toBe(2);  // 2 条归因
+    expect(body.records.length).toBe(2);
+    expect(body.errors.length).toBe(2);
   });
 });

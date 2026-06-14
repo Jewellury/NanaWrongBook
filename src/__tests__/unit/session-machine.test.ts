@@ -3,7 +3,7 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { SessionMachine, SessionStep, getAllSteps, isOptionalStep } from '../../lib/session-machine';
+import { SessionMachine, SessionStep, getAllSteps, isOptionalStep } from '../../../lib/session-machine';
 
 describe('SessionMachine（正常流程）', () => {
   test('默认从 batch_photo 开始', () => {
