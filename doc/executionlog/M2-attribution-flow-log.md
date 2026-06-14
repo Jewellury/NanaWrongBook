@@ -100,3 +100,57 @@
 - [x] test:m2:unit: 15/15 通过
 - [x] test:m2:integration: 12/12 通过
 - [x] 可进入审计阶段
+
+---
+
+## 修正轮：生产库清理 + 测试容器安全路径验证（2026-06-14 · commit c7d196e）
+
+### 问题
+
+外部审计发现 M2 集成测试在 prod 容器中运行，写入了 `./data/dev.db`（1 会话 + 2 探针 + 2 归因）。
+
+### 清理步骤
+
+1. **备份**：`cp ./data/dev.db ./data/dev.db.bak-20260614`（容器 + 宿主机双份）
+2. **按 FK 顺序删除**：ProbeRecord(2) → ErrorRecord(2) → DiagnosisSession(1)
+3. **验空**：`test-user-001` 会话 = 0
+4. **验 M1 无损**：节点 48 / 边 36 / 桥 18 / 主线 10 ✅
+
+### 根因修复
+
+`docker-compose.test.yml` command 加入 M2 测试步骤：
+```yaml
+echo '=== M2 单元测试 ===' && npm run test:m2:unit &&
+echo '=== M2 集成测试 ===' && npm run test:m2:integration &&
+```
+
+### 安全路径重跑
+
+`docker compose -f docker-compose.test.yml up --abort-on-container-exit`：
+
+| 测试 | 结果 | 数据路径 |
+|------|:--:|------|
+| test:graph:unit | 19/19 ✅ | 不写库 |
+| test:graph:integration | 7/7 ✅ | ./data/test/test.db |
+| test:m2:unit | 15/15 ✅ | 不写库 |
+| test:m2:integration | 12/12 ✅ | ./data/test/test.db |
+| **退出码** | **0** ✅ | |
+| **dev.db 隔离** | ✅ | ./data/test 独立目录 |
+
+### 守门五条（修正后）
+
+| # | 规则 | 状态 |
+|---|------|:--:|
+| 1 | migrate 前确认 | ✅ |
+| 2 | 不碰上游 | ✅ |
+| 3 | 测试只走测试容器 | ✅ **已修正** |
+| 4 | .env 不入库 | ✅ |
+| 5 | 写了 ≠ 过了 | ✅ M1 26/26 + M2 27/27 = 53/53 |
+
+## 完成状态（修正后）
+
+- [x] 所有任务完成
+- [x] 生产库测试数据已清理
+- [x] 测试容器安全路径重跑通过（退出码 0）
+- [x] 代码已提交（6 commits + 修正轮 c7d196e）
+- [x] 可进入审计阶段
