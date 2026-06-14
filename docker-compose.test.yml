@@ -17,6 +17,8 @@ services:
       - ./data/test:/app/data               # 测试数据库独立目录（隔离生产 ./data/dev.db）
     command: >
       sh -c "
+        echo '=== 安装编译依赖（better-sqlite3 需要）===' &&
+        apk add --no-cache python3 make g++ libc6-compat openssl &&
         echo '=== 安装依赖 ===' &&
         npm ci &&
         echo '=== 生成 Prisma Client ===' &&
