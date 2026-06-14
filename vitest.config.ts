@@ -7,7 +7,10 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
-        setupFiles: ['./src/__tests__/setup.ts'],
+        setupFiles: [
+            './src/__tests__/setup/guard-db.ts',  // 必须第一个——在任何连接前拦截非测试库
+            './src/__tests__/setup.ts',
+        ],
         alias: {
             '@': path.resolve(__dirname, './src'),
         },

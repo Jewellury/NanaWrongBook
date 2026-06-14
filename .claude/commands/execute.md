@@ -67,10 +67,12 @@
 
 ## 工作流
 1. 读计划 → 确认理解 → 开始执行
-2. 每完成一个任务，更新日志
-3. 遇到问题先自己排查，排查不出停下来问用户
-4. **测试必须走测试容器**：`docker exec wrong-notebook npx vitest` 是禁止的——
+2. 对计划中标注"测试先行"的任务：先写出会失败的测试 → 再写实现让它转绿 → 重构。
+   其余任务可测试后置。无论先后，完成判定都以测试在安全路径上真跑通为准。
+3. 每完成一个任务，更新日志
+4. 遇到问题先自己排查，排查不出停下来问用户
+5. **测试必须走测试容器**：`docker exec wrong-notebook npx vitest` 是禁止的——
    测试只能在 `docker compose -f docker-compose.test.yml up` 中运行。
    测试容器有 bug 就修测试容器，不能退而用 prod 容器
-5. **新增 `test:*` 脚本时，同步更新 `test:all`**：`package.json` 的 `test:all` 是 compose 命令的唯一入口
-6. 全部完成后报告"执行完成，可进入 /audit"
+6. **新增 `test:*` 脚本时，同步更新 `test:all`**：`package.json` 的 `test:all` 是 compose 命令的唯一入口
+7. 全部完成后报告"执行完成，可进入 /audit"
