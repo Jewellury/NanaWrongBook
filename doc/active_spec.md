@@ -9,30 +9,32 @@
 
 ## 🎯 本轮目标
 
-容器分层方案 + M1 最终补验 —— 已完成 ✅，审计通过。
+M2 归因流程骨架 —— 已完成 ✅，审计通过。
 
 ## ✅ 任务清单
 
-- [x] 新增 .env.test.example（模板，提交 git）
-- [x] 新增 docker-compose.test.yml（独立测试容器）
-- [x] 确认 .gitignore 覆盖 .env.test
-- [x] 新增 test:graph:unit / test:graph:integration 脚本
-- [x] M1 图谱补验：26/26 用例通过（19 unit + 7 integration）
-- [x] 隔离验证：dev.db 未触碰，生产容器未中断
+- [x] Prisma schema 追加 3 张新表 + 迁移（DiagnosisSession/ProbeRecord/ErrorRecord）
+- [x] 会话状态机（8 步，probe_drill 可选跳转）
+- [x] API 路由（4 个：POST/GET sessions, POST probes, POST errors）
+- [x] 9 条设计决策全部落地（含 evidenceRound/followUpVerified/禁旁路鉴权）
+- [x] 测试：53/53 全部通过（M1 26 + M2 27），安全路径退出码 0
+- [x] 生产库污染清理 + 事故复盘
+- [x] 预防措施：test:all 聚合 + 执行铁律
 - [x] 审计通过
 
 ## 🔗 关联文档
 
-- 计划: doc/plan/container-split-prod-test-plan.md
-- 执行日志: doc/executionlog/container-split-prod-test-log.md
-- 审计: doc/auditlog/container-split-prod-test-audit.md ✅ 通过
+- 计划: doc/plan/M2-attribution-flow-plan.md
+- 执行日志: doc/executionlog/M2-attribution-flow-log.md
+- 事故复盘: doc/reference/M2-prod-contamination-postmortem.md
+- 审计: doc/auditlog/M2-attribution-flow-audit.md ✅ 通过
 
 ## ⚠️ 已知问题
 
-全仓 `test:unit` 在 `.env.test` 下有 5 个上游测试失败（config.test.ts ×1 + logger.test.ts ×4）。
-根因：上游测试依赖默认 env 值（AI_PROVIDER=gemini / LOG_LEVEL 不抑制 info）。
-建议后续开 `upstream-test-env-isolation` 独立计划处理。
+- 全仓 `test:unit` 在 `.env.test` 下有 5 个上游测试失败（已有 plan: upstream-test-env-isolation）
+- `data/dev.db.bak-20260614` 备份残留（M2 稳定后可删除）
 
 ## 📝 备注
 
-M1 里程碑完整闭环。下一轮：M2 归因流程 或 upstream-test-env-isolation。
+M2 里程碑完整闭环。预防措施（test:all + 执行铁律）已编码到 .claude/commands/execute.md。
+下一轮：M3 初诊+追踪 或 upstream-test-env-isolation。

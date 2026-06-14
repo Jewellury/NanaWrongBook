@@ -33,7 +33,7 @@
 |--------|:--:|------|------|
 | M0 环境搭建 | ✅ 完成 | 2026-06-13 | 2026-06-13 |
 | M1 知识图谱数据层 | ✅ 完成 | 2026-06-14 | 2026-06-14 |
-| M2 归因流程 | ⬜ 待开始 | — | — |
+| M2 归因流程 | ✅ 完成 | 2026-06-14 | 2026-06-14 |
 | M3 初诊+追踪 | ⬜ 待开始 | — | — |
 | M4 深化 | ⬜ 待开始 | — | — |
 
@@ -101,3 +101,41 @@ a73fff4 → cf02a18 → 2518175 → 5a47be9 → c7b2604 → ae306f3 → ba3cdec
 ### commit 链
 
 f48caa2 → 472ca98 → 6e57467 → c58b651 → 4d9b92f
+
+---
+
+## 2026-06-14 · M2 轮：归因流程骨架
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 06-14 | Prisma schema 追加 | ✅ | 3 张新表（DiagnosisSession/ProbeRecord/ErrorRecord），含 evidenceRound/followUpVerified |
+| 06-14 | 会话状态机 | ✅ | 8 步流程，probe_drill 可选跳转 |
+| 06-14 | API 路由 | ✅ | 4 个（POST/GET sessions, POST probes, POST errors） |
+| 06-14 | 测试 | ✅ | 53/53 全部通过（19+7+15+12），安全路径退出码 0 |
+| 06-14 | 生产库污染清理 | ✅ | 5 条测试数据删除，M1 完整无损 |
+| 06-14 | 预防措施 | ✅ | test:all 聚合 + 执行铁律 + 事故复盘 |
+| 06-14 | 审计 | ✅ | 通过，审计报告: doc/auditlog/M2-attribution-flow-audit.md |
+
+### 交付物
+
+| 文件 | 类型 |
+|------|------|
+| prisma/schema.prisma | 修改（末尾追加 3 model） |
+| prisma/migrations/20260614061611_add_m2_diagnosis_session/ | 新增 |
+| lib/session-machine.ts | 新增 |
+| src/app/api/diagnosis/sessions/*（4 个 route.ts） | 新增 |
+| src/__tests__/unit/session-machine.test.ts | 新增 |
+| src/__tests__/integration/diagnosis-api.test.ts | 新增 |
+| package.json | 修改（+3 行） |
+| docker-compose.test.yml | 修改（用 test:all 替代逐个清单） |
+| .claude/commands/execute.md | 修改（+4 行测试铁律） |
+
+### 事故与修正
+
+生产库被 M2 集成测试写入 5 条测试数据（根因：compose 未同步 M2 测试脚本 + 执行代理退守 prod 容器）。复盘与修正见 doc/reference/M2-prod-contamination-postmortem.md。
+
+### commit 链
+
+6bdcabf → 4e8e5c5 → c7d196e → 9e9feb3 → 0eae9ea → 5db4ce7 → 8c02ae6 → f0ca0ec → c9742aa
