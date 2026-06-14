@@ -98,7 +98,7 @@ M2 的 API 只做数据存取——创建会话、记录探针、记录归因。
 
 `confirmed`（slip/gap）管的是错因性质，跟"推荐视频后有没有复诊确认真补上了"是两个轴。缺后者，知识漏洞会"假性闭合"（她没看懂视频，系统却以为已处理）——这是 TECH_PLAN_v2 §0.1「复诊闭环」的硬性要求。
 
-现在加 `followUpVerified String? @default("none")`（none → pending → verified），同样只埋字段不写逻辑。
+现在加 `followUpVerified String @default("none")`（none → pending → verified），非空 + 默认值，避免 null 和 "none" 两种"没复诊"的歧义。同样只埋字段不写逻辑。
 
 ### 决策⑨：集成测试必须打真实路由，禁止旁路鉴权（🟡 修正项）
 
