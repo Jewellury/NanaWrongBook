@@ -60,6 +60,8 @@
 ## 完成状态
 - [ ] 所有任务完成
 - [ ] 代码已提交（commit: <hash>）
+- [ ] `test:all` 通过（`docker compose -f docker-compose.test.yml up --abort-on-container-exit` 退出码 0）
+- [ ] 确认测试在安全路径运行（`./data/test/test.db` 被更新，`./data/dev.db` 未被触碰）
 - [ ] 可进入审计阶段
 ```
 
@@ -67,4 +69,8 @@
 1. 读计划 → 确认理解 → 开始执行
 2. 每完成一个任务，更新日志
 3. 遇到问题先自己排查，排查不出停下来问用户
-4. 全部完成后报告"执行完成，可进入 /audit"
+4. **测试必须走测试容器**：`docker exec wrong-notebook npx vitest` 是禁止的——
+   测试只能在 `docker compose -f docker-compose.test.yml up` 中运行。
+   测试容器有 bug 就修测试容器，不能退而用 prod 容器
+5. **新增 `test:*` 脚本时，同步更新 `test:all`**：`package.json` 的 `test:all` 是 compose 命令的唯一入口
+6. 全部完成后报告"执行完成，可进入 /audit"

@@ -27,13 +27,7 @@ services:
         npx prisma migrate deploy &&
         echo '=== 灌入种子数据 ===' &&
         npm run seed &&
-        echo '=== 图谱单元测试 ===' &&
-        npm run test:graph:unit &&
-        echo '=== 图谱集成测试 ===' &&
-        npm run test:graph:integration &&
-        echo '=== M2 单元测试 ===' &&
-        npm run test:m2:unit &&
-        echo '=== M2 集成测试 ===' &&
-        npm run test:m2:integration &&
+        echo '=== 运行全部测试 ===' &&
+        npm run test:all &&
         echo '=== 全部通过 ✅ ==='
       "
