@@ -31,5 +31,9 @@ services:
         npm run test:graph:unit &&
         echo '=== 图谱集成测试 ===' &&
         npm run test:graph:integration &&
+        echo '=== M2 单元测试 ===' &&
+        npm run test:m2:unit &&
+        echo '=== M2 集成测试 ===' &&
+        npm run test:m2:integration &&
         echo '=== 全部通过 ✅ ==='
       "
