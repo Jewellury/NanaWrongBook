@@ -27,9 +27,9 @@ services:
         npx prisma migrate deploy &&
         echo '=== 灌入种子数据 ===' &&
         npm run seed &&
-        echo '=== 纯单元测试 ===' &&
-        npm run test:unit &&
-        echo '=== 集成测试（连测试库）===' &&
-        npm run test:integration &&
+        echo '=== 图谱单元测试 ===' &&
+        npm run test:graph:unit &&
+        echo '=== 图谱集成测试 ===' &&
+        npm run test:graph:integration &&
         echo '=== 全部通过 ✅ ==='
       "
