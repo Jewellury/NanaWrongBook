@@ -9,25 +9,30 @@
 
 ## 🎯 本轮目标
 
-M1 知识图谱数据层 —— 已完成 ✅，审计通过。
+容器分层方案 + M1 最终补验 —— 已完成 ✅，审计通过。
 
 ## ✅ 任务清单
 
-- [x] Prisma schema 追加 8 张新表 + 迁移
-- [x] 种子导入脚本（幂等 upsert，字段归一化，悬空边过滤）
-- [x] 内存图谱模块（fromData/load + 图遍历 + 环检测）
-- [x] 单元测试（19 用例）
-- [x] 集成测试（代码已写，待 Docker 恢复后运行）
-- [x] 审计修复（mainlineSubgraph 实现 + tool 边隔离 + lockfile 同步）
+- [x] 新增 .env.test.example（模板，提交 git）
+- [x] 新增 docker-compose.test.yml（独立测试容器）
+- [x] 确认 .gitignore 覆盖 .env.test
+- [x] 新增 test:graph:unit / test:graph:integration 脚本
+- [x] M1 图谱补验：26/26 用例通过（19 unit + 7 integration）
+- [x] 隔离验证：dev.db 未触碰，生产容器未中断
 - [x] 审计通过
 
 ## 🔗 关联文档
 
-- 规格: doc/reference/TECH_PLAN_v2.md §3
-- 计划: doc/plan/knowledge-graph-data-layer-plan.md
-- 执行日志: doc/executionlog/knowledge-graph-data-layer-log.md
-- 审计: doc/auditlog/knowledge-graph-data-layer-audit.md ✅ 通过
+- 计划: doc/plan/container-split-prod-test-plan.md
+- 执行日志: doc/executionlog/container-split-prod-test-log.md
+- 审计: doc/auditlog/container-split-prod-test-audit.md ✅ 通过
+
+## ⚠️ 已知问题
+
+全仓 `test:unit` 在 `.env.test` 下有 5 个上游测试失败（config.test.ts ×1 + logger.test.ts ×4）。
+根因：上游测试依赖默认 env 值（AI_PROVIDER=gemini / LOG_LEVEL 不抑制 info）。
+建议后续开 `upstream-test-env-isolation` 独立计划处理。
 
 ## 📝 备注
 
-下一轮：M2 归因流程。待用户确认后启动 /plan。
+M1 里程碑完整闭环。下一轮：M2 归因流程 或 upstream-test-env-isolation。

@@ -47,9 +47,10 @@
 | 06-14 | 种子导入脚本 | ✅ | 幂等 upsert，48 节点/36 边/18 桥，19 悬空边跳过 |
 | 06-14 | 内存图谱模块 | ✅ | fromData/load 双构造，prereqsOf/allPrereqsOf/dependentsOf/mainlineSubgraph/环检测 |
 | 06-14 | 单元测试 | ✅ | 19 纯单元用例（Docker 内 12/12 验证，扩展后代码审核确认） |
-| 06-14 | 集成测试 | ⚠️ | 代码已写（8 用例），Docker 宕机未运行 |
+| 06-14 | 集成测试 | ✅ | 通过测试容器补验：7/7 通过 |
 | 06-14 | 审计修复 | ✅ | mainlineSubgraph 实现 + tool 边隔离 + lockfile 同步 |
 | 06-14 | 审计 | ✅ | 通过，审计报告: doc/auditlog/knowledge-graph-data-layer-audit.md |
+| 06-14 | 容器分层方案 | ✅ | 独立测试容器，M1 补验 26/26 全过 |
 
 ### 交付物
 
@@ -66,5 +67,37 @@
 ### commit 链
 
 a73fff4 → cf02a18 → 2518175 → 5a47be9 → c7b2604 → ae306f3 → ba3cdec
+
+---
+
+## 2026-06-14 · 容器分层方案
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 06-14 | .env.test.example + compose | ✅ | 测试环境变量模板 + 独立测试容器 |
+| 06-14 | .gitignore 确认 | ✅ | `.env.test` 不入库 |
+| 06-14 | 图谱专用测试脚本 | ✅ | test:graph:unit / test:graph:integration |
+| 06-14 | M1 最终补验 | ✅ | 26/26 图谱用例通过（19 unit + 7 integration） |
+| 06-14 | 隔离验证 | ✅ | dev.db 未触碰，生产容器未中断 |
+| 06-14 | 审计 | ✅ | 通过，审计报告: doc/auditlog/container-split-prod-test-audit.md |
+
+### 已知问题
+
+全仓 `test:unit` 在 `.env.test` 下有 5 个上游测试失败（config.test.ts/logger.test.ts）。根因：上游测试对环境变量有隐含默认值假设。建议后续开 `upstream-test-env-isolation` 独立计划处理。
+
+### 交付物
+
+| 文件 | 类型 |
+|------|------|
+| .env.test.example | 新增 |
+| docker-compose.test.yml | 新增 |
+| .gitignore | 修改（+1 行） |
+| package.json | 修改（+2 行 scripts） |
+
+### commit 链
+
+f48caa2 → 472ca98 → 6e57467 → c58b651 → 4d9b92f
 | M3 初诊+追踪 | ⬜ 待开始 | — | — |
 | M4 深化 | ⬜ 待开始 | — | — |
