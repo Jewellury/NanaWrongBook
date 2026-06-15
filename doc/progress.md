@@ -192,3 +192,50 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 ### commit 链
 
 014554f → c678a0f → 7b72e6c → e059368 → 080351a → 462c4e0
+
+---
+
+## 2026-06-15 · M3c 轮：周末诊断编排 + 最小纸质包 PDF
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 06-15 | 诊断编排器 | ✅ | 5 个纯逻辑函数（测试先行，24 用例）：boundary 选题 / BKT 作答 / KST 传播 / 纸质包节点选择 / 练习题选择 |
+| 06-15 | 核心修正 | ✅ | 一道题 = 一份证据：作答节点 BKT 从 StudentNodeState 既有先验出发，KST 只传播未作答节点 |
+| 06-15 | 题单 API | ✅ | POST /api/diagnosis/session-items，学生视图无答案泄漏 |
+| 06-15 | 答案提交 API | ✅ | POST /api/diagnosis/submit-answers，BKT+KST 分线 → StudentNodeState 持久化 → ProbeRecord 写入 |
+| 06-15 | 纸质包 API | ✅ | GET /api/diagnosis/paper-pack，frontier 优先 + gap 补位（封顶 4 节点/~10 题）|
+| 06-15 | 打印页 | ✅ | src/app/diagnosis/paper-pack/page.tsx，封面+练习区+答案分页+A4 @media print |
+| 06-15 | 测试 | ✅ | 35/35（24 unit + 11 integration），test:all 110/110 退出码 0 |
+| 06-15 | 返工修正 | ✅ | 集成测试空壳→真实 handler 调用（vi.mock 模式） |
+| 06-15 | 审计 | ✅ | 通过 |
+
+### 已知限制
+
+- KST-lite gap 只传播一层 dependents，M4 补递归（延续 M3a）
+- 不调 LLM：无 AI 判分/Newman 追问
+
+### 设计债（在册）
+
+| # | 设计债 | 说明 |
+|---|--------|------|
+| 1 | slipFlag 持久化历史 | 当前仅单 boolean，复诊时"连续两次"判定需 slipCount 字段 |
+| 2 | /initial 一步式废弃 | 与 submit-answers 两条初诊路径分叉，建议稳定后废弃 /initial |
+
+### 交付物
+
+| 文件 | 类型 |
+|------|------|
+| lib/diagnosis-orchestrator.ts | 新增 |
+| src/app/api/diagnosis/session-items/route.ts | 新增 |
+| src/app/api/diagnosis/submit-answers/route.ts | 新增 |
+| src/app/api/diagnosis/paper-pack/route.ts | 新增 |
+| src/app/diagnosis/paper-pack/page.tsx | 新增 |
+| src/__tests__/unit/diagnosis-orchestrator.test.ts | 新增 |
+| src/__tests__/integration/m3c-flow.test.ts | 新增 |
+| package.json | 修改（+2 scripts） |
+
+### commit 链
+
+04fd47d → d560757 → 40b2928
