@@ -21,7 +21,9 @@
     "test:m2:integration": "vitest run src/__tests__/integration/diagnosis-api.test.ts",
     "test:m3:unit": "vitest run src/__tests__/unit/kst-lite.test.ts src/__tests__/unit/bkt.test.ts",
     "test:m3:integration": "vitest run src/__tests__/integration/diagnosis-api.test.ts",
-    "test:all": "npm run test:graph:unit && npm run test:graph:integration && npm run test:m2:unit && npm run test:m2:integration && npm run test:m3:unit"
+    "test:m3c:unit": "vitest run src/__tests__/unit/diagnosis-orchestrator.test.ts",
+    "test:m3c:integration": "vitest run src/__tests__/integration/m3c-flow.test.ts",
+    "test:all": "npm run test:graph:unit && npm run test:graph:integration && npm run test:m2:unit && npm run test:m2:integration && npm run test:m3:unit && npm run test:m3c:unit && npm run test:m3c:integration"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
