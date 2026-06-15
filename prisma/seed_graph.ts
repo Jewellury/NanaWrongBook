@@ -156,11 +156,55 @@ async function main() {
     });
   }
 
+  // 7. 导入真题 Item（从 seed_items_batch1）——含序号 ID 防撞车
+  //    BG102 有 2 道 drill → BG102-drill-1 / BG102-drill-2
+  //    M2a-38 有 2 道 drill → M2a-38-drill-1 / M2a-38-drill-2
+  const { seedItems } = await import('../prisma/seed_items_batch1');
+  let itemCount = 0;
+  // 跟踪每个 (nodeId, role) 组合的序号
+  const roleSeq = new Map<string, number>();
+
+  for (const item of seedItems) {
+    const key = `${item.nodeId}-${item.role}`;
+    const seq = (roleSeq.get(key) ?? 0) + 1;
+    roleSeq.set(key, seq);
+    const id = `${item.nodeId}-${item.role}-${seq}`;
+
+    await prisma.item.upsert({
+      where: { id },
+      update: {
+        stem: item.stem,
+        answer: item.answer,
+        analysis: item.note ?? null,
+        source: item.source,
+        reviewed: item.reviewed,
+      },
+      create: {
+        id,
+        nodeId: item.nodeId,
+        role: item.role,
+        stem: item.stem,
+        answer: item.answer,
+        analysis: item.note ?? null,
+        source: item.source,
+        reviewed: item.reviewed,
+      },
+    });
+    itemCount++;
+  }
+
+  // 核对 DB 实际入库条数
+  const dbCount = await prisma.item.count();
+  console.log('');
   console.log('✅ 种子数据导入完成');
   console.log(`   主线: ${mainlineCount} 条`);
   console.log(`   节点: ${nodeCount} 个`);
   console.log(`   边: ${edgeCount} 条（跳过悬空: ${skippedDangling} 条）`);
   console.log(`   主线桥: ${bridgeCount} 条`);
+  console.log(`   真题 Item: ${itemCount} 道（DB 实际: ${dbCount} 道）`);
+  if (dbCount !== 101) {
+    console.error(`⚠️  Item 入库数量异常：期望 101，实际 ${dbCount}`);
+  }
 }
 
 main()
