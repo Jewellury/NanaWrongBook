@@ -1,0 +1,1958 @@
+=== ALL ENTRIES ===
+[Content_Types].xml | 109102
+_rels/.rels | 739
+word/document.xml | 772489
+customXml/_rels/item1.xml.rels | 295
+customXml/item1.xml | 241
+customXml/itemProps1.xml | 341
+docProps/app.xml | 729
+docProps/core.xml | 722
+docProps/custom.xml | 747
+word/_rels/document.xml.rels | 202148
+word/_rels/footer1.xml.rels | 522
+word/_rels/header1.xml.rels | 792
+word/embeddings/oleObject1.bin | 3584
+word/embeddings/oleObject10.bin | 3584
+word/embeddings/oleObject100.bin | 3584
+word/embeddings/oleObject101.bin | 3584
+word/embeddings/oleObject102.bin | 3584
+word/embeddings/oleObject103.bin | 3584
+word/embeddings/oleObject104.bin | 3584
+word/embeddings/oleObject105.bin | 3584
+word/embeddings/oleObject106.bin | 3584
+word/embeddings/oleObject107.bin | 3584
+word/embeddings/oleObject108.bin | 3584
+word/embeddings/oleObject109.bin | 3584
+word/embeddings/oleObject11.bin | 3584
+word/embeddings/oleObject110.bin | 3584
+word/embeddings/oleObject111.bin | 3584
+word/embeddings/oleObject112.bin | 3584
+word/embeddings/oleObject113.bin | 3584
+word/embeddings/oleObject114.bin | 3584
+word/embeddings/oleObject115.bin | 3584
+word/embeddings/oleObject116.bin | 3584
+word/embeddings/oleObject117.bin | 3584
+word/embeddings/oleObject118.bin | 3584
+word/embeddings/oleObject119.bin | 3584
+word/embeddings/oleObject12.bin | 3584
+word/embeddings/oleObject120.bin | 3584
+word/embeddings/oleObject121.bin | 3584
+word/embeddings/oleObject122.bin | 3584
+word/embeddings/oleObject123.bin | 3584
+word/embeddings/oleObject124.bin | 3584
+word/embeddings/oleObject125.bin | 3584
+word/embeddings/oleObject126.bin | 3584
+word/embeddings/oleObject127.bin | 3584
+word/embeddings/oleObject128.bin | 3584
+word/embeddings/oleObject129.bin | 3584
+word/embeddings/oleObject13.bin | 3584
+word/embeddings/oleObject130.bin | 3584
+word/embeddings/oleObject131.bin | 3584
+word/embeddings/oleObject132.bin | 3584
+word/embeddings/oleObject133.bin | 3584
+word/embeddings/oleObject134.bin | 3584
+word/embeddings/oleObject135.bin | 3584
+word/embeddings/oleObject136.bin | 3584
+word/embeddings/oleObject137.bin | 3584
+word/embeddings/oleObject138.bin | 3584
+word/embeddings/oleObject139.bin | 3584
+word/embeddings/oleObject14.bin | 3584
+word/embeddings/oleObject140.bin | 3584
+word/embeddings/oleObject141.bin | 3584
+word/embeddings/oleObject142.bin | 3584
+word/embeddings/oleObject143.bin | 3584
+word/embeddings/oleObject144.bin | 3584
+word/embeddings/oleObject145.bin | 3584
+word/embeddings/oleObject146.bin | 3584
+word/embeddings/oleObject147.bin | 3584
+word/embeddings/oleObject148.bin | 3584
+word/embeddings/oleObject149.bin | 3584
+word/embeddings/oleObject15.bin | 3584
+word/embeddings/oleObject150.bin | 3584
+word/embeddings/oleObject151.bin | 3584
+word/embeddings/oleObject152.bin | 3584
+word/embeddings/oleObject153.bin | 3584
+word/embeddings/oleObject154.bin | 3584
+word/embeddings/oleObject155.bin | 3584
+word/embeddings/oleObject156.bin | 3584
+word/embeddings/oleObject157.bin | 3584
+word/embeddings/oleObject158.bin | 3584
+word/embeddings/oleObject159.bin | 3584
+word/embeddings/oleObject16.bin | 3584
+word/embeddings/oleObject160.bin | 3584
+word/embeddings/oleObject161.bin | 3584
+word/embeddings/oleObject162.bin | 3584
+word/embeddings/oleObject163.bin | 3584
+word/embeddings/oleObject164.bin | 3584
+word/embeddings/oleObject165.bin | 3584
+word/embeddings/oleObject166.bin | 3584
+word/embeddings/oleObject167.bin | 3584
+word/embeddings/oleObject168.bin | 3584
+word/embeddings/oleObject169.bin | 3584
+word/embeddings/oleObject17.bin | 3584
+word/embeddings/oleObject170.bin | 3584
+word/embeddings/oleObject171.bin | 3584
+word/embeddings/oleObject172.bin | 3584
+word/embeddings/oleObject173.bin | 3072
+word/embeddings/oleObject174.bin | 3584
+word/embeddings/oleObject175.bin | 3584
+word/embeddings/oleObject176.bin | 3584
+word/embeddings/oleObject177.bin | 3584
+word/embeddings/oleObject178.bin | 3584
+word/embeddings/oleObject179.bin | 3584
+word/embeddings/oleObject18.bin | 3584
+word/embeddings/oleObject180.bin | 3584
+word/embeddings/oleObject181.bin | 3584
+word/embeddings/oleObject182.bin | 3584
+word/embeddings/oleObject183.bin | 3584
+word/embeddings/oleObject184.bin | 3584
+word/embeddings/oleObject185.bin | 3584
+word/embeddings/oleObject186.bin | 3584
+word/embeddings/oleObject187.bin | 3584
+word/embeddings/oleObject188.bin | 3584
+word/embeddings/oleObject189.bin | 3584
+word/embeddings/oleObject19.bin | 3584
+word/embeddings/oleObject190.bin | 3072
+word/embeddings/oleObject191.bin | 3584
+word/embeddings/oleObject192.bin | 3584
+word/embeddings/oleObject193.bin | 3584
+word/embeddings/oleObject194.bin | 3584
+word/embeddings/oleObject195.bin | 3584
+word/embeddings/oleObject196.bin | 3584
+word/embeddings/oleObject197.bin | 3072
+word/embeddings/oleObject198.bin | 3584
+word/embeddings/oleObject199.bin | 3584
+word/embeddings/oleObject2.bin | 3584
+word/embeddings/oleObject20.bin | 3584
+word/embeddings/oleObject200.bin | 3584
+word/embeddings/oleObject201.bin | 3584
+word/embeddings/oleObject202.bin | 3584
+word/embeddings/oleObject203.bin | 3584
+word/embeddings/oleObject204.bin | 3072
+word/embeddings/oleObject205.bin | 4096
+word/embeddings/oleObject206.bin | 3584
+word/embeddings/oleObject207.bin | 3584
+word/embeddings/oleObject208.bin | 3584
+word/embeddings/oleObject209.bin | 3584
+word/embeddings/oleObject21.bin | 3584
+word/embeddings/oleObject210.bin | 3584
+word/embeddings/oleObject211.bin | 3584
+word/embeddings/oleObject212.bin | 3584
+word/embeddings/oleObject213.bin | 3584
+word/embeddings/oleObject214.bin | 3584
+word/embeddings/oleObject215.bin | 3584
+word/embeddings/oleObject216.bin | 3584
+word/embeddings/oleObject217.bin | 3584
+word/embeddings/oleObject218.bin | 3584
+word/embeddings/oleObject219.bin | 3584
+word/embeddings/oleObject22.bin | 3584
+word/embeddings/oleObject220.bin | 3584
+word/embeddings/oleObject221.bin | 3584
+word/embeddings/oleObject222.bin | 3584
+word/embeddings/oleObject223.bin | 3584
+word/embeddings/oleObject224.bin | 3584
+word/embeddings/oleObject225.bin | 3584
+word/embeddings/oleObject226.bin | 3584
+word/embeddings/oleObject227.bin | 3584
+word/embeddings/oleObject228.bin | 3584
+word/embeddings/oleObject229.bin | 3584
+word/embeddings/oleObject23.bin | 3584
+word/embeddings/oleObject230.bin | 3584
+word/embeddings/oleObject231.bin | 3584
+word/embeddings/oleObject232.bin | 3584
+word/embeddings/oleObject233.bin | 5120
+word/embeddings/oleObject234.bin | 3584
+word/embeddings/oleObject235.bin | 3584
+word/embeddings/oleObject236.bin | 3584
+word/embeddings/oleObject237.bin | 3584
+word/embeddings/oleObject238.bin | 3584
+word/embeddings/oleObject239.bin | 3584
+word/embeddings/oleObject24.bin | 3584
+word/embeddings/oleObject240.bin | 3584
+word/embeddings/oleObject241.bin | 3584
+word/embeddings/oleObject242.bin | 3584
+word/embeddings/oleObject243.bin | 3584
+word/embeddings/oleObject244.bin | 3584
+word/embeddings/oleObject245.bin | 3584
+word/embeddings/oleObject246.bin | 3584
+word/embeddings/oleObject247.bin | 3584
+word/embeddings/oleObject248.bin | 3584
+word/embeddings/oleObject249.bin | 3584
+word/embeddings/oleObject25.bin | 3584
+word/embeddings/oleObject250.bin | 3584
+word/embeddings/oleObject251.bin | 3584
+word/embeddings/oleObject252.bin | 3584
+word/embeddings/oleObject253.bin | 3584
+word/embeddings/oleObject254.bin | 3584
+word/embeddings/oleObject255.bin | 3584
+word/embeddings/oleObject256.bin | 3584
+word/embeddings/oleObject257.bin | 3584
+word/embeddings/oleObject258.bin | 3584
+word/embeddings/oleObject259.bin | 3584
+word/embeddings/oleObject26.bin | 3584
+word/embeddings/oleObject260.bin | 3584
+word/embeddings/oleObject261.bin | 3584
+word/embeddings/oleObject262.bin | 3584
+word/embeddings/oleObject263.bin | 3584
+word/embeddings/oleObject264.bin | 3584
+word/embeddings/oleObject265.bin | 3584
+word/embeddings/oleObject266.bin | 3584
+word/embeddings/oleObject267.bin | 3584
+word/embeddings/oleObject268.bin | 3584
+word/embeddings/oleObject269.bin | 3584
+word/embeddings/oleObject27.bin | 3584
+word/embeddings/oleObject270.bin | 3584
+word/embeddings/oleObject271.bin | 3584
+word/embeddings/oleObject272.bin | 3584
+word/embeddings/oleObject273.bin | 3584
+word/embeddings/oleObject274.bin | 3584
+word/embeddings/oleObject275.bin | 3584
+word/embeddings/oleObject276.bin | 3584
+word/embeddings/oleObject277.bin | 3584
+word/embeddings/oleObject278.bin | 3584
+word/embeddings/oleObject279.bin | 4608
+word/embeddings/oleObject28.bin | 3584
+word/embeddings/oleObject280.bin | 3584
+word/embeddings/oleObject281.bin | 3584
+word/embeddings/oleObject282.bin | 3584
+word/embeddings/oleObject283.bin | 3584
+word/embeddings/oleObject284.bin | 3584
+word/embeddings/oleObject285.bin | 3584
+word/embeddings/oleObject286.bin | 3584
+word/embeddings/oleObject287.bin | 3584
+word/embeddings/oleObject288.bin | 3584
+word/embeddings/oleObject289.bin | 3584
+word/embeddings/oleObject29.bin | 3584
+word/embeddings/oleObject290.bin | 3584
+word/embeddings/oleObject291.bin | 3584
+word/embeddings/oleObject292.bin | 3584
+word/embeddings/oleObject293.bin | 3584
+word/embeddings/oleObject294.bin | 3584
+word/embeddings/oleObject295.bin | 3584
+word/embeddings/oleObject296.bin | 3584
+word/embeddings/oleObject297.bin | 3584
+word/embeddings/oleObject298.bin | 3584
+word/embeddings/oleObject299.bin | 3584
+word/embeddings/oleObject3.bin | 3584
+word/embeddings/oleObject30.bin | 3584
+word/embeddings/oleObject300.bin | 3584
+word/embeddings/oleObject301.bin | 3584
+word/embeddings/oleObject302.bin | 3584
+word/embeddings/oleObject303.bin | 3584
+word/embeddings/oleObject304.bin | 3584
+word/embeddings/oleObject305.bin | 3584
+word/embeddings/oleObject306.bin | 3584
+word/embeddings/oleObject307.bin | 3584
+word/embeddings/oleObject308.bin | 3584
+word/embeddings/oleObject309.bin | 3584
+word/embeddings/oleObject31.bin | 3584
+word/embeddings/oleObject310.bin | 3584
+word/embeddings/oleObject311.bin | 3584
+word/embeddings/oleObject312.bin | 3584
+word/embeddings/oleObject313.bin | 3584
+word/embeddings/oleObject314.bin | 3584
+word/embeddings/oleObject315.bin | 3072
+word/embeddings/oleObject316.bin | 3584
+word/embeddings/oleObject317.bin | 3072
+word/embeddings/oleObject318.bin | 3584
+word/embeddings/oleObject319.bin | 3072
+word/embeddings/oleObject32.bin | 3584
+word/embeddings/oleObject320.bin | 3584
+word/embeddings/oleObject321.bin | 3584
+word/embeddings/oleObject322.bin | 3072
+word/embeddings/oleObject323.bin | 3584
+word/embeddings/oleObject324.bin | 3584
+word/embeddings/oleObject325.bin | 3584
+word/embeddings/oleObject326.bin | 3072
+word/embeddings/oleObject327.bin | 3584
+word/embeddings/oleObject328.bin | 3584
+word/embeddings/oleObject329.bin | 3584
+word/embeddings/oleObject33.bin | 3584
+word/embeddings/oleObject330.bin | 3584
+word/embeddings/oleObject331.bin | 3584
+word/embeddings/oleObject332.bin | 3584
+word/embeddings/oleObject333.bin | 3584
+word/embeddings/oleObject334.bin | 3584
+word/embeddings/oleObject335.bin | 3584
+word/embeddings/oleObject336.bin | 3584
+word/embeddings/oleObject337.bin | 3584
+word/embeddings/oleObject338.bin | 3584
+word/embeddings/oleObject339.bin | 3072
+word/embeddings/oleObject34.bin | 3584
+word/embeddings/oleObject340.bin | 3584
+word/embeddings/oleObject341.bin | 3584
+word/embeddings/oleObject342.bin | 3584
+word/embeddings/oleObject343.bin | 3584
+word/embeddings/oleObject344.bin | 3584
+word/embeddings/oleObject345.bin | 3584
+word/embeddings/oleObject346.bin | 3072
+word/embeddings/oleObject347.bin | 3584
+word/embeddings/oleObject348.bin | 3584
+word/embeddings/oleObject349.bin | 3584
+word/embeddings/oleObject35.bin | 3584
+word/embeddings/oleObject350.bin | 3584
+word/embeddings/oleObject351.bin | 3584
+word/embeddings/oleObject352.bin | 3584
+word/embeddings/oleObject353.bin | 3584
+word/embeddings/oleObject354.bin | 3584
+word/embeddings/oleObject355.bin | 3584
+word/embeddings/oleObject356.bin | 3584
+word/embeddings/oleObject357.bin | 3584
+word/embeddings/oleObject358.bin | 3584
+word/embeddings/oleObject359.bin | 3584
+word/embeddings/oleObject36.bin | 3584
+word/embeddings/oleObject360.bin | 3584
+word/embeddings/oleObject361.bin | 3584
+word/embeddings/oleObject362.bin | 3584
+word/embeddings/oleObject363.bin | 3584
+word/embeddings/oleObject364.bin | 3584
+word/embeddings/oleObject365.bin | 3584
+word/embeddings/oleObject366.bin | 3584
+word/embeddings/oleObject367.bin | 3584
+word/embeddings/oleObject368.bin | 3584
+word/embeddings/oleObject369.bin | 3584
+word/embeddings/oleObject37.bin | 3584
+word/embeddings/oleObject370.bin | 3584
+word/embeddings/oleObject371.bin | 3584
+word/embeddings/oleObject372.bin | 3584
+word/embeddings/oleObject373.bin | 3584
+word/embeddings/oleObject374.bin | 3584
+word/embeddings/oleObject375.bin | 3584
+word/embeddings/oleObject376.bin | 3072
+word/embeddings/oleObject377.bin | 3584
+word/embeddings/oleObject378.bin | 3584
+word/embeddings/oleObject379.bin | 3584
+word/embeddings/oleObject38.bin | 3584
+word/embeddings/oleObject380.bin | 3584
+word/embeddings/oleObject381.bin | 3584
+word/embeddings/oleObject382.bin | 3584
+word/embeddings/oleObject383.bin | 3584
+word/embeddings/oleObject384.bin | 3584
+word/embeddings/oleObject385.bin | 3584
+word/embeddings/oleObject386.bin | 3584
+word/embeddings/oleObject387.bin | 3072
+word/embeddings/oleObject388.bin | 3584
+word/embeddings/oleObject389.bin | 3584
+word/embeddings/oleObject39.bin | 3584
+word/embeddings/oleObject390.bin | 3584
+word/embeddings/oleObject391.bin | 4608
+word/embeddings/oleObject392.bin | 3584
+word/embeddings/oleObject393.bin | 3584
+word/embeddings/oleObject394.bin | 3584
+word/embeddings/oleObject395.bin | 3584
+word/embeddings/oleObject396.bin | 3584
+word/embeddings/oleObject397.bin | 3584
+word/embeddings/oleObject398.bin | 3584
+word/embeddings/oleObject399.bin | 3584
+word/embeddings/oleObject4.bin | 3584
+word/embeddings/oleObject40.bin | 3584
+word/embeddings/oleObject400.bin | 3584
+word/embeddings/oleObject401.bin | 3584
+word/embeddings/oleObject402.bin | 3584
+word/embeddings/oleObject403.bin | 3584
+word/embeddings/oleObject404.bin | 3584
+word/embeddings/oleObject405.bin | 3584
+word/embeddings/oleObject406.bin | 3584
+word/embeddings/oleObject407.bin | 3584
+word/embeddings/oleObject408.bin | 3584
+word/embeddings/oleObject409.bin | 3584
+word/embeddings/oleObject41.bin | 3584
+word/embeddings/oleObject410.bin | 3584
+word/embeddings/oleObject411.bin | 3584
+word/embeddings/oleObject412.bin | 3584
+word/embeddings/oleObject413.bin | 3584
+word/embeddings/oleObject414.bin | 3584
+word/embeddings/oleObject415.bin | 3584
+word/embeddings/oleObject416.bin | 3584
+word/embeddings/oleObject417.bin | 3584
+word/embeddings/oleObject418.bin | 3584
+word/embeddings/oleObject419.bin | 3584
+word/embeddings/oleObject42.bin | 3584
+word/embeddings/oleObject420.bin | 3584
+word/embeddings/oleObject421.bin | 3072
+word/embeddings/oleObject422.bin | 3584
+word/embeddings/oleObject423.bin | 3584
+word/embeddings/oleObject424.bin | 3584
+word/embeddings/oleObject425.bin | 3584
+word/embeddings/oleObject426.bin | 3584
+word/embeddings/oleObject427.bin | 3584
+word/embeddings/oleObject428.bin | 3584
+word/embeddings/oleObject429.bin | 3584
+word/embeddings/oleObject43.bin | 3584
+word/embeddings/oleObject430.bin | 3584
+word/embeddings/oleObject431.bin | 3584
+word/embeddings/oleObject432.bin | 3584
+word/embeddings/oleObject433.bin | 3584
+word/embeddings/oleObject434.bin | 3584
+word/embeddings/oleObject435.bin | 3584
+word/embeddings/oleObject436.bin | 3584
+word/embeddings/oleObject437.bin | 3584
+word/embeddings/oleObject438.bin | 3584
+word/embeddings/oleObject439.bin | 3584
+word/embeddings/oleObject44.bin | 3584
+word/embeddings/oleObject440.bin | 3584
+word/embeddings/oleObject441.bin | 3584
+word/embeddings/oleObject442.bin | 3584
+word/embeddings/oleObject443.bin | 3072
+word/embeddings/oleObject444.bin | 3584
+word/embeddings/oleObject445.bin | 3584
+word/embeddings/oleObject446.bin | 3584
+word/embeddings/oleObject447.bin | 3584
+word/embeddings/oleObject448.bin | 4096
+word/embeddings/oleObject449.bin | 3072
+word/embeddings/oleObject45.bin | 3584
+word/embeddings/oleObject450.bin | 3584
+word/embeddings/oleObject451.bin | 4096
+word/embeddings/oleObject452.bin | 3584
+word/embeddings/oleObject453.bin | 3584
+word/embeddings/oleObject454.bin | 3584
+word/embeddings/oleObject455.bin | 3584
+word/embeddings/oleObject456.bin | 3584
+word/embeddings/oleObject457.bin | 3584
+word/embeddings/oleObject458.bin | 3584
+word/embeddings/oleObject459.bin | 3584
+word/embeddings/oleObject46.bin | 3584
+word/embeddings/oleObject460.bin | 3584
+word/embeddings/oleObject461.bin | 3584
+word/embeddings/oleObject462.bin | 3584
+word/embeddings/oleObject463.bin | 3584
+word/embeddings/oleObject464.bin | 3584
+word/embeddings/oleObject465.bin | 3584
+word/embeddings/oleObject466.bin | 3072
+word/embeddings/oleObject467.bin | 3584
+word/embeddings/oleObject468.bin | 3584
+word/embeddings/oleObject469.bin | 3584
+word/embeddings/oleObject47.bin | 3584
+word/embeddings/oleObject470.bin | 3584
+word/embeddings/oleObject471.bin | 3584
+word/embeddings/oleObject472.bin | 3584
+word/embeddings/oleObject473.bin | 3584
+word/embeddings/oleObject474.bin | 3584
+word/embeddings/oleObject475.bin | 3584
+word/embeddings/oleObject476.bin | 3584
+word/embeddings/oleObject477.bin | 3584
+word/embeddings/oleObject478.bin | 3584
+word/embeddings/oleObject479.bin | 3584
+word/embeddings/oleObject48.bin | 3584
+word/embeddings/oleObject480.bin | 3584
+word/embeddings/oleObject481.bin | 3584
+word/embeddings/oleObject482.bin | 3584
+word/embeddings/oleObject483.bin | 3584
+word/embeddings/oleObject484.bin | 3584
+word/embeddings/oleObject485.bin | 3584
+word/embeddings/oleObject486.bin | 3584
+word/embeddings/oleObject487.bin | 3584
+word/embeddings/oleObject488.bin | 3584
+word/embeddings/oleObject489.bin | 4096
+word/embeddings/oleObject49.bin | 3584
+word/embeddings/oleObject490.bin | 3584
+word/embeddings/oleObject491.bin | 3584
+word/embeddings/oleObject492.bin | 3584
+word/embeddings/oleObject493.bin | 3584
+word/embeddings/oleObject494.bin | 3584
+word/embeddings/oleObject495.bin | 4096
+word/embeddings/oleObject496.bin | 3584
+word/embeddings/oleObject497.bin | 3584
+word/embeddings/oleObject498.bin | 3584
+word/embeddings/oleObject499.bin | 3584
+word/embeddings/oleObject5.bin | 3584
+word/embeddings/oleObject50.bin | 3584
+word/embeddings/oleObject500.bin | 3584
+word/embeddings/oleObject501.bin | 3584
+word/embeddings/oleObject502.bin | 3584
+word/embeddings/oleObject503.bin | 3584
+word/embeddings/oleObject504.bin | 3584
+word/embeddings/oleObject505.bin | 3584
+word/embeddings/oleObject506.bin | 3584
+word/embeddings/oleObject507.bin | 3584
+word/embeddings/oleObject508.bin | 3584
+word/embeddings/oleObject509.bin | 3584
+word/embeddings/oleObject51.bin | 3584
+word/embeddings/oleObject510.bin | 3584
+word/embeddings/oleObject511.bin | 3584
+word/embeddings/oleObject512.bin | 3584
+word/embeddings/oleObject513.bin | 3584
+word/embeddings/oleObject514.bin | 3584
+word/embeddings/oleObject515.bin | 3584
+word/embeddings/oleObject516.bin | 3584
+word/embeddings/oleObject517.bin | 3584
+word/embeddings/oleObject518.bin | 3584
+word/embeddings/oleObject519.bin | 3584
+word/embeddings/oleObject52.bin | 3584
+word/embeddings/oleObject520.bin | 3584
+word/embeddings/oleObject521.bin | 3584
+word/embeddings/oleObject522.bin | 3584
+word/embeddings/oleObject523.bin | 3584
+word/embeddings/oleObject524.bin | 3584
+word/embeddings/oleObject525.bin | 3584
+word/embeddings/oleObject526.bin | 3584
+word/embeddings/oleObject527.bin | 3584
+word/embeddings/oleObject528.bin | 3584
+word/embeddings/oleObject529.bin | 3584
+word/embeddings/oleObject53.bin | 4096
+word/embeddings/oleObject530.bin | 3584
+word/embeddings/oleObject531.bin | 3584
+word/embeddings/oleObject532.bin | 3584
+word/embeddings/oleObject533.bin | 3584
+word/embeddings/oleObject534.bin | 3584
+word/embeddings/oleObject535.bin | 3584
+word/embeddings/oleObject536.bin | 3584
+word/embeddings/oleObject537.bin | 3584
+word/embeddings/oleObject538.bin | 3584
+word/embeddings/oleObject539.bin | 3584
+word/embeddings/oleObject54.bin | 4096
+word/embeddings/oleObject540.bin | 3584
+word/embeddings/oleObject541.bin | 3584
+word/embeddings/oleObject542.bin | 3584
+word/embeddings/oleObject543.bin | 3584
+word/embeddings/oleObject544.bin | 3584
+word/embeddings/oleObject545.bin | 3584
+word/embeddings/oleObject546.bin | 3584
+word/embeddings/oleObject547.bin | 3584
+word/embeddings/oleObject548.bin | 3584
+word/embeddings/oleObject549.bin | 3584
+word/embeddings/oleObject55.bin | 4096
+word/embeddings/oleObject550.bin | 3584
+word/embeddings/oleObject551.bin | 3584
+word/embeddings/oleObject552.bin | 3584
+word/embeddings/oleObject553.bin | 3584
+word/embeddings/oleObject554.bin | 3584
+word/embeddings/oleObject555.bin | 3584
+word/embeddings/oleObject556.bin | 3584
+word/embeddings/oleObject557.bin | 3584
+word/embeddings/oleObject558.bin | 3584
+word/embeddings/oleObject559.bin | 3584
+word/embeddings/oleObject56.bin | 3584
+word/embeddings/oleObject560.bin | 3584
+word/embeddings/oleObject561.bin | 3584
+word/embeddings/oleObject562.bin | 3584
+word/embeddings/oleObject563.bin | 3584
+word/embeddings/oleObject564.bin | 3584
+word/embeddings/oleObject565.bin | 3584
+word/embeddings/oleObject566.bin | 3584
+word/embeddings/oleObject567.bin | 3584
+word/embeddings/oleObject568.bin | 3584
+word/embeddings/oleObject569.bin | 3584
+word/embeddings/oleObject57.bin | 3584
+word/embeddings/oleObject570.bin | 3072
+word/embeddings/oleObject571.bin | 3584
+word/embeddings/oleObject572.bin | 3584
+word/embeddings/oleObject573.bin | 3584
+word/embeddings/oleObject574.bin | 3584
+word/embeddings/oleObject575.bin | 3584
+word/embeddings/oleObject576.bin | 3584
+word/embeddings/oleObject577.bin | 3584
+word/embeddings/oleObject578.bin | 3584
+word/embeddings/oleObject579.bin | 3072
+word/embeddings/oleObject58.bin | 3584
+word/embeddings/oleObject580.bin | 3584
+word/embeddings/oleObject581.bin | 3584
+word/embeddings/oleObject582.bin | 3584
+word/embeddings/oleObject583.bin | 3584
+word/embeddings/oleObject584.bin | 3584
+word/embeddings/oleObject585.bin | 3584
+word/embeddings/oleObject586.bin | 3584
+word/embeddings/oleObject587.bin | 3584
+word/embeddings/oleObject588.bin | 3584
+word/embeddings/oleObject589.bin | 3584
+word/embeddings/oleObject59.bin | 3584
+word/embeddings/oleObject590.bin | 3584
+word/embeddings/oleObject591.bin | 3584
+word/embeddings/oleObject592.bin | 3584
+word/embeddings/oleObject593.bin | 3584
+word/embeddings/oleObject594.bin | 3584
+word/embeddings/oleObject595.bin | 3584
+word/embeddings/oleObject596.bin | 3584
+word/embeddings/oleObject597.bin | 3584
+word/embeddings/oleObject598.bin | 3584
+word/embeddings/oleObject599.bin | 3584
+word/embeddings/oleObject6.bin | 3584
+word/embeddings/oleObject60.bin | 3584
+word/embeddings/oleObject600.bin | 3072
+word/embeddings/oleObject601.bin | 3584
+word/embeddings/oleObject602.bin | 3584
+word/embeddings/oleObject603.bin | 3584
+word/embeddings/oleObject604.bin | 3584
+word/embeddings/oleObject605.bin | 3584
+word/embeddings/oleObject606.bin | 3584
+word/embeddings/oleObject607.bin | 3584
+word/embeddings/oleObject608.bin | 3584
+word/embeddings/oleObject609.bin | 3584
+word/embeddings/oleObject61.bin | 3584
+word/embeddings/oleObject610.bin | 3584
+word/embeddings/oleObject611.bin | 3584
+word/embeddings/oleObject612.bin | 3584
+word/embeddings/oleObject613.bin | 3584
+word/embeddings/oleObject614.bin | 3584
+word/embeddings/oleObject615.bin | 3584
+word/embeddings/oleObject616.bin | 3072
+word/embeddings/oleObject617.bin | 3584
+word/embeddings/oleObject618.bin | 3584
+word/embeddings/oleObject619.bin | 3584
+word/embeddings/oleObject62.bin | 3584
+word/embeddings/oleObject620.bin | 3584
+word/embeddings/oleObject621.bin | 3584
+word/embeddings/oleObject622.bin | 3584
+word/embeddings/oleObject623.bin | 3584
+word/embeddings/oleObject624.bin | 3584
+word/embeddings/oleObject625.bin | 3584
+word/embeddings/oleObject626.bin | 3584
+word/embeddings/oleObject627.bin | 3584
+word/embeddings/oleObject628.bin | 3584
+word/embeddings/oleObject629.bin | 3584
+word/embeddings/oleObject63.bin | 3584
+word/embeddings/oleObject630.bin | 3584
+word/embeddings/oleObject631.bin | 3584
+word/embeddings/oleObject632.bin | 3584
+word/embeddings/oleObject633.bin | 3584
+word/embeddings/oleObject634.bin | 3584
+word/embeddings/oleObject635.bin | 3584
+word/embeddings/oleObject636.bin | 3584
+word/embeddings/oleObject637.bin | 3584
+word/embeddings/oleObject638.bin | 3584
+word/embeddings/oleObject639.bin | 3584
+word/embeddings/oleObject64.bin | 3584
+word/embeddings/oleObject640.bin | 3584
+word/embeddings/oleObject641.bin | 3584
+word/embeddings/oleObject642.bin | 3584
+word/embeddings/oleObject643.bin | 3584
+word/embeddings/oleObject644.bin | 3584
+word/embeddings/oleObject645.bin | 3584
+word/embeddings/oleObject646.bin | 3584
+word/embeddings/oleObject647.bin | 3584
+word/embeddings/oleObject648.bin | 3584
+word/embeddings/oleObject649.bin | 3584
+word/embeddings/oleObject65.bin | 3584
+word/embeddings/oleObject650.bin | 3584
+word/embeddings/oleObject651.bin | 4608
+word/embeddings/oleObject652.bin | 3584
+word/embeddings/oleObject653.bin | 3584
+word/embeddings/oleObject654.bin | 3584
+word/embeddings/oleObject655.bin | 3584
+word/embeddings/oleObject656.bin | 3584
+word/embeddings/oleObject657.bin | 3584
+word/embeddings/oleObject658.bin | 3584
+word/embeddings/oleObject659.bin | 3584
+word/embeddings/oleObject66.bin | 3584
+word/embeddings/oleObject660.bin | 3584
+word/embeddings/oleObject661.bin | 3584
+word/embeddings/oleObject662.bin | 3584
+word/embeddings/oleObject663.bin | 3584
+word/embeddings/oleObject664.bin | 3584
+word/embeddings/oleObject665.bin | 3584
+word/embeddings/oleObject666.bin | 3584
+word/embeddings/oleObject667.bin | 3584
+word/embeddings/oleObject668.bin | 3584
+word/embeddings/oleObject669.bin | 3584
+word/embeddings/oleObject67.bin | 3072
+word/embeddings/oleObject670.bin | 3584
+word/embeddings/oleObject671.bin | 3584
+word/embeddings/oleObject672.bin | 3584
+word/embeddings/oleObject673.bin | 3584
+word/embeddings/oleObject674.bin | 3584
+word/embeddings/oleObject675.bin | 3584
+word/embeddings/oleObject676.bin | 3584
+word/embeddings/oleObject677.bin | 3584
+word/embeddings/oleObject678.bin | 3584
+word/embeddings/oleObject679.bin | 3584
+word/embeddings/oleObject68.bin | 3584
+word/embeddings/oleObject680.bin | 3584
+word/embeddings/oleObject681.bin | 3584
+word/embeddings/oleObject682.bin | 3584
+word/embeddings/oleObject683.bin | 3584
+word/embeddings/oleObject684.bin | 3584
+word/embeddings/oleObject685.bin | 3584
+word/embeddings/oleObject686.bin | 3584
+word/embeddings/oleObject687.bin | 3584
+word/embeddings/oleObject688.bin | 3584
+word/embeddings/oleObject689.bin | 3584
+word/embeddings/oleObject69.bin | 3584
+word/embeddings/oleObject690.bin | 3584
+word/embeddings/oleObject691.bin | 3584
+word/embeddings/oleObject692.bin | 3584
+word/embeddings/oleObject693.bin | 3584
+word/embeddings/oleObject694.bin | 3584
+word/embeddings/oleObject695.bin | 3584
+word/embeddings/oleObject696.bin | 3584
+word/embeddings/oleObject697.bin | 3584
+word/embeddings/oleObject698.bin | 3584
+word/embeddings/oleObject699.bin | 3584
+word/embeddings/oleObject7.bin | 3072
+word/embeddings/oleObject70.bin | 3584
+word/embeddings/oleObject700.bin | 3584
+word/embeddings/oleObject701.bin | 3584
+word/embeddings/oleObject702.bin | 3584
+word/embeddings/oleObject703.bin | 3584
+word/embeddings/oleObject704.bin | 3584
+word/embeddings/oleObject705.bin | 3584
+word/embeddings/oleObject706.bin | 3584
+word/embeddings/oleObject707.bin | 3584
+word/embeddings/oleObject708.bin | 3584
+word/embeddings/oleObject709.bin | 3584
+word/embeddings/oleObject71.bin | 3584
+word/embeddings/oleObject710.bin | 3584
+word/embeddings/oleObject711.bin | 3584
+word/embeddings/oleObject712.bin | 3072
+word/embeddings/oleObject713.bin | 3584
+word/embeddings/oleObject714.bin | 3584
+word/embeddings/oleObject715.bin | 3584
+word/embeddings/oleObject716.bin | 3584
+word/embeddings/oleObject717.bin | 3072
+word/embeddings/oleObject718.bin | 3584
+word/embeddings/oleObject719.bin | 3584
+word/embeddings/oleObject72.bin | 3584
+word/embeddings/oleObject720.bin | 3584
+word/embeddings/oleObject721.bin | 3584
+word/embeddings/oleObject722.bin | 3584
+word/embeddings/oleObject723.bin | 3584
+word/embeddings/oleObject724.bin | 3584
+word/embeddings/oleObject725.bin | 3584
+word/embeddings/oleObject726.bin | 3584
+word/embeddings/oleObject727.bin | 3584
+word/embeddings/oleObject728.bin | 3584
+word/embeddings/oleObject729.bin | 3584
+word/embeddings/oleObject73.bin | 3584
+word/embeddings/oleObject730.bin | 3584
+word/embeddings/oleObject731.bin | 3584
+word/embeddings/oleObject732.bin | 3584
+word/embeddings/oleObject733.bin | 3584
+word/embeddings/oleObject734.bin | 3584
+word/embeddings/oleObject735.bin | 3584
+word/embeddings/oleObject736.bin | 3584
+word/embeddings/oleObject737.bin | 3584
+word/embeddings/oleObject738.bin | 3584
+word/embeddings/oleObject739.bin | 3584
+word/embeddings/oleObject74.bin | 3584
+word/embeddings/oleObject740.bin | 3584
+word/embeddings/oleObject741.bin | 3584
+word/embeddings/oleObject742.bin | 3584
+word/embeddings/oleObject743.bin | 3584
+word/embeddings/oleObject744.bin | 3584
+word/embeddings/oleObject745.bin | 3584
+word/embeddings/oleObject746.bin | 3584
+word/embeddings/oleObject747.bin | 4096
+word/embeddings/oleObject748.bin | 3584
+word/embeddings/oleObject749.bin | 4096
+word/embeddings/oleObject75.bin | 3584
+word/embeddings/oleObject750.bin | 3584
+word/embeddings/oleObject751.bin | 3072
+word/embeddings/oleObject752.bin | 3584
+word/embeddings/oleObject753.bin | 3584
+word/embeddings/oleObject754.bin | 3584
+word/embeddings/oleObject755.bin | 3584
+word/embeddings/oleObject756.bin | 3584
+word/embeddings/oleObject757.bin | 3584
+word/embeddings/oleObject758.bin | 3584
+word/embeddings/oleObject759.bin | 3584
+word/embeddings/oleObject76.bin | 3584
+word/embeddings/oleObject760.bin | 3584
+word/embeddings/oleObject761.bin | 3584
+word/embeddings/oleObject762.bin | 3584
+word/embeddings/oleObject763.bin | 3584
+word/embeddings/oleObject764.bin | 3584
+word/embeddings/oleObject765.bin | 3584
+word/embeddings/oleObject766.bin | 3584
+word/embeddings/oleObject767.bin | 3584
+word/embeddings/oleObject768.bin | 3584
+word/embeddings/oleObject769.bin | 3584
+word/embeddings/oleObject77.bin | 3584
+word/embeddings/oleObject770.bin | 3584
+word/embeddings/oleObject771.bin | 3584
+word/embeddings/oleObject772.bin | 3584
+word/embeddings/oleObject773.bin | 3584
+word/embeddings/oleObject774.bin | 3584
+word/embeddings/oleObject775.bin | 3584
+word/embeddings/oleObject776.bin | 3072
+word/embeddings/oleObject777.bin | 3584
+word/embeddings/oleObject778.bin | 3584
+word/embeddings/oleObject779.bin | 3584
+word/embeddings/oleObject78.bin | 3584
+word/embeddings/oleObject780.bin | 4096
+word/embeddings/oleObject781.bin | 3584
+word/embeddings/oleObject782.bin | 3072
+word/embeddings/oleObject783.bin | 3584
+word/embeddings/oleObject784.bin | 3072
+word/embeddings/oleObject785.bin | 3072
+word/embeddings/oleObject786.bin | 3584
+word/embeddings/oleObject787.bin | 3584
+word/embeddings/oleObject788.bin | 3584
+word/embeddings/oleObject789.bin | 3584
+word/embeddings/oleObject79.bin | 3584
+word/embeddings/oleObject790.bin | 3584
+word/embeddings/oleObject791.bin | 3584
+word/embeddings/oleObject792.bin | 3584
+word/embeddings/oleObject793.bin | 3584
+word/embeddings/oleObject794.bin | 3584
+word/embeddings/oleObject795.bin | 3584
+word/embeddings/oleObject796.bin | 3584
+word/embeddings/oleObject797.bin | 3584
+word/embeddings/oleObject798.bin | 3584
+word/embeddings/oleObject799.bin | 3584
+word/embeddings/oleObject8.bin | 3584
+word/embeddings/oleObject80.bin | 3584
+word/embeddings/oleObject800.bin | 3584
+word/embeddings/oleObject801.bin | 3584
+word/embeddings/oleObject802.bin | 3584
+word/embeddings/oleObject803.bin | 3584
+word/embeddings/oleObject804.bin | 3584
+word/embeddings/oleObject805.bin | 3072
+word/embeddings/oleObject806.bin | 3072
+word/embeddings/oleObject807.bin | 3584
+word/embeddings/oleObject808.bin | 3584
+word/embeddings/oleObject809.bin | 3584
+word/embeddings/oleObject81.bin | 3584
+word/embeddings/oleObject810.bin | 3584
+word/embeddings/oleObject811.bin | 3584
+word/embeddings/oleObject812.bin | 3584
+word/embeddings/oleObject813.bin | 3584
+word/embeddings/oleObject814.bin | 3584
+word/embeddings/oleObject815.bin | 3584
+word/embeddings/oleObject816.bin | 3584
+word/embeddings/oleObject817.bin | 3584
+word/embeddings/oleObject818.bin | 3584
+word/embeddings/oleObject819.bin | 3584
+word/embeddings/oleObject82.bin | 3584
+word/embeddings/oleObject820.bin | 3584
+word/embeddings/oleObject821.bin | 3584
+word/embeddings/oleObject822.bin | 3584
+word/embeddings/oleObject823.bin | 3584
+word/embeddings/oleObject824.bin | 3584
+word/embeddings/oleObject825.bin | 3584
+word/embeddings/oleObject826.bin | 3584
+word/embeddings/oleObject827.bin | 3584
+word/embeddings/oleObject828.bin | 3584
+word/embeddings/oleObject829.bin | 3584
+word/embeddings/oleObject83.bin | 3584
+word/embeddings/oleObject830.bin | 3584
+word/embeddings/oleObject831.bin | 3584
+word/embeddings/oleObject832.bin | 3584
+word/embeddings/oleObject833.bin | 3584
+word/embeddings/oleObject834.bin | 3584
+word/embeddings/oleObject835.bin | 3584
+word/embeddings/oleObject836.bin | 3584
+word/embeddings/oleObject837.bin | 3584
+word/embeddings/oleObject838.bin | 3584
+word/embeddings/oleObject839.bin | 3584
+word/embeddings/oleObject84.bin | 3584
+word/embeddings/oleObject840.bin | 3584
+word/embeddings/oleObject841.bin | 3584
+word/embeddings/oleObject842.bin | 3584
+word/embeddings/oleObject843.bin | 4096
+word/embeddings/oleObject85.bin | 3584
+word/embeddings/oleObject86.bin | 3584
+word/embeddings/oleObject87.bin | 3584
+word/embeddings/oleObject88.bin | 3584
+word/embeddings/oleObject89.bin | 3584
+word/embeddings/oleObject9.bin | 3584
+word/embeddings/oleObject90.bin | 3584
+word/embeddings/oleObject91.bin | 3584
+word/embeddings/oleObject92.bin | 3584
+word/embeddings/oleObject93.bin | 3584
+word/embeddings/oleObject94.bin | 3584
+word/embeddings/oleObject95.bin | 3584
+word/embeddings/oleObject96.bin | 3584
+word/embeddings/oleObject97.bin | 3584
+word/embeddings/oleObject98.bin | 3584
+word/embeddings/oleObject99.bin | 3584
+word/fontTable.xml | 2957
+word/footer1.xml | 5623
+word/header1.xml | 7815
+word/media/image1.png | 10259
+word/media/image10.wmf | 624
+word/media/image100.wmf | 1146
+word/media/image101.wmf | 632
+word/media/image102.wmf | 1188
+word/media/image103.wmf | 1198
+word/media/image104.wmf | 1038
+word/media/image105.wmf | 914
+word/media/image106.wmf | 914
+word/media/image107.wmf | 914
+word/media/image108.wmf | 914
+word/media/image109.wmf | 730
+word/media/image11.wmf | 1930
+word/media/image110.wmf | 1094
+word/media/image111.wmf | 1144
+word/media/image112.wmf | 1790
+word/media/image113.wmf | 1144
+word/media/image114.wmf | 1404
+word/media/image115.wmf | 1178
+word/media/image116.wmf | 1284
+word/media/image117.wmf | 1752
+word/media/image118.wmf | 1078
+word/media/image119.wmf | 844
+word/media/image12.wmf | 1108
+word/media/image120.wmf | 864
+word/media/image121.wmf | 1234
+word/media/image122.wmf | 850
+word/media/image123.wmf | 932
+word/media/image124.wmf | 860
+word/media/image125.wmf | 910
+word/media/image126.wmf | 872
+word/media/image127.wmf | 2508
+word/media/image128.wmf | 1082
+word/media/image129.wmf | 1130
+word/media/image13.wmf | 978
+word/media/image130.wmf | 1188
+word/media/image131.wmf | 1188
+word/media/image132.wmf | 1130
+word/media/image133.wmf | 1074
+word/media/image134.wmf | 1074
+word/media/image135.wmf | 1244
+word/media/image136.wmf | 984
+word/media/image137.wmf | 872
+word/media/image138.wmf | 1330
+word/media/image139.wmf | 886
+word/media/image14.wmf | 1188
+word/media/image140.wmf | 1576
+word/media/image141.wmf | 1122
+word/media/image142.wmf | 2628
+word/media/image143.png | 2069
+word/media/image144.wmf | 760
+word/media/image145.wmf | 914
+word/media/image146.png | 47455
+word/media/image147.wmf | 856
+word/media/image148.wmf | 914
+word/media/image149.wmf | 1122
+word/media/image15.wmf | 762
+word/media/image150.wmf | 1444
+word/media/image151.wmf | 624
+word/media/image152.wmf | 976
+word/media/image153.wmf | 852
+word/media/image154.wmf | 1704
+word/media/image155.wmf | 1706
+word/media/image156.wmf | 1706
+word/media/image157.wmf | 1842
+word/media/image158.wmf | 1140
+word/media/image159.wmf | 1926
+word/media/image16.wmf | 744
+word/media/image160.wmf | 1122
+word/media/image161.wmf | 2124
+word/media/image162.wmf | 1024
+word/media/image163.wmf | 1210
+word/media/image164.wmf | 1418
+word/media/image165.wmf | 952
+word/media/image166.wmf | 624
+word/media/image167.wmf | 2748
+word/media/image168.wmf | 1494
+word/media/image169.wmf | 1646
+word/media/image17.wmf | 744
+word/media/image170.wmf | 898
+word/media/image171.wmf | 770
+word/media/image172.wmf | 628
+word/media/image173.wmf | 1066
+word/media/image174.wmf | 808
+word/media/image175.wmf | 868
+word/media/image176.wmf | 856
+word/media/image177.wmf | 760
+word/media/image178.wmf | 868
+word/media/image179.wmf | 804
+word/media/image18.wmf | 746
+word/media/image180.wmf | 1390
+word/media/image181.wmf | 1166
+word/media/image182.wmf | 1534
+word/media/image183.wmf | 1454
+word/media/image184.wmf | 1468
+word/media/image185.wmf | 1178
+word/media/image186.wmf | 1278
+word/media/image187.wmf | 856
+word/media/image188.wmf | 1138
+word/media/image189.wmf | 960
+word/media/image19.wmf | 736
+word/media/image190.wmf | 1044
+word/media/image191.wmf | 836
+word/media/image192.wmf | 1358
+word/media/image193.png | 59825
+word/media/image194.wmf | 980
+word/media/image195.wmf | 872
+word/media/image196.wmf | 926
+word/media/image197.wmf | 740
+word/media/image198.wmf | 636
+word/media/image199.wmf | 978
+word/media/image2.png | 214
+word/media/image20.wmf | 1494
+word/media/image200.wmf | 874
+word/media/image201.wmf | 1130
+word/media/image202.wmf | 1458
+word/media/image203.wmf | 748
+word/media/image204.wmf | 756
+word/media/image205.wmf | 1000
+word/media/image206.wmf | 1378
+word/media/image207.wmf | 882
+word/media/image208.wmf | 1300
+word/media/image209.wmf | 1422
+word/media/image21.wmf | 1170
+word/media/image210.wmf | 1172
+word/media/image211.wmf | 1304
+word/media/image212.wmf | 1428
+word/media/image213.wmf | 866
+word/media/image214.wmf | 846
+word/media/image215.wmf | 808
+word/media/image216.wmf | 986
+word/media/image217.wmf | 1612
+word/media/image218.wmf | 1786
+word/media/image219.wmf | 2844
+word/media/image22.wmf | 1108
+word/media/image220.wmf | 1514
+word/media/image221.wmf | 1424
+word/media/image222.wmf | 1424
+word/media/image223.wmf | 1106
+word/media/image224.wmf | 1614
+word/media/image225.wmf | 1294
+word/media/image226.wmf | 1332
+word/media/image227.wmf | 1200
+word/media/image228.wmf | 1172
+word/media/image229.wmf | 752
+word/media/image23.wmf | 1064
+word/media/image230.wmf | 1142
+word/media/image231.wmf | 1308
+word/media/image232.wmf | 1004
+word/media/image233.wmf | 1038
+word/media/image234.wmf | 876
+word/media/image235.wmf | 794
+word/media/image236.wmf | 1128
+word/media/image237.wmf | 744
+word/media/image238.wmf | 762
+word/media/image239.wmf | 740
+word/media/image24.wmf | 730
+word/media/image240.wmf | 634
+word/media/image241.wmf | 1146
+word/media/image242.wmf | 2142
+word/media/image243.wmf | 1168
+word/media/image244.wmf | 868
+word/media/image245.wmf | 2266
+word/media/image246.wmf | 1166
+word/media/image247.wmf | 1156
+word/media/image248.wmf | 1394
+word/media/image249.wmf | 1060
+word/media/image25.wmf | 738
+word/media/image250.wmf | 1572
+word/media/image251.wmf | 2932
+word/media/image252.wmf | 1736
+word/media/image253.wmf | 2472
+word/media/image254.wmf | 2550
+word/media/image255.wmf | 1696
+word/media/image256.wmf | 1126
+word/media/image257.wmf | 774
+word/media/image258.wmf | 1228
+word/media/image259.wmf | 1562
+word/media/image26.wmf | 740
+word/media/image260.wmf | 640
+word/media/image261.wmf | 756
+word/media/image262.wmf | 896
+word/media/image263.wmf | 866
+word/media/image264.wmf | 738
+word/media/image265.wmf | 624
+word/media/image266.wmf | 632
+word/media/image267.wmf | 1130
+word/media/image268.wmf | 640
+word/media/image269.wmf | 914
+word/media/image27.wmf | 632
+word/media/image270.wmf | 632
+word/media/image271.wmf | 1262
+word/media/image272.wmf | 1998
+word/media/image273.wmf | 1460
+word/media/image274.wmf | 2068
+word/media/image275.wmf | 1650
+word/media/image276.wmf | 1156
+word/media/image277.wmf | 886
+word/media/image278.wmf | 2266
+word/media/image279.wmf | 1332
+word/media/image28.wmf | 1226
+word/media/image280.wmf | 648
+word/media/image281.wmf | 1766
+word/media/image282.wmf | 1044
+word/media/image283.wmf | 872
+word/media/image284.wmf | 1782
+word/media/image285.wmf | 834
+word/media/image286.wmf | 850
+word/media/image287.wmf | 1716
+word/media/image288.wmf | 1218
+word/media/image289.wmf | 1474
+word/media/image29.wmf | 1242
+word/media/image290.wmf | 1082
+word/media/image291.wmf | 1164
+word/media/image292.wmf | 1138
+word/media/image293.wmf | 1116
+word/media/image294.wmf | 1270
+word/media/image295.wmf | 1138
+word/media/image296.wmf | 1026
+word/media/image297.wmf | 1724
+word/media/image298.wmf | 1040
+word/media/image299.wmf | 1000
+word/media/image3.png | 121
+word/media/image30.wmf | 1142
+word/media/image300.wmf | 1256
+word/media/image301.wmf | 2920
+word/media/image302.wmf | 1726
+word/media/image303.wmf | 1470
+word/media/image304.wmf | 1388
+word/media/image305.wmf | 1058
+word/media/image306.wmf | 2014
+word/media/image307.wmf | 1038
+word/media/image308.wmf | 2066
+word/media/image309.wmf | 1194
+word/media/image31.wmf | 994
+word/media/image310.wmf | 1406
+word/media/image311.wmf | 1700
+word/media/image312.wmf | 1286
+word/media/image313.wmf | 860
+word/media/image314.wmf | 1050
+word/media/image315.wmf | 834
+word/media/image316.wmf | 1430
+word/media/image317.wmf | 860
+word/media/image318.wmf | 1564
+word/media/image319.wmf | 1902
+word/media/image32.wmf | 834
+word/media/image320.wmf | 2658
+word/media/image321.wmf | 1042
+word/media/image322.wmf | 872
+word/media/image323.wmf | 1430
+word/media/image324.wmf | 844
+word/media/image325.wmf | 1586
+word/media/image326.wmf | 1450
+word/media/image327.wmf | 2032
+word/media/image328.wmf | 1684
+word/media/image329.wmf | 2090
+word/media/image33.wmf | 862
+word/media/image330.wmf | 6140
+word/media/image331.wmf | 4512
+word/media/image332.wmf | 1090
+word/media/image333.wmf | 1166
+word/media/image334.wmf | 1250
+word/media/image335.wmf | 632
+word/media/image336.wmf | 1286
+word/media/image337.wmf | 1788
+word/media/image338.wmf | 1832
+word/media/image339.wmf | 2262
+word/media/image34.wmf | 1106
+word/media/image340.wmf | 2186
+word/media/image341.wmf | 2230
+word/media/image342.wmf | 1030
+word/media/image343.png | 55647
+word/media/image344.wmf | 804
+word/media/image345.wmf | 746
+word/media/image346.wmf | 852
+word/media/image347.wmf | 1246
+word/media/image348.png | 67503
+word/media/image349.wmf | 752
+word/media/image35.wmf | 894
+word/media/image350.wmf | 758
+word/media/image351.wmf | 650
+word/media/image352.wmf | 762
+word/media/image353.wmf | 760
+word/media/image354.wmf | 1034
+word/media/image355.wmf | 640
+word/media/image356.wmf | 906
+word/media/image357.wmf | 776
+word/media/image358.wmf | 648
+word/media/image359.wmf | 762
+word/media/image36.wmf | 834
+word/media/image360.wmf | 762
+word/media/image361.wmf | 756
+word/media/image362.wmf | 762
+word/media/image363.wmf | 630
+word/media/image364.wmf | 752
+word/media/image365.wmf | 632
+word/media/image366.wmf | 630
+word/media/image367.wmf | 754
+word/media/image368.wmf | 1120
+word/media/image369.wmf | 752
+word/media/image37.wmf | 924
+word/media/image370.wmf | 654
+word/media/image371.wmf | 778
+word/media/image372.wmf | 762
+word/media/image373.wmf | 878
+word/media/image374.wmf | 868
+word/media/image375.wmf | 746
+word/media/image376.wmf | 974
+word/media/image377.wmf | 746
+word/media/image378.wmf | 762
+word/media/image379.wmf | 754
+word/media/image38.wmf | 808
+word/media/image380.wmf | 770
+word/media/image381.wmf | 782
+word/media/image382.wmf | 768
+word/media/image383.wmf | 746
+word/media/image384.wmf | 640
+word/media/image385.wmf | 736
+word/media/image386.wmf | 658
+word/media/image387.wmf | 1386
+word/media/image388.wmf | 746
+word/media/image389.wmf | 1212
+word/media/image39.wmf | 706
+word/media/image390.wmf | 1504
+word/media/image391.wmf | 2684
+word/media/image392.wmf | 762
+word/media/image393.wmf | 1504
+word/media/image394.wmf | 2506
+word/media/image395.wmf | 1118
+word/media/image396.wmf | 1092
+word/media/image397.png | 76060
+word/media/image398.wmf | 1530
+word/media/image399.wmf | 844
+word/media/image4.wmf | 1492
+word/media/image40.wmf | 852
+word/media/image400.wmf | 1020
+word/media/image401.wmf | 896
+word/media/image402.wmf | 876
+word/media/image403.wmf | 632
+word/media/image404.wmf | 1028
+word/media/image405.wmf | 1288
+word/media/image406.wmf | 976
+word/media/image407.wmf | 978
+word/media/image408.wmf | 968
+word/media/image409.wmf | 1114
+word/media/image41.wmf | 786
+word/media/image410.wmf | 1082
+word/media/image411.wmf | 872
+word/media/image412.wmf | 1542
+word/media/image413.wmf | 1082
+word/media/image414.wmf | 2264
+word/media/image415.wmf | 1786
+word/media/image416.wmf | 844
+word/media/image417.wmf | 1130
+word/media/image418.wmf | 860
+word/media/image419.wmf | 868
+word/media/image42.wmf | 1092
+word/media/image420.wmf | 1928
+word/media/image421.wmf | 872
+word/media/image422.wmf | 872
+word/media/image423.wmf | 1698
+word/media/image424.wmf | 2884
+word/media/image425.wmf | 860
+word/media/image426.wmf | 1114
+word/media/image427.wmf | 624
+word/media/image428.wmf | 1082
+word/media/image429.wmf | 1082
+word/media/image43.wmf | 1204
+word/media/image430.wmf | 1940
+word/media/image431.wmf | 1114
+word/media/image432.wmf | 1578
+word/media/image433.wmf | 2100
+word/media/image434.wmf | 2640
+word/media/image435.wmf | 840
+word/media/image436.wmf | 1112
+word/media/image437.wmf | 1130
+word/media/image438.wmf | 862
+word/media/image439.wmf | 1320
+word/media/image44.wmf | 1062
+word/media/image440.wmf | 1142
+word/media/image441.wmf | 1058
+word/media/image442.wmf | 1130
+word/media/image443.wmf | 1038
+word/media/image444.wmf | 1486
+word/media/image445.wmf | 1130
+word/media/image446.wmf | 1520
+word/media/image447.wmf | 1320
+word/media/image448.wmf | 1074
+word/media/image449.wmf | 1160
+word/media/image45.wmf | 896
+word/media/image450.wmf | 756
+word/media/image451.wmf | 1104
+word/media/image452.wmf | 738
+word/media/image453.wmf | 640
+word/media/image454.wmf | 1074
+word/media/image455.wmf | 968
+word/media/image456.wmf | 866
+word/media/image457.wmf | 942
+word/media/image458.wmf | 860
+word/media/image459.wmf | 984
+word/media/image46.wmf | 982
+word/media/image460.wmf | 904
+word/media/image461.wmf | 648
+word/media/image462.wmf | 978
+word/media/image463.wmf | 750
+word/media/image464.wmf | 1178
+word/media/image465.wmf | 1360
+word/media/image466.wmf | 1204
+word/media/image467.wmf | 834
+word/media/image468.wmf | 1944
+word/media/image469.wmf | 1346
+word/media/image47.wmf | 1070
+word/media/image470.wmf | 1278
+word/media/image471.wmf | 1304
+word/media/image472.wmf | 704
+word/media/image473.wmf | 670
+word/media/image474.wmf | 672
+word/media/image475.wmf | 682
+word/media/image476.wmf | 1382
+word/media/image477.wmf | 624
+word/media/image478.wmf | 630
+word/media/image479.wmf | 1510
+word/media/image48.wmf | 996
+word/media/image480.wmf | 624
+word/media/image481.wmf | 1848
+word/media/image482.wmf | 834
+word/media/image483.wmf | 860
+word/media/image484.wmf | 1652
+word/media/image485.wmf | 1658
+word/media/image486.wmf | 892
+word/media/image487.wmf | 864
+word/media/image488.wmf | 864
+word/media/image489.wmf | 848
+word/media/image49.wmf | 1004
+word/media/image490.wmf | 974
+word/media/image491.wmf | 974
+word/media/image492.wmf | 1316
+word/media/image493.wmf | 736
+word/media/image494.wmf | 1020
+word/media/image495.wmf | 1182
+word/media/image496.wmf | 874
+word/media/image497.wmf | 1996
+word/media/image498.wmf | 762
+word/media/image499.wmf | 2428
+word/media/image5.wmf | 852
+word/media/image50.wmf | 1222
+word/media/image500.wmf | 874
+word/media/image501.wmf | 2322
+word/media/image502.wmf | 852
+word/media/image503.wmf | 624
+word/media/image504.wmf | 974
+word/media/image505.wmf | 974
+word/media/image506.wmf | 1020
+word/media/image507.wmf | 1172
+word/media/image508.wmf | 874
+word/media/image509.wmf | 1508
+word/media/image51.wmf | 874
+word/media/image510.wmf | 986
+word/media/image511.wmf | 986
+word/media/image512.wmf | 1556
+word/media/image513.wmf | 1556
+word/media/image514.wmf | 1556
+word/media/image515.wmf | 1050
+word/media/image516.wmf | 986
+word/media/image517.wmf | 624
+word/media/image518.wmf | 1400
+word/media/image519.wmf | 1498
+word/media/image52.wmf | 978
+word/media/image520.wmf | 1508
+word/media/image521.wmf | 1446
+word/media/image522.wmf | 1372
+word/media/image523.wmf | 1268
+word/media/image524.wmf | 1360
+word/media/image525.wmf | 1376
+word/media/image526.wmf | 1360
+word/media/image527.wmf | 1268
+word/media/image528.wmf | 958
+word/media/image529.wmf | 958
+word/media/image53.wmf | 978
+word/media/image530.wmf | 878
+word/media/image531.wmf | 834
+word/media/image532.wmf | 1188
+word/media/image533.wmf | 850
+word/media/image534.wmf | 1508
+word/media/image535.wmf | 1206
+word/media/image536.wmf | 1508
+word/media/image537.wmf | 988
+word/media/image538.wmf | 1122
+word/media/image539.wmf | 1622
+word/media/image54.wmf | 978
+word/media/image540.wmf | 1656
+word/media/image541.wmf | 2258
+word/media/image542.wmf | 5618
+word/media/image543.png | 3037
+word/media/image544.png | 3268
+word/media/image545.png | 10483
+word/media/image55.wmf | 978
+word/media/image56.wmf | 690
+word/media/image57.wmf | 1190
+word/media/image58.wmf | 1742
+word/media/image59.wmf | 1344
+word/media/image6.wmf | 762
+word/media/image60.wmf | 834
+word/media/image61.wmf | 1622
+word/media/image62.wmf | 1866
+word/media/image63.wmf | 788
+word/media/image64.wmf | 786
+word/media/image65.wmf | 786
+word/media/image66.wmf | 788
+word/media/image67.wmf | 862
+word/media/image68.wmf | 624
+word/media/image69.wmf | 844
+word/media/image7.wmf | 680
+word/media/image70.wmf | 1468
+word/media/image71.wmf | 2040
+word/media/image72.wmf | 882
+word/media/image73.wmf | 1036
+word/media/image74.wmf | 864
+word/media/image75.wmf | 1294
+word/media/image76.wmf | 954
+word/media/image77.wmf | 940
+word/media/image78.wmf | 1302
+word/media/image79.wmf | 1112
+word/media/image8.wmf | 786
+word/media/image80.wmf | 1164
+word/media/image81.png | 105234
+word/media/image82.wmf | 784
+word/media/image83.wmf | 980
+word/media/image84.wmf | 874
+word/media/image85.wmf | 874
+word/media/image86.wmf | 908
+word/media/image87.wmf | 914
+word/media/image88.wmf | 914
+word/media/image89.wmf | 924
+word/media/image9.wmf | 778
+word/media/image90.wmf | 914
+word/media/image91.wmf | 1088
+word/media/image92.wmf | 1244
+word/media/image93.wmf | 1260
+word/media/image94.wmf | 1436
+word/media/image95.wmf | 1168
+word/media/image96.wmf | 1038
+word/media/image97.wmf | 948
+word/media/image98.wmf | 990
+word/media/image99.wmf | 658
+word/numbering.xml | 4326
+word/settings.xml | 5279
+word/styles.xml | 24337
+word/theme/theme1.xml | 6796
+word/webSettings.xml | 528
+
+=== EXTRACTING MEDIA ===
+Extracted: image1.png
+Extracted: image10.wmf
+Extracted: image100.wmf
+Extracted: image101.wmf
+Extracted: image102.wmf
+Extracted: image103.wmf
+Extracted: image104.wmf
+Extracted: image105.wmf
+Extracted: image106.wmf
+Extracted: image107.wmf
+Extracted: image108.wmf
+Extracted: image109.wmf
+Extracted: image11.wmf
+Extracted: image110.wmf
+Extracted: image111.wmf
+Extracted: image112.wmf
+Extracted: image113.wmf
+Extracted: image114.wmf
+Extracted: image115.wmf
+Extracted: image116.wmf
+Extracted: image117.wmf
+Extracted: image118.wmf
+Extracted: image119.wmf
+Extracted: image12.wmf
+Extracted: image120.wmf
+Extracted: image121.wmf
+Extracted: image122.wmf
+Extracted: image123.wmf
+Extracted: image124.wmf
+Extracted: image125.wmf
+Extracted: image126.wmf
+Extracted: image127.wmf
+Extracted: image128.wmf
+Extracted: image129.wmf
+Extracted: image13.wmf
+Extracted: image130.wmf
+Extracted: image131.wmf
+Extracted: image132.wmf
+Extracted: image133.wmf
+Extracted: image134.wmf
+Extracted: image135.wmf
+Extracted: image136.wmf
+Extracted: image137.wmf
+Extracted: image138.wmf
+Extracted: image139.wmf
+Extracted: image14.wmf
+Extracted: image140.wmf
+Extracted: image141.wmf
+Extracted: image142.wmf
+Extracted: image143.png
+Extracted: image144.wmf
+Extracted: image145.wmf
+Extracted: image146.png
+Extracted: image147.wmf
+Extracted: image148.wmf
+Extracted: image149.wmf
+Extracted: image15.wmf
+Extracted: image150.wmf
+Extracted: image151.wmf
+Extracted: image152.wmf
+Extracted: image153.wmf
+Extracted: image154.wmf
+Extracted: image155.wmf
+Extracted: image156.wmf
+Extracted: image157.wmf
+Extracted: image158.wmf
+Extracted: image159.wmf
+Extracted: image16.wmf
+Extracted: image160.wmf
+Extracted: image161.wmf
+Extracted: image162.wmf
+Extracted: image163.wmf
+Extracted: image164.wmf
+Extracted: image165.wmf
+Extracted: image166.wmf
+Extracted: image167.wmf
+Extracted: image168.wmf
+Extracted: image169.wmf
+Extracted: image17.wmf
+Extracted: image170.wmf
+Extracted: image171.wmf
+Extracted: image172.wmf
+Extracted: image173.wmf
+Extracted: image174.wmf
+Extracted: image175.wmf
+Extracted: image176.wmf
+Extracted: image177.wmf
+Extracted: image178.wmf
+Extracted: image179.wmf
+Extracted: image18.wmf
+Extracted: image180.wmf
+Extracted: image181.wmf
+Extracted: image182.wmf
+Extracted: image183.wmf
+Extracted: image184.wmf
+Extracted: image185.wmf
+Extracted: image186.wmf
+Extracted: image187.wmf
+Extracted: image188.wmf
+Extracted: image189.wmf
+Extracted: image19.wmf
+Extracted: image190.wmf
+Extracted: image191.wmf
+Extracted: image192.wmf
+Extracted: image193.png
+Extracted: image194.wmf
+Extracted: image195.wmf
+Extracted: image196.wmf
+Extracted: image197.wmf
+Extracted: image198.wmf
+Extracted: image199.wmf
+Extracted: image2.png
+Extracted: image20.wmf
+Extracted: image200.wmf
+Extracted: image201.wmf
+Extracted: image202.wmf
+Extracted: image203.wmf
+Extracted: image204.wmf
+Extracted: image205.wmf
+Extracted: image206.wmf
+Extracted: image207.wmf
+Extracted: image208.wmf
+Extracted: image209.wmf
+Extracted: image21.wmf
+Extracted: image210.wmf
+Extracted: image211.wmf
+Extracted: image212.wmf
+Extracted: image213.wmf
+Extracted: image214.wmf
+Extracted: image215.wmf
+Extracted: image216.wmf
+Extracted: image217.wmf
+Extracted: image218.wmf
+Extracted: image219.wmf
+Extracted: image22.wmf
+Extracted: image220.wmf
+Extracted: image221.wmf
+Extracted: image222.wmf
+Extracted: image223.wmf
+Extracted: image224.wmf
+Extracted: image225.wmf
+Extracted: image226.wmf
+Extracted: image227.wmf
+Extracted: image228.wmf
+Extracted: image229.wmf
+Extracted: image23.wmf
+Extracted: image230.wmf
+Extracted: image231.wmf
+Extracted: image232.wmf
+Extracted: image233.wmf
+Extracted: image234.wmf
+Extracted: image235.wmf
+Extracted: image236.wmf
+Extracted: image237.wmf
+Extracted: image238.wmf
+Extracted: image239.wmf
+Extracted: image24.wmf
+Extracted: image240.wmf
+Extracted: image241.wmf
+Extracted: image242.wmf
+Extracted: image243.wmf
+Extracted: image244.wmf
+Extracted: image245.wmf
+Extracted: image246.wmf
+Extracted: image247.wmf
+Extracted: image248.wmf
+Extracted: image249.wmf
+Extracted: image25.wmf
+Extracted: image250.wmf
+Extracted: image251.wmf
+Extracted: image252.wmf
+Extracted: image253.wmf
+Extracted: image254.wmf
+Extracted: image255.wmf
+Extracted: image256.wmf
+Extracted: image257.wmf
+Extracted: image258.wmf
+Extracted: image259.wmf
+Extracted: image26.wmf
+Extracted: image260.wmf
+Extracted: image261.wmf
+Extracted: image262.wmf
+Extracted: image263.wmf
+Extracted: image264.wmf
+Extracted: image265.wmf
+Extracted: image266.wmf
+Extracted: image267.wmf
+Extracted: image268.wmf
+Extracted: image269.wmf
+Extracted: image27.wmf
+Extracted: image270.wmf
+Extracted: image271.wmf
+Extracted: image272.wmf
+Extracted: image273.wmf
+Extracted: image274.wmf
+Extracted: image275.wmf
+Extracted: image276.wmf
+Extracted: image277.wmf
+Extracted: image278.wmf
+Extracted: image279.wmf
+Extracted: image28.wmf
+Extracted: image280.wmf
+Extracted: image281.wmf
+Extracted: image282.wmf
+Extracted: image283.wmf
+Extracted: image284.wmf
+Extracted: image285.wmf
+Extracted: image286.wmf
+Extracted: image287.wmf
+Extracted: image288.wmf
+Extracted: image289.wmf
+Extracted: image29.wmf
+Extracted: image290.wmf
+Extracted: image291.wmf
+Extracted: image292.wmf
+Extracted: image293.wmf
+Extracted: image294.wmf
+Extracted: image295.wmf
+Extracted: image296.wmf
+Extracted: image297.wmf
+Extracted: image298.wmf
+Extracted: image299.wmf
+Extracted: image3.png
+Extracted: image30.wmf
+Extracted: image300.wmf
+Extracted: image301.wmf
+Extracted: image302.wmf
+Extracted: image303.wmf
+Extracted: image304.wmf
+Extracted: image305.wmf
+Extracted: image306.wmf
+Extracted: image307.wmf
+Extracted: image308.wmf
+Extracted: image309.wmf
+Extracted: image31.wmf
+Extracted: image310.wmf
+Extracted: image311.wmf
+Extracted: image312.wmf
+Extracted: image313.wmf
+Extracted: image314.wmf
+Extracted: image315.wmf
+Extracted: image316.wmf
+Extracted: image317.wmf
+Extracted: image318.wmf
+Extracted: image319.wmf
+Extracted: image32.wmf
+Extracted: image320.wmf
+Extracted: image321.wmf
+Extracted: image322.wmf
+Extracted: image323.wmf
+Extracted: image324.wmf
+Extracted: image325.wmf
+Extracted: image326.wmf
+Extracted: image327.wmf
+Extracted: image328.wmf
+Extracted: image329.wmf
+Extracted: image33.wmf
+Extracted: image330.wmf
+Extracted: image331.wmf
+Extracted: image332.wmf
+Extracted: image333.wmf
+Extracted: image334.wmf
+Extracted: image335.wmf
+Extracted: image336.wmf
+Extracted: image337.wmf
+Extracted: image338.wmf
+Extracted: image339.wmf
+Extracted: image34.wmf
+Extracted: image340.wmf
+Extracted: image341.wmf
+Extracted: image342.wmf
+Extracted: image343.png
+Extracted: image344.wmf
+Extracted: image345.wmf
+Extracted: image346.wmf
+Extracted: image347.wmf
+Extracted: image348.png
+Extracted: image349.wmf
+Extracted: image35.wmf
+Extracted: image350.wmf
+Extracted: image351.wmf
+Extracted: image352.wmf
+Extracted: image353.wmf
+Extracted: image354.wmf
+Extracted: image355.wmf
+Extracted: image356.wmf
+Extracted: image357.wmf
+Extracted: image358.wmf
+Extracted: image359.wmf
+Extracted: image36.wmf
+Extracted: image360.wmf
+Extracted: image361.wmf
+Extracted: image362.wmf
+Extracted: image363.wmf
+Extracted: image364.wmf
+Extracted: image365.wmf
+Extracted: image366.wmf
+Extracted: image367.wmf
+Extracted: image368.wmf
+Extracted: image369.wmf
+Extracted: image37.wmf
+Extracted: image370.wmf
+Extracted: image371.wmf
+Extracted: image372.wmf
+Extracted: image373.wmf
+Extracted: image374.wmf
+Extracted: image375.wmf
+Extracted: image376.wmf
+Extracted: image377.wmf
+Extracted: image378.wmf
+Extracted: image379.wmf
+Extracted: image38.wmf
+Extracted: image380.wmf
+Extracted: image381.wmf
+Extracted: image382.wmf
+Extracted: image383.wmf
+Extracted: image384.wmf
+Extracted: image385.wmf
+Extracted: image386.wmf
+Extracted: image387.wmf
+Extracted: image388.wmf
+Extracted: image389.wmf
+Extracted: image39.wmf
+Extracted: image390.wmf
+Extracted: image391.wmf
+Extracted: image392.wmf
+Extracted: image393.wmf
+Extracted: image394.wmf
+Extracted: image395.wmf
+Extracted: image396.wmf
+Extracted: image397.png
+Extracted: image398.wmf
+Extracted: image399.wmf
+Extracted: image4.wmf
+Extracted: image40.wmf
+Extracted: image400.wmf
+Extracted: image401.wmf
+Extracted: image402.wmf
+Extracted: image403.wmf
+Extracted: image404.wmf
+Extracted: image405.wmf
+Extracted: image406.wmf
+Extracted: image407.wmf
+Extracted: image408.wmf
+Extracted: image409.wmf
+Extracted: image41.wmf
+Extracted: image410.wmf
+Extracted: image411.wmf
+Extracted: image412.wmf
+Extracted: image413.wmf
+Extracted: image414.wmf
+Extracted: image415.wmf
+Extracted: image416.wmf
+Extracted: image417.wmf
+Extracted: image418.wmf
+Extracted: image419.wmf
+Extracted: image42.wmf
+Extracted: image420.wmf
+Extracted: image421.wmf
+Extracted: image422.wmf
+Extracted: image423.wmf
+Extracted: image424.wmf
+Extracted: image425.wmf
+Extracted: image426.wmf
+Extracted: image427.wmf
+Extracted: image428.wmf
+Extracted: image429.wmf
+Extracted: image43.wmf
+Extracted: image430.wmf
+Extracted: image431.wmf
+Extracted: image432.wmf
+Extracted: image433.wmf
+Extracted: image434.wmf
+Extracted: image435.wmf
+Extracted: image436.wmf
+Extracted: image437.wmf
+Extracted: image438.wmf
+Extracted: image439.wmf
+Extracted: image44.wmf
+Extracted: image440.wmf
+Extracted: image441.wmf
+Extracted: image442.wmf
+Extracted: image443.wmf
+Extracted: image444.wmf
+Extracted: image445.wmf
+Extracted: image446.wmf
+Extracted: image447.wmf
+Extracted: image448.wmf
+Extracted: image449.wmf
+Extracted: image45.wmf
+Extracted: image450.wmf
+Extracted: image451.wmf
+Extracted: image452.wmf
+Extracted: image453.wmf
+Extracted: image454.wmf
+Extracted: image455.wmf
+Extracted: image456.wmf
+Extracted: image457.wmf
+Extracted: image458.wmf
+Extracted: image459.wmf
+Extracted: image46.wmf
+Extracted: image460.wmf
+Extracted: image461.wmf
+Extracted: image462.wmf
+Extracted: image463.wmf
+Extracted: image464.wmf
+Extracted: image465.wmf
+Extracted: image466.wmf
+Extracted: image467.wmf
+Extracted: image468.wmf
+Extracted: image469.wmf
+Extracted: image47.wmf
+Extracted: image470.wmf
+Extracted: image471.wmf
+Extracted: image472.wmf
+Extracted: image473.wmf
+Extracted: image474.wmf
+Extracted: image475.wmf
+Extracted: image476.wmf
+Extracted: image477.wmf
+Extracted: image478.wmf
+Extracted: image479.wmf
+Extracted: image48.wmf
+Extracted: image480.wmf
+Extracted: image481.wmf
+Extracted: image482.wmf
+Extracted: image483.wmf
+Extracted: image484.wmf
+Extracted: image485.wmf
+Extracted: image486.wmf
+Extracted: image487.wmf
+Extracted: image488.wmf
+Extracted: image489.wmf
+Extracted: image49.wmf
+Extracted: image490.wmf
+Extracted: image491.wmf
+Extracted: image492.wmf
+Extracted: image493.wmf
+Extracted: image494.wmf
+Extracted: image495.wmf
+Extracted: image496.wmf
+Extracted: image497.wmf
+Extracted: image498.wmf
+Extracted: image499.wmf
+Extracted: image5.wmf
+Extracted: image50.wmf
+Extracted: image500.wmf
+Extracted: image501.wmf
+Extracted: image502.wmf
+Extracted: image503.wmf
+Extracted: image504.wmf
+Extracted: image505.wmf
+Extracted: image506.wmf
+Extracted: image507.wmf
+Extracted: image508.wmf
+Extracted: image509.wmf
+Extracted: image51.wmf
+Extracted: image510.wmf
+Extracted: image511.wmf
+Extracted: image512.wmf
+Extracted: image513.wmf
+Extracted: image514.wmf
+Extracted: image515.wmf
+Extracted: image516.wmf
+Extracted: image517.wmf
+Extracted: image518.wmf
+Extracted: image519.wmf
+Extracted: image52.wmf
+Extracted: image520.wmf
+Extracted: image521.wmf
+Extracted: image522.wmf
+Extracted: image523.wmf
+Extracted: image524.wmf
+Extracted: image525.wmf
+Extracted: image526.wmf
+Extracted: image527.wmf
+Extracted: image528.wmf
+Extracted: image529.wmf
+Extracted: image53.wmf
+Extracted: image530.wmf
+Extracted: image531.wmf
+Extracted: image532.wmf
+Extracted: image533.wmf
+Extracted: image534.wmf
+Extracted: image535.wmf
+Extracted: image536.wmf
+Extracted: image537.wmf
+Extracted: image538.wmf
+Extracted: image539.wmf
+Extracted: image54.wmf
+Extracted: image540.wmf
+Extracted: image541.wmf
+Extracted: image542.wmf
+Extracted: image543.png
+Extracted: image544.png
+Extracted: image545.png
+Extracted: image55.wmf
+Extracted: image56.wmf
+Extracted: image57.wmf
+Extracted: image58.wmf
+Extracted: image59.wmf
+Extracted: image6.wmf
+Extracted: image60.wmf
+Extracted: image61.wmf
+Extracted: image62.wmf
+Extracted: image63.wmf
+Extracted: image64.wmf
+Extracted: image65.wmf
+Extracted: image66.wmf
+Extracted: image67.wmf
+Extracted: image68.wmf
+Extracted: image69.wmf
+Extracted: image7.wmf
+Extracted: image70.wmf
+Extracted: image71.wmf
+Extracted: image72.wmf
+Extracted: image73.wmf
+Extracted: image74.wmf
+Extracted: image75.wmf
+Extracted: image76.wmf
+Extracted: image77.wmf
+Extracted: image78.wmf
+Extracted: image79.wmf
+Extracted: image8.wmf
+Extracted: image80.wmf
+Extracted: image81.png
+Extracted: image82.wmf
+Extracted: image83.wmf
+Extracted: image84.wmf
+Extracted: image85.wmf
+Extracted: image86.wmf
+Extracted: image87.wmf
+Extracted: image88.wmf
+Extracted: image89.wmf
+Extracted: image9.wmf
+Extracted: image90.wmf
+Extracted: image91.wmf
+Extracted: image92.wmf
+Extracted: image93.wmf
+Extracted: image94.wmf
+Extracted: image95.wmf
+Extracted: image96.wmf
+Extracted: image97.wmf
+Extracted: image98.wmf
+Extracted: image99.wmf
+
+Text written to: e:\nana\doc\research\extracted\2024\document-text.txt (8459 chars)

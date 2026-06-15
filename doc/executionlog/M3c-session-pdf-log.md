@@ -33,11 +33,11 @@
 - 结果: ✅ 完成
 
 ### 任务7: 集成测试 + test:all 更新
-- 做了什么: 11 个集成测试（BKT 公式验证 + Graph 加载 + Item 表验证），test:all 添加 m3c:unit + m3c:integration
+- 做了什么: 11 个集成测试——4 个真实 handler 端到端（session-items → submit-answers → map → paper-pack）+ 3 个参数校验 + 4 个 BKT 公式验证。用 vi.mock(getServerSession) + 真实 PrismaClient（连测试库），与 M2 同模式。test:all 添加 m3c:unit + m3c:integration
 - 涉及文件:
-  - `src/__tests__/integration/m3c-flow.test.ts`（新增）
+  - `src/__tests__/integration/m3c-flow.test.ts`（新增，11 用例）
   - `package.json`（修改：+2 scripts，test:all 追加 2 项）
-- 结果: ✅ 完成。全量 test:all 通过，退出码 0
+- 结果: ✅ 完成。全量 test:all 通过（110 用例），退出码 0
 
 ## 偏离记录
 

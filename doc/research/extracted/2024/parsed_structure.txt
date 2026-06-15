@@ -1,0 +1,413 @@
+[0]  [IMG: image1.png, image2.png, image3.png]
+[1] 绝密 ★ 启用前
+[2] 2024年普通高等学校招生全国统一考试（新课标I卷）
+[3] 数学
+[4] 本试卷共10页，19小题，满分150分.
+[5] 注意事项：
+[6] 1.答题前，先将自己的姓名、准考证号、考场号、座位号填写在试卷和答题卡上，并将准考证号条形码粘贴在答题卡上的指定位置.
+[7] 2.选择题的作答：每小题选出答案后，用2B铅笔把答题卡上对应题目的答案标号涂黑.写在试卷、草稿纸和答题卡上的非答题区域均无效.
+[8] 3.填空题和解答题的作答：用黑色签字笔直接答在答题卡上对应的答题区域内.写在试卷、草稿纸和答题卡上的非答题区域均无效.
+[9] 4.考试结束后，请将本试卷和答题卡一并上交.
+[10] 一、选择题：本题共 8 小题，每小题 5 分，共 40 分. 在每小题给出的四个选项中，只有一个选项是正确的．请把正确的选项填涂在答题卡相应的位置上.
+[11] 1. 已知集合，则（    ） [OLE: oleObject1.bin, oleObject2.bin]
+[12] A. 	B. 	C. 	D. [OLE: oleObject3.bin, oleObject4.bin, oleObject5.bin, oleObject6.bin]
+[13] 【答案】A
+[14] 【解析】
+[15] 【分析】化简集合，由交集的概念即可得解. [OLE: oleObject7.bin]
+[16] 【详解】因为，且注意到， [OLE: oleObject8.bin, oleObject9.bin]
+[17] 从而. [OLE: oleObject10.bin, oleObject11.bin]
+[18] 故选：A.
+[19] 2. 若，则（    ） [OLE: oleObject12.bin, oleObject13.bin]
+[20] A. 	B. 	C. 	D. [OLE: oleObject14.bin, oleObject15.bin, oleObject16.bin, oleObject17.bin]
+[21] 【答案】C
+[22] 【解析】
+[23] 【分析】由复数四则运算法则直接运算即可求解.
+[24] 【详解】因为，所以. [OLE: oleObject18.bin, oleObject19.bin]
+[25] 故选：C.
+[26] 3. 已知向量，若，则（    ） [OLE: oleObject20.bin, oleObject21.bin, oleObject22.bin]
+[27] A. 	B. 	C. 1	D. 2 [OLE: oleObject23.bin, oleObject24.bin]
+[28] 【答案】D
+[29] 【解析】
+[30] 【分析】根据向量垂直的坐标运算可求的值. [OLE: oleObject25.bin]
+[31] 【详解】因为，所以， [OLE: oleObject26.bin, oleObject27.bin]
+[32] 所以即，故， [OLE: oleObject28.bin, oleObject29.bin, oleObject30.bin]
+[33] 故选：D [IMG: image33.wmf]
+[34] 4. 已知，则（    ） [OLE: oleObject31.bin, oleObject32.bin]
+[35] A. 	B. 	C. 	D. [OLE: oleObject33.bin, oleObject34.bin, oleObject35.bin, oleObject36.bin]
+[36] 【答案】A
+[37] 【解析】
+[38] 【分析】根据两角和的余弦可求的关系，结合的值可求前者，故可求的值. [OLE: oleObject37.bin, oleObject38.bin, oleObject39.bin]
+[39] 【详解】因为，所以， [OLE: oleObject40.bin, oleObject41.bin]
+[40] 而，所以， [OLE: oleObject42.bin, oleObject43.bin]
+[41] 故即， [OLE: oleObject44.bin, oleObject45.bin]
+[42] 从而，故， [OLE: oleObject46.bin, oleObject47.bin]
+[43] 故选：A.
+[44] 5. 已知圆柱和圆锥的底面半径相等，侧面积相等，且它们的高均为，则圆锥的体积为（    ） [OLE: oleObject48.bin]
+[45] A. 	B. 	C. 	D. [OLE: oleObject49.bin, oleObject50.bin, oleObject51.bin, oleObject52.bin]
+[46] 【答案】B
+[47] 【解析】
+[48] 【分析】设圆柱的底面半径为，根据圆锥和圆柱的侧面积相等可得半径的方程，求出解后可求圆锥的体积. [OLE: oleObject53.bin, oleObject54.bin]
+[49] 【详解】设圆柱的底面半径为，则圆锥的母线长为， [OLE: oleObject55.bin, oleObject56.bin]
+[50] 而它们的侧面积相等，所以即， [OLE: oleObject57.bin, oleObject58.bin]
+[51] 故，故圆锥的体积为. [OLE: oleObject59.bin, oleObject60.bin]
+[52] 故选：B.
+[53] 6. 已知函数在R上单调递增，则a的取值范围是（    ） [OLE: oleObject61.bin]
+[54] A. 	B. 	C. 	D. [OLE: oleObject62.bin, oleObject63.bin, oleObject64.bin, oleObject65.bin]
+[55] 【答案】B
+[56] 【解析】
+[57] 【分析】根据二次函数的性质和分界点的大小关系即可得到不等式组，解出即可.
+[58] 【详解】因为在上单调递增，且时，单调递增， [OLE: oleObject66.bin, oleObject67.bin, oleObject68.bin, oleObject69.bin]
+[59] 则需满足，解得， [OLE: oleObject70.bin, oleObject71.bin]
+[60] 即a的范围是. [OLE: oleObject72.bin]
+[61] 故选：B.
+[62] 7. 当时，曲线与的交点个数为（    ） [OLE: oleObject73.bin, oleObject74.bin, oleObject75.bin]
+[63] A. 3	B. 4	C. 6	D. 8
+[64] 【答案】C
+[65] 【解析】
+[66] 【分析】画出两函数在上的图象，根据图象即可求解 [OLE: oleObject76.bin]
+[67] 【详解】因为函数的最小正周期为， [OLE: oleObject77.bin, oleObject78.bin]
+[68] 函数的最小正周期为， [OLE: oleObject79.bin, oleObject80.bin]
+[69] 所以在上函数有三个周期的图象， [OLE: oleObject81.bin, oleObject82.bin]
+[70] 在坐标系中结合五点法画出两函数图象，如图所示：
+[71]  [IMG: image81.png]
+[72] 由图可知，两函数图象有6个交点.
+[73] 故选：C
+[75] 8. 已知函数的定义域为R，，且当时，则下列结论中一定正确的是（    ） [OLE: oleObject83.bin, oleObject84.bin, oleObject85.bin, oleObject86.bin]
+[76] A. 	B. [OLE: oleObject87.bin, oleObject88.bin]
+[77] C. 	D. [OLE: oleObject89.bin, oleObject90.bin]
+[78] 【答案】B
+[79] 【解析】
+[80] 【分析】代入得到，再利用函数性质和不等式的性质，逐渐递推即可判断. [OLE: oleObject91.bin]
+[81] 【详解】因为当时，所以， [OLE: oleObject92.bin, oleObject93.bin, oleObject94.bin]
+[82] 又因为， [OLE: oleObject95.bin]
+[83] 则， [OLE: oleObject96.bin]
+[84] ， [OLE: oleObject97.bin]
+[85] ， [OLE: oleObject98.bin]
+[86]  [OLE: oleObject99.bin]
+[87] ， [OLE: oleObject100.bin]
+[88] ，则依次下去可知，则B正确； [OLE: oleObject101.bin, oleObject102.bin]
+[89] 且无证据表明ACD一定正确.
+[90] 故选：B.
+[91] 【点睛】关键点点睛：本题的关键是利用，再利用题目所给的函数性质，代入函数值再结合不等式同向可加性，不断递推即可. [OLE: oleObject103.bin, oleObject104.bin]
+[93] 二、选择题：本题共 3 小题，每小题 6 分，共 18 分. 在每小题给出的选项中，有多项符合题目要求. 全部选对得 6 分，部分选对的得部分分，选对但不全的得部分分，有选错的得0分.
+[94] 9. 随着“一带一路”国际合作的深入，某茶叶种植区多措并举推动茶叶出口.为了解推动出口后的亩收入（单位：万元）情况，从该种植区抽取样本，得到推动出口后亩收入的样本均值，样本方差，已知该种植区以往的亩收入服从正态分布，假设推动出口后的亩收入服从正态分布，则（    ）（若随机变量Z服从正态分布，） [OLE: oleObject105.bin, oleObject106.bin, oleObject107.bin, oleObject108.bin, oleObject109.bin, oleObject110.bin, oleObject111.bin, oleObject112.bin]
+[95] A. 	B. [OLE: oleObject113.bin, oleObject114.bin]
+[96] C. 	D. [OLE: oleObject115.bin, oleObject116.bin]
+[97] 【答案】BC
+[98] 【解析】
+[99] 【分析】根据正态分布的原则以及正态分布的对称性即可解出. [OLE: oleObject117.bin]
+[100] 【详解】依题可知，，所以， [OLE: oleObject118.bin, oleObject119.bin]
+[101] 故，C正确，D错误； [OLE: oleObject120.bin]
+[102] 因为，所以， [OLE: oleObject121.bin, oleObject122.bin]
+[103] 因为，所以， [OLE: oleObject123.bin, oleObject124.bin]
+[104] 而，B正确，A错误， [OLE: oleObject125.bin]
+[105] 故选：BC．
+[106] 10. 设函数，则（    ） [OLE: oleObject126.bin]
+[107] A. 是的极小值点	B. 当时， [OLE: oleObject127.bin, oleObject128.bin, oleObject129.bin, oleObject130.bin]
+[108] C. 当时，	D. 当时， [OLE: oleObject131.bin, oleObject132.bin, oleObject133.bin, oleObject134.bin]
+[109] 【答案】ACD
+[110] 【解析】
+[111] 【分析】求出函数的导数，得到极值点，即可判断A；利用函数的单调性可判断B；根据函数在上的值域即可判断C；直接作差可判断D. [OLE: oleObject135.bin, oleObject136.bin, oleObject137.bin]
+[112] 【详解】对A，因为函数的定义域为R，而， [OLE: oleObject138.bin, oleObject139.bin]
+[113] 易知当时，，当或时， [OLE: oleObject140.bin, oleObject141.bin, oleObject142.bin, oleObject143.bin, oleObject144.bin]
+[114] 函数在上单调递增，在上单调递减，在上单调递增，故是函数的极小值点，正确； [OLE: oleObject145.bin, oleObject146.bin, oleObject147.bin, oleObject148.bin, oleObject149.bin, oleObject150.bin]
+[115] 对B，当时，，所以， [OLE: oleObject151.bin, oleObject152.bin, oleObject153.bin]
+[116] 而由上可知，函数在上单调递增，所以，错误； [OLE: oleObject154.bin, oleObject155.bin, oleObject156.bin]
+[117] 对C，当时，，而由上可知，函数在上单调递减， [OLE: oleObject157.bin, oleObject158.bin, oleObject159.bin, oleObject160.bin]
+[118] 所以，即，正确； [OLE: oleObject161.bin, oleObject162.bin]
+[119] 对D，当时，， [OLE: oleObject163.bin, oleObject164.bin]
+[120] 所以，正确； [OLE: oleObject165.bin]
+[121] 故选：ACD.
+[122] 11. 设计一条美丽的丝带,其造型可以看作图中的曲线C的一部分.已知C过坐标原点O.且C上的点满足:横坐标大于，到点的距离与到定直线的距离之积为4，则（    ） [IMG: image143.png] [OLE: oleObject166.bin, oleObject167.bin, oleObject168.bin]
+[123]  [IMG: image146.png]
+[124] A. 	B. 点在C上 [OLE: oleObject169.bin, oleObject170.bin]
+[125] C. C在第一象限的点的纵坐标的最大值为1	D. 当点在C上时， [OLE: oleObject171.bin, oleObject172.bin]
+[126] 【答案】ABD
+[127] 【解析】
+[128] 【分析】根据题设将原点代入曲线方程后可求，故可判断A的正误，结合曲线方程可判断B的正误，利用特例法可判断C的正误，将曲线方程化简后结合不等式的性质可判断D的正误. [OLE: oleObject173.bin]
+[129] 【详解】对于A：设曲线上的动点，则且， [OLE: oleObject174.bin, oleObject175.bin, oleObject176.bin]
+[130] 因为曲线过坐标原点，故，解得，故A正确. [OLE: oleObject177.bin, oleObject178.bin]
+[131] 对于B：又曲线方程为，而， [OLE: oleObject179.bin, oleObject180.bin]
+[132] 故. [OLE: oleObject181.bin]
+[133] 当时，， [OLE: oleObject182.bin, oleObject183.bin]
+[134] 故在曲线上，故B正确. [OLE: oleObject184.bin]
+[135] 对于C：由曲线的方程可得，取， [OLE: oleObject185.bin, oleObject186.bin]
+[136] 则，而，故此时， [OLE: oleObject187.bin, oleObject188.bin, oleObject189.bin]
+[137] 故在第一象限内点的纵坐标的最大值大于1，故C错误. [OLE: oleObject190.bin]
+[138] 对于D：当点在曲线上时，由C的分析可得， [OLE: oleObject191.bin, oleObject192.bin]
+[139] 故，故D正确. [OLE: oleObject193.bin]
+[140] 故选：ABD.
+[141] 【点睛】思路点睛：根据曲线方程讨论曲线的性质，一般需要将曲线方程变形化简后结合不等式的性质等来处理.
+[142] 三、填空题：本题共 3 小题，每小题 5 分，共 15 分.
+[143] 12. 设双曲线的左右焦点分别为，过作平行于轴的直线交C于A，B两点，若，则C的离心率为___________． [OLE: oleObject194.bin, oleObject195.bin, oleObject196.bin, oleObject197.bin, oleObject198.bin]
+[144] 【答案】 [OLE: oleObject199.bin]
+[145] 【解析】
+[146] 【分析】由题意画出双曲线大致图象，求出，结合双曲线第一定义求出，即可得到的值，从而求出离心率. [OLE: oleObject200.bin, oleObject201.bin, oleObject202.bin]
+[147] 【详解】由题可知三点横坐标相等，设在第一象限，将代入 [OLE: oleObject203.bin, oleObject204.bin, oleObject205.bin, oleObject206.bin]
+[148] 得，即，故，， [OLE: oleObject207.bin, oleObject208.bin, oleObject209.bin, oleObject210.bin]
+[149] 又，得，解得，代入得， [OLE: oleObject211.bin, oleObject212.bin, oleObject213.bin, oleObject214.bin, oleObject215.bin]
+[150] 故，即，所以. [OLE: oleObject216.bin, oleObject217.bin, oleObject218.bin]
+[151] 故答案为： [OLE: oleObject219.bin]
+[152]  [IMG: image193.png]
+[153] 13. 若曲线在点处的切线也是曲线的切线，则__________. [OLE: oleObject220.bin, oleObject221.bin, oleObject222.bin, oleObject223.bin]
+[154] 【答案】 [OLE: oleObject224.bin]
+[155] 【解析】
+[156] 【分析】先求出曲线在的切线方程，再设曲线的切点为，求出，利用公切线斜率相等求出，表示出切线方程，结合两切线方程相同即可求解. [OLE: oleObject225.bin, oleObject226.bin, oleObject227.bin, oleObject228.bin, oleObject229.bin, oleObject230.bin]
+[157] 【详解】由得，， [OLE: oleObject231.bin, oleObject232.bin, oleObject233.bin]
+[158] 故曲线在处的切线方程为； [OLE: oleObject234.bin, oleObject235.bin, oleObject236.bin]
+[159] 由得， [OLE: oleObject237.bin, oleObject238.bin]
+[160] 设切线与曲线相切的切点为， [OLE: oleObject239.bin, oleObject240.bin]
+[161] 由两曲线有公切线得，解得，则切点为， [OLE: oleObject241.bin, oleObject242.bin, oleObject243.bin]
+[162] 切线方程为， [OLE: oleObject244.bin]
+[163] 根据两切线重合,所以，解得. [OLE: oleObject245.bin, oleObject246.bin]
+[164] 故答案为： [OLE: oleObject247.bin]
+[165] 14. 甲、乙两人各有四张卡片，每张卡片上标有一个数字，甲的卡片上分别标有数字1，3，5，7，乙的卡片上分别标有数字2，4，6，8，两人进行四轮比赛，在每轮比赛中，两人各自从自己持有的卡片中随机选一张，并比较所选卡片上数字的大小，数字大的人得1分，数字小的人得0分，然后各自弃置此轮所选的卡片（弃置的卡片在此后的轮次中不能使用）.则四轮比赛后，甲的总得分不小于2的概率为_________.
+[166] 【答案】##0.5 [OLE: oleObject248.bin]
+[167] 【解析】
+[168] 【分析】将每局的得分分别作为随机变量，然后分析其和随机变量即可.
+[169] 【详解】设甲在四轮游戏中的得分分别为，四轮的总得分为. [OLE: oleObject249.bin, oleObject250.bin]
+[170] 对于任意一轮，甲乙两人在该轮出示每张牌的概率都均等，其中使得甲得分的出牌组合有六种，从而甲在该轮得分的概率，所以. [OLE: oleObject251.bin, oleObject252.bin]
+[171] 从而. [OLE: oleObject253.bin]
+[172] 记. [OLE: oleObject254.bin]
+[173] 如果甲得0分，则组合方式是唯一的：必定是甲出1，3，5，7分别对应乙出2，4，6，8，所以； [OLE: oleObject255.bin]
+[174] 如果甲得3分，则组合方式也是唯一的：必定是甲出1，3，5，7分别对应乙出8，2，4，6，所以. [OLE: oleObject256.bin]
+[175] 而的所有可能取值是0，1，2，3，故，. [OLE: oleObject257.bin, oleObject258.bin, oleObject259.bin]
+[176] 所以，，两式相减即得，故. [OLE: oleObject260.bin, oleObject261.bin, oleObject262.bin, oleObject263.bin]
+[177] 所以甲的总得分不小于2的概率为. [OLE: oleObject264.bin]
+[178] 故答案为：. [OLE: oleObject265.bin]
+[179] 【点睛】关键点点睛：本题的关键在于将问题转化为随机变量问题，利用期望的可加性得到等量关系，从而避免繁琐的列举.
+[180] 四、解答题：本题共 5 小题，共 77 分. 解答应写出文字说明、证明过程或演算步骤.
+[181] 15. 记的内角A、B、C的对边分别为a，b，c，已知， [OLE: oleObject266.bin, oleObject267.bin, oleObject268.bin]
+[182] （1）求B；
+[183] （2）若的面积为，求c． [OLE: oleObject269.bin, oleObject270.bin]
+[184] 【答案】（1） [OLE: oleObject271.bin]
+[185] （2） [OLE: oleObject272.bin]
+[186] 【解析】
+[187] 【分析】（1）由余弦定理、平方关系依次求出，最后结合已知得的值即可； [OLE: oleObject273.bin, oleObject274.bin, oleObject275.bin]
+[188] （2）首先求出，然后由正弦定理可将均用含有的式子表示，结合三角形面积公式即可列方程求解. [OLE: oleObject276.bin, oleObject277.bin, oleObject278.bin]
+[189] 【小问1详解】
+[190] 由余弦定理有，对比已知， [OLE: oleObject279.bin, oleObject280.bin]
+[191] 可得， [OLE: oleObject281.bin]
+[192] 因为，所以， [OLE: oleObject282.bin, oleObject283.bin]
+[193] 从而， [OLE: oleObject284.bin]
+[194] 又因为，即， [OLE: oleObject285.bin, oleObject286.bin]
+[195] 注意到， [OLE: oleObject287.bin]
+[196] 所以. [OLE: oleObject288.bin]
+[197] 【小问2详解】
+[198] 由（1）可得，，，从而，， [OLE: oleObject289.bin, oleObject290.bin, oleObject291.bin, oleObject292.bin, oleObject293.bin]
+[199] 而， [OLE: oleObject294.bin]
+[200] 由正弦定理有， [OLE: oleObject295.bin]
+[201] 从而， [OLE: oleObject296.bin]
+[202] 由三角形面积公式可知，的面积可表示为 [OLE: oleObject297.bin]
+[203] ， [OLE: oleObject298.bin]
+[204] 由已知的面积为，可得， [OLE: oleObject299.bin, oleObject300.bin, oleObject301.bin]
+[205] 所以. [OLE: oleObject302.bin]
+[206] 16. 已知和为椭圆上两点. [OLE: oleObject303.bin, oleObject304.bin, oleObject305.bin]
+[207] （1）求C的离心率;
+[208] （2）若过P的直线交C于另一点B，且的面积为9，求的方程． [OLE: oleObject306.bin, oleObject307.bin, oleObject308.bin]
+[209] 【答案】（1） [OLE: oleObject309.bin]
+[210] （2）直线的方程为或. [OLE: oleObject310.bin, oleObject311.bin, oleObject312.bin]
+[211] 【解析】
+[212] 【分析】（1）代入两点得到关于的方程，解出即可； [OLE: oleObject313.bin]
+[213] （2）方法一：以为底，求出三角形的高，即点到直线的距离，再利用平行线距离公式得到平移后的直线方程，联立椭圆方程得到点坐标，则得到直线的方程；方法二：同法一得到点到直线的距离，再设，根据点到直线距离和点在椭圆上得到方程组，解出即可；法三：同法一得到点到直线的距离，利用椭圆的参数方程即可求解；法四：首先验证直线斜率不存在的情况，再设直线，联立椭圆方程，得到点坐标，再利用点到直线距离公式即可；法五：首先考虑直线斜率不存在的情况，再设，利用弦长公式和点到直线的距离公式即可得到答案；法六：设线法与法五一致，利用水平宽乘铅垂高乘表达面积即可. [OLE: oleObject314.bin, oleObject315.bin, oleObject316.bin, oleObject317.bin, oleObject318.bin, oleObject319.bin, oleObject320.bin, oleObject321.bin, oleObject322.bin, oleObject323.bin, oleObject324.bin, oleObject325.bin, oleObject326.bin, oleObject327.bin, oleObject328.bin, oleObject329.bin]
+[214] 【小问1详解】
+[215] 由题意得，解得， [OLE: oleObject330.bin, oleObject331.bin]
+[216] 所以. [OLE: oleObject332.bin]
+[217] 【小问2详解】
+[218] 法一：，则直线的方程为，即， [OLE: oleObject333.bin, oleObject334.bin, oleObject335.bin, oleObject336.bin]
+[219] ，由（1）知， [OLE: oleObject337.bin, oleObject338.bin]
+[220] 设点到直线的距离为，则， [OLE: oleObject339.bin, oleObject340.bin, oleObject341.bin, oleObject342.bin]
+[221] 则将直线沿着与垂直的方向平移单位即可， [OLE: oleObject343.bin, oleObject344.bin, oleObject345.bin]
+[222] 此时该平行线与椭圆的交点即为点， [OLE: oleObject346.bin]
+[223] 设该平行线的方程为：， [OLE: oleObject347.bin]
+[224] 则，解得或， [OLE: oleObject348.bin, oleObject349.bin, oleObject350.bin]
+[225] 当时，联立，解得或， [OLE: oleObject351.bin, oleObject352.bin, oleObject353.bin, oleObject354.bin]
+[226] 即或， [OLE: oleObject355.bin, oleObject356.bin]
+[227] 当时，此时，直线的方程为，即， [OLE: oleObject357.bin, oleObject358.bin, oleObject359.bin, oleObject360.bin, oleObject361.bin]
+[228] 当时，此时，直线的方程为，即， [OLE: oleObject362.bin, oleObject363.bin, oleObject364.bin, oleObject365.bin, oleObject366.bin]
+[229] 当时，联立得， [OLE: oleObject367.bin, oleObject368.bin, oleObject369.bin]
+[230] ，此时该直线与椭圆无交点. [OLE: oleObject370.bin]
+[231] 综上直线的方程为或. [OLE: oleObject371.bin, oleObject372.bin, oleObject373.bin]
+[232] 法二：同法一得到直线的方程为， [OLE: oleObject374.bin, oleObject375.bin]
+[233] 点到直线的距离， [OLE: oleObject376.bin, oleObject377.bin, oleObject378.bin]
+[234] 设，则，解得或， [OLE: oleObject379.bin, oleObject380.bin, oleObject381.bin, oleObject382.bin]
+[235] 即或，以下同法一. [OLE: oleObject383.bin, oleObject384.bin]
+[236] 法三：同法一得到直线的方程为， [OLE: oleObject385.bin, oleObject386.bin]
+[237] 点到直线的距离， [OLE: oleObject387.bin, oleObject388.bin, oleObject389.bin]
+[238] 设，其中，则有， [OLE: oleObject390.bin, oleObject391.bin, oleObject392.bin]
+[239] 联立，解得或， [OLE: oleObject393.bin, oleObject394.bin, oleObject395.bin]
+[240] 即或，以下同法一； [OLE: oleObject396.bin, oleObject397.bin]
+[241] 法四：当直线的斜率不存在时，此时， [OLE: oleObject398.bin, oleObject399.bin]
+[242] ，符合题意，此时，直线的方程为，即， [OLE: oleObject400.bin, oleObject401.bin, oleObject402.bin, oleObject403.bin, oleObject404.bin]
+[243] 当线的斜率存在时，设直线的方程为， [OLE: oleObject405.bin, oleObject406.bin, oleObject407.bin]
+[244] 联立椭圆方程有，则，其中，即， [OLE: oleObject408.bin, oleObject409.bin, oleObject410.bin, oleObject411.bin]
+[245] 解得或，，， [OLE: oleObject412.bin, oleObject413.bin, oleObject414.bin, oleObject415.bin]
+[246] 令，则，则 [OLE: oleObject416.bin, oleObject417.bin, oleObject418.bin]
+[247] 同法一得到直线的方程为， [OLE: oleObject419.bin, oleObject420.bin]
+[248] 点到直线的距离， [OLE: oleObject421.bin, oleObject422.bin, oleObject423.bin]
+[249] 则，解得， [OLE: oleObject424.bin, oleObject425.bin]
+[250] 此时，则得到此时，直线方程为，即， [IMG: image322.wmf] [OLE: oleObject426.bin, oleObject427.bin, oleObject428.bin, oleObject429.bin, oleObject430.bin]
+[251] 综上直线的方程为或. [OLE: oleObject431.bin, oleObject432.bin, oleObject433.bin]
+[252] 法五：当的斜率不存在时，到距离， [OLE: oleObject434.bin, oleObject435.bin, oleObject436.bin, oleObject437.bin]
+[253] 此时不满足条件. [OLE: oleObject438.bin]
+[254] 当的斜率存在时，设，令， [OLE: oleObject439.bin, oleObject440.bin, oleObject441.bin]
+[255] ，消可得， [OLE: oleObject442.bin, oleObject443.bin, oleObject444.bin]
+[256] ，且，即， [OLE: oleObject445.bin, oleObject446.bin, oleObject447.bin]
+[257] ， [OLE: oleObject448.bin]
+[258] 到直线距离， [OLE: oleObject449.bin, oleObject450.bin, oleObject451.bin]
+[259] 或，均满足题意，或，即或. [OLE: oleObject452.bin, oleObject453.bin, oleObject454.bin, oleObject455.bin, oleObject456.bin, oleObject457.bin]
+[260] 法六：当的斜率不存在时，到距离， [OLE: oleObject458.bin, oleObject459.bin, oleObject460.bin, oleObject461.bin]
+[261] 此时不满足条件. [OLE: oleObject462.bin]
+[262] 当直线斜率存在时，设， [OLE: oleObject463.bin, oleObject464.bin]
+[263] 设与轴的交点为，令，则， [OLE: oleObject465.bin, oleObject466.bin, oleObject467.bin, oleObject468.bin, oleObject469.bin]
+[264] 联立，则有， [OLE: oleObject470.bin, oleObject471.bin]
+[265] ， [OLE: oleObject472.bin]
+[266] 其中，且， [OLE: oleObject473.bin, oleObject474.bin]
+[267] 则， [OLE: oleObject475.bin]
+[268] 则，解得或，经代入判别式验证均满足题意 [IMG: image33.wmf] [OLE: oleObject476.bin, oleObject477.bin, oleObject478.bin]
+[269] 则直线为或，即或. [OLE: oleObject479.bin, oleObject480.bin, oleObject481.bin, oleObject482.bin, oleObject483.bin]
+[270]  [IMG: image343.png]
+[271] 17. 如图，四棱锥中，底面ABCD，，． [OLE: oleObject484.bin, oleObject485.bin, oleObject486.bin, oleObject487.bin]
+[272]  [IMG: image348.png]
+[273] （1）若，证明：平面； [OLE: oleObject488.bin, oleObject489.bin, oleObject490.bin]
+[274] （2）若，且二面角的正弦值为，求． [OLE: oleObject491.bin, oleObject492.bin, oleObject493.bin, oleObject494.bin]
+[275] 【答案】（1）证明见解析
+[276] （2） [OLE: oleObject495.bin]
+[277] 【解析】
+[278] 【分析】（1）先证出平面，即可得，由勾股定理逆定理可得，从而 ，再根据线面平行的判定定理即可证出； [OLE: oleObject496.bin, oleObject497.bin, oleObject498.bin, oleObject499.bin, oleObject500.bin]
+[279] （2）过点D作于，再过点作于，连接，根据三垂线法可知，即为二面角的平面角，即可求得，再分别用的长度表示出，即可解方程求出． [OLE: oleObject501.bin, oleObject502.bin, oleObject503.bin, oleObject504.bin, oleObject505.bin, oleObject506.bin, oleObject507.bin, oleObject508.bin, oleObject509.bin, oleObject510.bin, oleObject511.bin, oleObject512.bin]
+[280] 【小问1详解】
+[281] 因为平面，而平面，所以， [OLE: oleObject513.bin, oleObject514.bin, oleObject515.bin, oleObject516.bin, oleObject517.bin]
+[282] 又，，平面，所以平面， [OLE: oleObject518.bin, oleObject519.bin, oleObject520.bin, oleObject521.bin, oleObject522.bin, oleObject523.bin]
+[283] 而平面，所以. [OLE: oleObject524.bin, oleObject525.bin, oleObject526.bin]
+[284] 因为，所以， 根据平面知识可知， [OLE: oleObject527.bin, oleObject528.bin, oleObject529.bin]
+[285] 又平面，平面，所以平面． [OLE: oleObject530.bin, oleObject531.bin, oleObject532.bin, oleObject533.bin, oleObject534.bin, oleObject535.bin]
+[286] 【小问2详解】
+[287] 如图所示，过点D作于，再过点作于，连接， [OLE: oleObject536.bin, oleObject537.bin, oleObject538.bin, oleObject539.bin, oleObject540.bin, oleObject541.bin]
+[288] 因为平面，所以平面平面，而平面平面， [OLE: oleObject542.bin, oleObject543.bin, oleObject544.bin, oleObject545.bin, oleObject546.bin, oleObject547.bin]
+[289] 所以平面，又，所以平面， [OLE: oleObject548.bin, oleObject549.bin, oleObject550.bin, oleObject551.bin, oleObject552.bin]
+[290] 根据二面角的定义可知，即为二面角的平面角， [OLE: oleObject553.bin, oleObject554.bin]
+[291] 即，即． [OLE: oleObject555.bin, oleObject556.bin]
+[292] 因为，设，则，由等面积法可得，， [OLE: oleObject557.bin, oleObject558.bin, oleObject559.bin, oleObject560.bin]
+[293] 又，而为等腰直角三角形，所以， [OLE: oleObject561.bin, oleObject562.bin, oleObject563.bin]
+[294] 故，解得，即． [OLE: oleObject564.bin, oleObject565.bin, oleObject566.bin]
+[295]  [IMG: image397.png]
+[296] 18. 已知函数 [OLE: oleObject567.bin]
+[297] （1）若，且，求的最小值； [OLE: oleObject568.bin, oleObject569.bin, oleObject570.bin]
+[298] （2）证明：曲线是中心对称图形； [OLE: oleObject571.bin]
+[299] （3）若当且仅当，求的取值范围． [OLE: oleObject572.bin, oleObject573.bin, oleObject574.bin]
+[300] 【答案】（1） [OLE: oleObject575.bin]
+[301] （2）证明见解析    （3） [OLE: oleObject576.bin]
+[302] 【解析】
+[303] 【分析】（1）求出后根据可求的最小值； [OLE: oleObject577.bin, oleObject578.bin, oleObject579.bin]
+[304] （2）设为图象上任意一点，可证关于的对称点为也在函数的图像上，从而可证对称性； [OLE: oleObject580.bin, oleObject581.bin, oleObject582.bin, oleObject583.bin, oleObject584.bin]
+[305] （3）根据题设可判断即，再根据在上恒成立可求得. [OLE: oleObject585.bin, oleObject586.bin, oleObject587.bin, oleObject588.bin, oleObject589.bin]
+[306] 【小问1详解】
+[307] 时，，其中， [OLE: oleObject590.bin, oleObject591.bin, oleObject592.bin]
+[308] 则， [OLE: oleObject593.bin]
+[309] 因为，当且仅当时等号成立， [OLE: oleObject594.bin, oleObject595.bin]
+[310] 故，而成立，故即， [OLE: oleObject596.bin, oleObject597.bin, oleObject598.bin, oleObject599.bin]
+[311] 所以的最小值为.， [OLE: oleObject600.bin, oleObject601.bin]
+[312] 【小问2详解】
+[313] 的定义域为， [OLE: oleObject602.bin, oleObject603.bin]
+[314] 设为图象上任意一点， [OLE: oleObject604.bin, oleObject605.bin]
+[315] 关于的对称点为， [OLE: oleObject606.bin, oleObject607.bin, oleObject608.bin]
+[316] 因在图象上，故， [IMG: image422.wmf] [OLE: oleObject609.bin, oleObject610.bin, oleObject611.bin]
+[317] 而， [OLE: oleObject612.bin]
+[318] ， [OLE: oleObject613.bin]
+[319] 所以也在图象上， [OLE: oleObject614.bin, oleObject615.bin]
+[320] 由的任意性可得图象为中心对称图形，且对称中心为. [OLE: oleObject616.bin, oleObject617.bin, oleObject618.bin]
+[321] 【小问3详解】
+[322] 因为当且仅当，故为的一个解， [OLE: oleObject619.bin, oleObject620.bin, oleObject621.bin, oleObject622.bin]
+[323] 所以即， [OLE: oleObject623.bin, oleObject624.bin]
+[324] 先考虑时，恒成立. [OLE: oleObject625.bin, oleObject626.bin]
+[325] 此时即为在上恒成立， [OLE: oleObject627.bin, oleObject628.bin, oleObject629.bin]
+[326] 设，则在上恒成立， [OLE: oleObject630.bin, oleObject631.bin, oleObject632.bin]
+[327] 设， [OLE: oleObject633.bin]
+[328] 则， [OLE: oleObject634.bin]
+[329] 当，， [OLE: oleObject635.bin, oleObject636.bin]
+[330] 故恒成立，故在上单调递增， [OLE: oleObject637.bin, oleObject638.bin, oleObject639.bin]
+[331] 故即在上恒成立. [OLE: oleObject640.bin, oleObject641.bin, oleObject642.bin]
+[332] 当时，， [OLE: oleObject643.bin, oleObject644.bin]
+[333] 故恒成立，故在上单调递增， [OLE: oleObject645.bin, oleObject646.bin, oleObject647.bin]
+[334] 故即在上恒成立. [OLE: oleObject648.bin, oleObject649.bin, oleObject650.bin]
+[335] 当，则当时， [OLE: oleObject651.bin, oleObject652.bin, oleObject653.bin]
+[336] 故在上单调递减，故，不合题意，舍； [OLE: oleObject654.bin, oleObject655.bin, oleObject656.bin]
+[337] 综上，在上恒成立时. [OLE: oleObject657.bin, oleObject658.bin, oleObject659.bin]
+[338] 而当时， [OLE: oleObject660.bin]
+[339] 而时，由上述过程可得在递增，故的解为， [OLE: oleObject661.bin, oleObject662.bin, oleObject663.bin, oleObject664.bin, oleObject665.bin]
+[340] 即的解为. [OLE: oleObject666.bin, oleObject667.bin]
+[341] 综上，. [OLE: oleObject668.bin]
+[342] 【点睛】思路点睛：一个函数不等式成立的充分必要条件就是函数不等式对应的解，而解的端点为函数对一个方程的根或定义域的端点，另外，根据函数不等式的解确定参数范围时，可先由恒成立得到参数的范围，再根据得到的参数的范围重新考虑不等式的解的情况.
+[343] 19. 设m为正整数，数列是公差不为0的等差数列，若从中删去两项和后剩余的项可被平均分为组，且每组的4个数都能构成等差数列，则称数列是可分数列． [OLE: oleObject669.bin, oleObject670.bin, oleObject671.bin, oleObject672.bin, oleObject673.bin, oleObject674.bin, oleObject675.bin]
+[344] （1）写出所有的，，使数列是可分数列； [OLE: oleObject676.bin, oleObject677.bin, oleObject678.bin, oleObject679.bin]
+[345] （2）当时，证明：数列是可分数列； [OLE: oleObject680.bin, oleObject681.bin, oleObject682.bin]
+[346] （3）从中任取两个数和，记数列是可分数列的概率为，证明：． [OLE: oleObject683.bin, oleObject684.bin, oleObject685.bin, oleObject686.bin, oleObject687.bin, oleObject688.bin, oleObject689.bin]
+[347] 【答案】（1） [OLE: oleObject690.bin]
+[348] （2）证明见解析    （3）证明见解析
+[349] 【解析】
+[350] 【分析】（1）直接根据可分数列的定义即可； [OLE: oleObject691.bin]
+[351] （2）根据可分数列的定义即可验证结论； [OLE: oleObject692.bin]
+[352] （3）证明使得原数列是可分数列的至少有个，再使用概率的定义. [OLE: oleObject693.bin, oleObject694.bin, oleObject695.bin]
+[353] 【小问1详解】
+[354] 首先，我们设数列的公差为，则. [OLE: oleObject696.bin, oleObject697.bin, oleObject698.bin]
+[355] 由于一个数列同时加上一个数或者乘以一个非零数后是等差数列，当且仅当该数列是等差数列，
+[356] 故我们可以对该数列进行适当的变形， [OLE: oleObject699.bin]
+[357] 得到新数列，然后对进行相应的讨论即可. [OLE: oleObject700.bin, oleObject701.bin]
+[358] 换言之，我们可以不妨设，此后的讨论均建立在该假设下进行. [OLE: oleObject702.bin]
+[359] 回到原题，第1小问相当于从中取出两个数和，使得剩下四个数是等差数列. [OLE: oleObject703.bin, oleObject704.bin, oleObject705.bin]
+[360] 那么剩下四个数只可能是，或，或. [OLE: oleObject706.bin, oleObject707.bin, oleObject708.bin]
+[361] 所以所有可能的就是. [OLE: oleObject709.bin, oleObject710.bin]
+[362] 【小问2详解】
+[363] 由于从数列中取出和后，剩余的个数可以分为以下两个部分，共组，使得每组成等差数列： [OLE: oleObject711.bin, oleObject712.bin, oleObject713.bin, oleObject714.bin, oleObject715.bin]
+[364] ①，共组； [OLE: oleObject716.bin, oleObject717.bin]
+[365] ②，共组. [OLE: oleObject718.bin, oleObject719.bin]
+[366] （如果，则忽略②） [OLE: oleObject720.bin]
+[367] 故数列是可分数列. [OLE: oleObject721.bin, oleObject722.bin]
+[368] 【小问3详解】
+[369] 定义集合，. [OLE: oleObject723.bin, oleObject724.bin]
+[370] 下面证明，对，如果下面两个命题同时成立， [OLE: oleObject725.bin]
+[371] 则数列一定是可分数列： [OLE: oleObject726.bin, oleObject727.bin]
+[372] 命题1：或； [OLE: oleObject728.bin, oleObject729.bin]
+[373] 命题2：. [OLE: oleObject730.bin]
+[374] 我们分两种情况证明这个结论.
+[375] 第一种情况：如果，且. [OLE: oleObject731.bin, oleObject732.bin]
+[376] 此时设，，. [OLE: oleObject733.bin, oleObject734.bin, oleObject735.bin]
+[377] 则由可知，即，故. [OLE: oleObject736.bin, oleObject737.bin, oleObject738.bin, oleObject739.bin]
+[378] 此时，由于从数列中取出和后， [OLE: oleObject740.bin, oleObject741.bin, oleObject742.bin]
+[379] 剩余的个数可以分为以下三个部分，共组，使得每组成等差数列： [OLE: oleObject743.bin, oleObject744.bin]
+[380] ①，共组； [OLE: oleObject745.bin, oleObject746.bin]
+[381] ②，共组； [OLE: oleObject747.bin, oleObject748.bin]
+[382] ③，共组. [OLE: oleObject749.bin, oleObject750.bin]
+[383] （如果某一部分的组数为，则忽略之） [OLE: oleObject751.bin]
+[384] 故此时数列是可分数列. [OLE: oleObject752.bin, oleObject753.bin]
+[385] 第二种情况：如果，且. [OLE: oleObject754.bin, oleObject755.bin]
+[386] 此时设，，. [OLE: oleObject756.bin, oleObject757.bin, oleObject758.bin]
+[387] 则由可知，即，故 [IMG: image33.wmf] [OLE: oleObject759.bin, oleObject760.bin, oleObject761.bin, oleObject762.bin]
+[388] 由于，故，从而，这就意味着. [OLE: oleObject763.bin, oleObject764.bin, oleObject765.bin, oleObject766.bin]
+[389] 此时，由于从数列中取出和后，剩余的个数可以分为以下四个部分，共组，使得每组成等差数列： [OLE: oleObject767.bin, oleObject768.bin, oleObject769.bin, oleObject770.bin, oleObject771.bin]
+[390] ①，共组； [OLE: oleObject772.bin, oleObject773.bin]
+[391] ②，，共组； [OLE: oleObject774.bin, oleObject775.bin, oleObject776.bin]
+[392] ③全体，其中，共组； [OLE: oleObject777.bin, oleObject778.bin, oleObject779.bin]
+[393] ④，共组. [OLE: oleObject780.bin, oleObject781.bin]
+[394] （如果某一部分的组数为，则忽略之） [OLE: oleObject782.bin]
+[395] 这里对②和③进行一下解释：将③中的每一组作为一个横排，排成一个包含个行，个列的数表以后，个列分别是下面这些数： [OLE: oleObject783.bin, oleObject784.bin, oleObject785.bin]
+[396] ，，，. [OLE: oleObject786.bin, oleObject787.bin, oleObject788.bin, oleObject789.bin]
+[397] 可以看出每列都是连续的若干个整数，它们再取并以后，将取遍中除开五个集合，，，，中的十个元素以外的所有数. [OLE: oleObject790.bin, oleObject791.bin, oleObject792.bin, oleObject793.bin, oleObject794.bin, oleObject795.bin]
+[398] 而这十个数中，除开已经去掉的和以外，剩余的八个数恰好就是②中出现的八个数. [OLE: oleObject796.bin, oleObject797.bin]
+[399] 这就说明我们给出的分组方式满足要求，故此时数列是可分数列. [OLE: oleObject798.bin, oleObject799.bin]
+[400] 至此，我们证明了：对，如果前述命题1和命题2同时成立，则数列一定是可分数列. [OLE: oleObject800.bin, oleObject801.bin, oleObject802.bin]
+[401] 然后我们来考虑这样的的个数. [OLE: oleObject803.bin]
+[402] 首先，由于，和各有个元素，故满足命题1的总共有个； [OLE: oleObject804.bin, oleObject805.bin, oleObject806.bin, oleObject807.bin, oleObject808.bin, oleObject809.bin]
+[403] 而如果，假设，则可设，，代入得. [OLE: oleObject810.bin, oleObject811.bin, oleObject812.bin, oleObject813.bin, oleObject814.bin]
+[404] 但这导致，矛盾，所以. [OLE: oleObject815.bin, oleObject816.bin]
+[405] 设，，，则，即. [OLE: oleObject817.bin, oleObject818.bin, oleObject819.bin, oleObject820.bin, oleObject821.bin]
+[406] 所以可能的恰好就是，对应的分别是，总共个. [OLE: oleObject822.bin, oleObject823.bin, oleObject824.bin, oleObject825.bin, oleObject826.bin]
+[407] 所以这个满足命题1的中，不满足命题2的恰好有个. [OLE: oleObject827.bin, oleObject828.bin, oleObject829.bin]
+[408] 这就得到同时满足命题1和命题2的的个数为. [OLE: oleObject830.bin, oleObject831.bin]
+[409] 当我们从中一次任取两个数和时，总的选取方式的个数等于. [OLE: oleObject832.bin, oleObject833.bin, oleObject834.bin, oleObject835.bin]
+[410] 而根据之前的结论，使得数列是可分数列的至少有个. [OLE: oleObject836.bin, oleObject837.bin, oleObject838.bin, oleObject839.bin]
+[411] 所以数列是可分数列的概率一定满足 [OLE: oleObject840.bin, oleObject841.bin, oleObject842.bin]
+[412] . [OLE: oleObject843.bin]
+[413] 这就证明了结论.
+[414] 【点睛】关键点点睛：本题的关键在于对新定义数列的理解，只有理解了定义，方可使用定义验证或探究结论.
