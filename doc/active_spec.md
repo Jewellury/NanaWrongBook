@@ -5,32 +5,32 @@
 
 ---
 
-> 最后更新: 2026-06-14
+> 最后更新: 2026-06-15
 
 ## 🎯 本轮目标
 
-提示词修订 + DB 护栏 —— 已完成 ⚠️（有条件通过）。
+M3a 追踪骨架 —— 已完成 ✅，审计通过。
 
 ## ✅ 任务清单
 
-- [x] DB 护栏断言（guard-db.ts 白名单 + vitest 挂载）
-- [x] audit.md 安全补检（+2 条）
-- [x] plan.md + execute.md TDD 注记
-- [x] 审计通过（挂账：容器复跑待 Docker 网络恢复）
+- [x] 真题种子文件（101 题 / 34 节点）
+- [x] Item 表 + 迁移（纯 CREATE TABLE）
+- [x] 种子导入（DB 101 条，BG102/M2a-38 drill 无碰撞）
+- [x] KST-lite 初诊算法（测试先行，6 用例）
+- [x] BKT 追踪算法（测试先行，12 用例，T=学习转移）
+- [x] 知识地图 + 初诊 API
+- [x] 测试 75/75，退出码 0
+- [x] 审计通过
 
 ## 🔗 关联文档
 
-- 提案: doc/plan/three-agent-prompt-revision-plan.md
-- 计划: doc/plan/prompt-revision-plan.md
-- 审计: doc/auditlog/prompt-revision-audit.md ⚠️ 有条件通过
+- 计划: doc/plan/M3a-tracking-skeleton-plan.md
+- 审计: doc/auditlog/M3a-tracking-skeleton-audit.md ✅ 通过
 
-## ⚠️ 挂账项
+## ⚠️ 已知限制
 
-| # | 内容 | 解除条件 |
-|---|------|----------|
-| 1 | `docker compose -f docker-compose.test.yml up` 53/53 复跑 | Docker 网络恢复 |
+KST-lite gap 只传播一层 dependents，M4 补递归。
 
 ## 📝 备注
 
-M3 可起 /plan。新规已生效（plan TDD 注记、execute 测试先行步骤、audit 安全补检）。
-1B（vitest run 全量）+ upstream-test-env-isolation 仍是独立一条线。
+M3a 完整闭环。下一轮：M3b 配题灌入 或 M4 探针下探。
