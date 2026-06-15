@@ -64,6 +64,8 @@ import { POST as createSession, GET as listSessions } from '../../app/api/diagno
 import { GET as getSession } from '../../app/api/diagnosis/sessions/[id]/route';
 import { POST as postProbe } from '../../app/api/diagnosis/sessions/[id]/probes/route';
 import { POST as postError } from '../../app/api/diagnosis/sessions/[id]/errors/route';
+import { GET as getMap } from '../../app/api/diagnosis/map/route';
+import { POST as postInitial } from '../../app/api/diagnosis/initial/route';
 
 // ---- 辅助函数 ----
 function mockRequest(body?: object, url?: string): Request {
@@ -219,5 +221,60 @@ describe('诊断会话 API（集成测试 · mock session）', () => {
     const body = await res.json();
     expect(body.records.length).toBe(2);
     expect(body.errors.length).toBe(2);
+  });
+});
+
+// ====== M3 知识地图 + 初诊 API ======
+
+describe('M3 诊断 API（集成测试 · mock session）', () => {
+
+  test('GET /api/diagnosis/map 返回知识地图', async () => {
+    const req = new Request('http://localhost/api/diagnosis/map?studentId=test-user-001');
+    const res = await getMap(req);
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(Array.isArray(body.nodes)).toBe(true);
+    expect(body.nodes.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.learningFrontier)).toBe(true);
+    expect(body.learningFrontier.length).toBeLessThanOrEqual(2);
+    expect(body.stats).toBeDefined();
+    expect(typeof body.stats.total).toBe('number');
+  });
+
+  test('GET /api/diagnosis/map 缺 studentId 返回 400', async () => {
+    const req = new Request('http://localhost/api/diagnosis/map');
+    const res = await getMap(req);
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/diagnosis/initial 运行初诊', async () => {
+    const req = mockRequest({
+      studentId: 'test-user-001',
+      mainlineId: 'M1',
+      answers: [
+        { nodeId: 'M1-04', correct: true },
+        { nodeId: 'M1-05', correct: false },
+      ],
+    }, 'http://localhost/api/diagnosis/initial');
+    const res = await postInitial(req);
+    expect(res.status).toBe(201);
+
+    const body = await res.json();
+    expect(body.session).toBeDefined();
+    expect(body.session.kind).toBe('initial');
+    expect(Array.isArray(body.nodeStates)).toBe(true);
+    expect(body.nodeStates.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.learningFrontier)).toBe(true);
+  });
+
+  test('POST /api/diagnosis/initial 拒绝空 answers', async () => {
+    const req = mockRequest({
+      studentId: 'test-user-001',
+      mainlineId: 'M1',
+      answers: [],
+    }, 'http://localhost/api/diagnosis/initial');
+    const res = await postInitial(req);
+    expect(res.status).toBe(400);
   });
 });
