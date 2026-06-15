@@ -160,6 +160,7 @@ model KnowledgeNode {
   edgesIn       KnowledgeEdge[] @relation("tgt")
   mainlines     NodeMainline[]
   states        StudentNodeState[]
+  items         Item[]        // 虚拟关系字段，不产生数据库列
 }
 
 model KnowledgeEdge {
@@ -272,4 +273,20 @@ model ErrorRecord {
 
   confirmed   String   @default("pending") // "pending" | "slip_confirmed" | "gap_confirmed"
   createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// M3 诊断引擎（个性化数学诊断辅导系统 · 增量）
+// ============================================================
+
+model Item {
+  id       String        @id      // {nodeId}-{role}-{序号}，如 M1-04-boundary-1
+  nodeId   String
+  node     KnowledgeNode @relation(fields: [nodeId], references: [id])
+  role     String                  // boundary | concept | variant | drill
+  stem     String                  // 题干
+  answer   String                  // 正确答案
+  analysis String?                 // 解析
+  source   String?                 // 真题来源标注
+  reviewed Boolean  @default(false) // LLM生成题须过审；已人工复核=true
 }
