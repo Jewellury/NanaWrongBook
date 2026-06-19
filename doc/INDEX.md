@@ -6,9 +6,12 @@
 
 ## 进来先读什么
 
-1. **[00_CURRENT.md](00_CURRENT.md)** — 现在在做什么、卡在哪、下一步。模型切换冷启动第一站。
-2. **[DECISIONS.md](DECISIONS.md)** — 技术决策台账。为什么选了 A 不选 B。
-3. 按需查：
+1. **[AGENTS.md](../AGENTS.md)** — **全局最高权威入口**：项目约束、安全铁律、Git 规范、三代理框架
+2. **[00_CURRENT.md](00_CURRENT.md)** — 现在在做什么、卡在哪、下一步。模型切换冷启动第一站。
+3. **[DECISIONS.md](DECISIONS.md)** — 技术决策台账。为什么选了 A 不选 B。
+4. 按需查：
+   - [CLAUDE.md](../CLAUDE.md) — Claude Code 专属说明（context-mode 路由）
+   - [OPENCODE.md](../OPENCODE.md) — OpenCode 专属说明
    - [progress.md](progress.md) — 项目历史轨迹（叙事，只增不减）
    - [active_spec.md](active_spec.md) — 当前轮任务清单
    - [reference/TECH_PLAN_v2.md](reference/TECH_PLAN_v2.md) — 技术方案权威版
@@ -20,6 +23,9 @@
 
 | 状态 | 文件 | 一句话 |
 |:--:|------|--------|
+| 🔥 | [AGENTS.md](../AGENTS.md) | **全局最高权威入口**：项目约束、安全铁律、Git 规范、三代理框架 |
+| ✅ | [CLAUDE.md](../CLAUDE.md) | Claude Code 运行时说明（context-mode 路由等） |
+| ✅ | [OPENCODE.md](../OPENCODE.md) | OpenCode 运行时说明（与 Claude 的差异） |
 | 🔥 | [00_CURRENT.md](00_CURRENT.md) | 当前项目整体状态 + 下一步 + 交接 |
 | ✅ | [DECISIONS.md](DECISIONS.md) | 技术决策台账（D 系列 + 门禁 + 开放项速查） |
 | ✅ | [progress.md](progress.md) | 项目历史轨迹，每轮追加 |
@@ -27,6 +33,23 @@
 | ✅ | [reference/TECH_PLAN_v2.md](reference/TECH_PLAN_v2.md) | 技术方案权威版：战略定位/知识图谱/诊断引擎/BKT/AI 管线 |
 | ✅ | [reference/OPS_handbook.md](reference/OPS_handbook.md) | 运营手册：共创者框架/医生模式/上线 SOP/措辞铁律 |
 | ✅ | [reference/BOOTSTRAP_new_project_handbook.md](reference/BOOTSTRAP_new_project_handbook.md) | 新项目引导手册 |
+| ✅ | [reference/installed-skills-catalog.md](reference/installed-skills-catalog.md) | 已安装 Skill 清单（2026-06-19） |
+| ✅ | [reference/codex_long_term_memory.md](reference/codex_long_term_memory.md) | Codex 长期记忆入口：长期协作约定与 Git 收口规则 |
+| ✅ | [reference/fof-semantic-mvp-dual-runtime-audit-notes.md](reference/fof-semantic-mvp-dual-runtime-audit-notes.md) | fof-semantic 双运行时审计笔记（发现的问题与建议） |
+
+---
+
+## Agent 规则（双运行时支持）
+
+| 状态 | 文件 | 一句话 |
+|:--:|------|--------|
+| 🔥 | [agents/plan-agent.md](agents/plan-agent.md) | Canonical 计划代理正文 |
+| 🔥 | [agents/execute-agent.md](agents/execute-agent.md) | Canonical 执行代理正文 |
+| 🔥 | [agents/audit-agent.md](agents/audit-agent.md) | Canonical 审计代理正文 |
+| ✅ | [../.claude/agents/](../.claude/agents/) | Claude Code 运行时加载层（由 sync-agents.js 同步） |
+| ✅ | [../.opencode/agents/](../.opencode/agents/) | OpenCode 运行时加载层（由 sync-agents.js 同步） |
+| ✅ | [../scripts/sync-agents.js](../scripts/sync-agents.js) | 同步 canonical → 运行时加载层 |
+| ✅ | [../scripts/check-agent-sync.js](../scripts/check-agent-sync.js) | 检查运行时文件与 canonical 一致 |
 
 ---
 
@@ -44,6 +67,8 @@
 | ✅ | [plan/container-split-prod-test-plan.md](plan/container-split-prod-test-plan.md) | 生产/测试容器分离 |
 | ✅ | [plan/prompt-revision-plan.md](plan/prompt-revision-plan.md) | 提示词修订 |
 | ✅ | [plan/three-agent-prompt-revision-plan.md](plan/three-agent-prompt-revision-plan.md) | 三代理提示词修订 |
+| 🟡 | [plan/opencode-dual-runtime-plan.md](plan/opencode-dual-runtime-plan.md) | OpenCode 双运行时支持方案 |
+| 🟡 | [plan/frontend-architecture-plan.md](plan/frontend-architecture-plan.md) | 独立前端架构方案（待 Codex 评审） |
 | 📦 | [plan/photo-guide-plan.md](plan/photo-guide-plan.md) | 拍照指南计划 |
 
 ### doc/executionlog/ — 执行日志
@@ -79,6 +104,7 @@
 | ✅ | [reference/TECH_PLAN_v2.md](reference/TECH_PLAN_v2.md) | 技术方案权威版 |
 | ✅ | [reference/OPS_handbook.md](reference/OPS_handbook.md) | 运营手册 |
 | ✅ | [reference/BOOTSTRAP_new_project_handbook.md](reference/BOOTSTRAP_new_project_handbook.md) | 新项目引导手册 |
+| ✅ | [reference/codex_long_term_memory.md](reference/codex_long_term_memory.md) | Codex 长期记忆入口 |
 
 ### 治理方案
 

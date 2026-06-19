@@ -24,6 +24,7 @@
 | D-12 | 2026-06-13 | process | **三分支模型**：dev（日常开发）→ main（稳定版本）← sync-upstream（临时同步上游）。origin = 用户仓库，upstream = 对方原始仓库 | CLAUDE.md Git 协作规范 | active |
 | D-13 | 2026-06-13 | process | **三代理协作框架**：/plan（计划）→ /execute（执行）→ /audit（审计）。计划未经用户确认不得执行；审计只指出问题不直接改代码 | CLAUDE.md 三代理协作开发规范 | active |
 | D-14 | 2026-06-13 | infrastructure | **AI 模型切 DeepSeek**：deepseek-chat，API Key + Base URL 配置完成。项目 AI（写代码方）用 DeepSeek，外部评审 AI（Claude/Codex）用各自模型 | [progress.md §基建轮](progress.md) | accepted |
+| D-15 | 2026-06-19 | process | **双运行时 agent 架构**：`AGENTS.md` = 全局最高权威入口；`doc/agents/` = canonical 角色正文；`.claude/agents/` + `.opencode/agents/` = 运行时加载层（由 `scripts/sync-agents.js` 机械同步，`scripts/check-agent-sync.js` 验证一致性）；`.claude/commands/` 改为 agent 委托（向后兼容斜杠命令）。不引入 Controller agent | [plan/opencode-dual-runtime-plan.md](plan/opencode-dual-runtime-plan.md)；[AGENTS.md](../AGENTS.md) | accepted |
 
 ---
 
