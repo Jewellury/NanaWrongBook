@@ -3,6 +3,10 @@
  *
  * 验证 .claude/agents/ 和 .opencode/agents/ 的正文部分与 doc/agents/（canonical）是否一致。
  *
+ * 两端运行时文件都有各自的 YAML frontmatter + canonical pointer 注释 + 正文。
+ * canonical 文件只有 canonical pointer 注释 + 正文（无 frontmatter）。
+ * 比较时统一提取正文部分后对比。
+ *
  * 对比前做行尾归一化（\r\n → \n）、去除 BOM、移除末尾空行，避免 Windows 下的假阳性。
  *
  * - 一致 → exit 0，打印 OK
@@ -26,23 +30,35 @@ const AGENTS = ['plan-agent.md', 'execute-agent.md', 'audit-agent.md'];
  */
 function normalize(text) {
   let t = text;
-  // Strip BOM
   if (t.charCodeAt(0) === 0xFEFF) {
     t = t.slice(1);
   }
-  // Normalize line endings
   t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  // Trim trailing whitespace and empty lines
   t = t.replace(/[\t ]+$/gm, '');
   t = t.replace(/\n{3,}$/, '\n');
   return t;
 }
 
 /**
+ * Strip YAML frontmatter block (--- ... ---) if present.
+ * Returns the body after frontmatter.
+ */
+function stripFrontmatter(text) {
+  const lines = text.split('\n');
+  if (lines[0] && lines[0].trim() === '---') {
+    const endIndex = lines.slice(1).findIndex(l => l.trim() === '---');
+    if (endIndex !== -1) {
+      return lines.slice(endIndex + 2).join('\n').trimStart();
+    }
+  }
+  return text;
+}
+
+/**
  * Extract the body content from a canonical file: strip the canonical source pointer block.
  */
 function extractCanonicalBody(content) {
-  const text = normalize(content);
+  let text = stripFrontmatter(normalize(content));
   const lines = text.split('\n');
   let startIdx = 0;
   for (let i = 0; i < lines.length; i++) {
@@ -59,59 +75,38 @@ function extractCanonicalBody(content) {
     }
   }
   let body = lines.slice(startIdx).join('\n').trimEnd() + '\n';
-  body = normalize(body);
-  return body;
+  return normalize(body);
 }
 
 /**
- * Extract the body content from a runtime loading file.
- * For .claude/agents/: strip the leading canonical pointer comment block.
- * For .opencode/agents/: strip the YAML frontmatter block.
+ * Extract the body from a runtime file (either .claude/agents/ or .opencode/agents/).
+ * Both now have YAML frontmatter → canonical pointer comment → body.
+ * Strip both and return only the body.
  */
-function extractRuntimeBody(content, runtime) {
+function extractRuntimeBody(content) {
   let text = normalize(content);
 
-  if (runtime === 'claude') {
-    const lines = text.split('\n');
-    let startIdx = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('> **Canonical source:**')) {
-        // Skip canonical pointer lines
-        while (i < lines.length && (lines[i].startsWith('> ') || lines[i].trim() === '>' || lines[i].trim() === '')) {
+  // Strip YAML frontmatter (--- ... ---) — both Claude and OpenCode have this
+  text = stripFrontmatter(text);
+
+  // Strip canonical pointer comment block (lines starting with "> ")
+  const lines = text.split('\n');
+  let startIdx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('> **Canonical source:**')) {
+      while (i < lines.length && (lines[i].startsWith('> ') || lines[i].trim() === '>' || lines[i].trim() === '')) {
+        i++;
+        if (i < lines.length && lines[i].trim() === '' && i + 1 < lines.length && !lines[i + 1].startsWith('> ')) {
           i++;
-          if (i < lines.length && lines[i].trim() === '' && i + 1 < lines.length && !lines[i + 1].startsWith('> ')) {
-            i++;
-            break;
-          }
+          break;
         }
-        startIdx = i;
-        break;
       }
+      startIdx = i;
+      break;
     }
-    let body = lines.slice(startIdx).join('\n').trimEnd() + '\n';
-    return normalize(body);
   }
-
-  if (runtime === 'opencode') {
-    // Strip YAML frontmatter (--- ... ---)
-    const lines = text.split('\n');
-    if (lines[0] && lines[0].trim() === '---') {
-      const endIndex = lines.slice(1).findIndex(l => l.trim() === '---');
-      if (endIndex !== -1) {
-        const bodyLines = lines.slice(endIndex + 2);
-        // Skip leading empty lines after frontmatter
-        let bodyStart = 0;
-        while (bodyStart < bodyLines.length && bodyLines[bodyStart].trim() === '') {
-          bodyStart++;
-        }
-        let body = bodyLines.slice(bodyStart).join('\n').trimEnd() + '\n';
-        return normalize(body);
-      }
-    }
-    return text;
-  }
-
-  return text;
+  let body = lines.slice(startIdx).join('\n').trimEnd() + '\n';
+  return normalize(body);
 }
 
 function check() {
@@ -142,8 +137,8 @@ function check() {
     }
 
     const canonicalBody = extractCanonicalBody(canonicalContent);
-    const claudeBody = extractRuntimeBody(claudeContent, 'claude');
-    const opencodeBody = extractRuntimeBody(opencodeContent, 'opencode');
+    const claudeBody = extractRuntimeBody(claudeContent);
+    const opencodeBody = extractRuntimeBody(opencodeContent);
 
     let mismatch = false;
 

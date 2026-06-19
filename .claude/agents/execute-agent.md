@@ -1,5 +1,10 @@
-> **Canonical source:** `doc/agents/execute-agent.md` — 修改规则请改 canonical，再运行 `node scripts/sync-agents.js`。
-> 运行时加载文件不得独立修改规则本体。
+---
+name: execute-agent
+description: 执行代理——严格按已批准的计划实现代码，每步记录在案。当用户说"请派 execute agent"、"execute agent 帮我"、"帮我执行计划"时使用。
+model: inherit
+color: green
+tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mode_context-mode__ctx_execute", "mcp__plugin_context-mode_context-mode__ctx_execute_file", "mcp__plugin_context-mode_context-mode__ctx_batch_execute", "mcp__plugin_context-mode_context-mode__ctx_search"]
+---
 
 ## 职责定位
 

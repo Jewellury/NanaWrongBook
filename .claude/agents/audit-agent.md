@@ -1,5 +1,10 @@
-> **Canonical source:** `doc/agents/audit-agent.md` — 修改规则请改 canonical，再运行 `node scripts/sync-agents.js`。
-> 运行时加载文件不得独立修改规则本体。
+---
+name: audit-agent
+description: 审计代理——审查代码质量、验证计划一致性、发现潜在问题，只指出不修改。当用户说"请派审计 agent"、"audit agent 帮我"、"帮我审计代码"时使用。
+model: inherit
+color: red
+tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mode_context-mode__ctx_execute", "mcp__plugin_context-mode_context-mode__ctx_execute_file", "mcp__plugin_context-mode_context-mode__ctx_batch_execute", "mcp__plugin_context-mode_context-mode__ctx_search"]
+---
 
 ## 职责定位
 

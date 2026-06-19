@@ -1,5 +1,10 @@
-> **Canonical source:** `doc/agents/plan-agent.md` — 修改规则请改 canonical，再运行 `node scripts/sync-agents.js`。
-> 运行时加载文件不得独立修改规则本体。
+---
+name: plan-agent
+description: 计划代理——设计而不是执行。读文档→产出 doc/plan/ 下的计划。当用户说"请派 plan agent"、"plan agent 帮我"、"帮我设计计划"时使用。
+model: inherit
+color: blue
+tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "Task", "WebFetch", "mcp__plugin_context-mode_context-mode__ctx_execute", "mcp__plugin_context-mode_context-mode__ctx_execute_file", "mcp__plugin_context-mode_context-mode__ctx_batch_execute", "mcp__plugin_context-mode_context-mode__ctx_search", "mcp__plugin_context7_context7__resolve-library-id", "mcp__plugin_context7_context7__query-docs"]
+---
 
 ## 职责定位
 
