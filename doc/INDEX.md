@@ -69,6 +69,7 @@
 | ✅ | [plan/three-agent-prompt-revision-plan.md](plan/three-agent-prompt-revision-plan.md) | 三代理提示词修订 |
 | 🟡 | [plan/opencode-dual-runtime-plan.md](plan/opencode-dual-runtime-plan.md) | OpenCode 双运行时支持方案 |
 | 🟡 | [plan/frontend-architecture-plan.md](plan/frontend-architecture-plan.md) | 独立前端架构方案（待 Codex 评审） |
+| 🟡 | [plan/project-progress-review-2026-06-20.md](plan/project-progress-review-2026-06-20.md) | 项目进展审查 2026-06-20（已审计修正） |
 | 📦 | [plan/photo-guide-plan.md](plan/photo-guide-plan.md) | 拍照指南计划 |
 
 ### doc/executionlog/ — 执行日志
@@ -91,6 +92,7 @@
 | ✅ | [auditlog/knowledge-graph-data-layer-audit.md](auditlog/knowledge-graph-data-layer-audit.md) | M1 审计报告 ✅ 通过 |
 | ✅ | [auditlog/container-split-prod-test-audit.md](auditlog/container-split-prod-test-audit.md) | 容器分层审计报告 ✅ 通过 |
 | ⚠️ | [auditlog/prompt-revision-audit.md](auditlog/prompt-revision-audit.md) | 提示词修订审计 ⚠️ 有条件通过 |
+| ✅ | [auditlog/project-progress-review-2026-06-20-audit.md](auditlog/project-progress-review-2026-06-20-audit.md) | 项目进展审查报告审计 ⚠️ 有条件通过 |
 | 📦 | [auditlog/photo-guide-audit.md](auditlog/photo-guide-audit.md) | 拍照指南审计 |
 
 ---
@@ -105,6 +107,9 @@
 | ✅ | [reference/OPS_handbook.md](reference/OPS_handbook.md) | 运营手册 |
 | ✅ | [reference/BOOTSTRAP_new_project_handbook.md](reference/BOOTSTRAP_new_project_handbook.md) | 新项目引导手册 |
 | ✅ | [reference/codex_long_term_memory.md](reference/codex_long_term_memory.md) | Codex 长期记忆入口 |
+| ✅ | [reference/codex_memory_decisions/](reference/codex_memory_decisions/) | Codex 记忆决策记录目录 |
+| ✅ | [reference/installed-skills-catalog.md](reference/installed-skills-catalog.md) | 已安装 Skill 清单（2026-06-19） |
+| ✅ | [reference/fof-semantic-mvp-dual-runtime-audit-notes.md](reference/fof-semantic-mvp-dual-runtime-audit-notes.md) | fof-semantic 双运行时审计笔记 |
 
 ### 治理方案
 
@@ -169,6 +174,7 @@
 | 📦 | [research/transcripts/](research/transcripts/) | 真题转写（2024 三版 + 2025/2026） |
 | 📦 | [research/extracted/](research/extracted/) | 真题提取 OCR 图片（2024-2026） |
 | 📦 | [research/comp_pages/](research/comp_pages/) | 竞品截图 |
+| 🟡 | [research/Claude Code 的机制.md](research/Claude Code 的机制.md) | Claude Code 机制分析（2026-06） |
 
 ---
 
@@ -210,5 +216,5 @@
 
 ---
 
-> 最后更新：2026-06-19 | 维护者：人类 + Claude + 三代理
-> 本文档随 Phase 2（reference/ 重组）后需更新移动文件的路径。
+> 最后更新：2026-06-20 | 维护者：人类 + Claude + 三代理
+> 本次更新：新进展审查报告 + 审计报告 + 参考文件补充
