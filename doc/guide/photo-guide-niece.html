@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📸 做题拍照小指南</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #fdf8f3;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    color: #3d3226;
+    line-height: 1.75;
+  }
+
+  .page {
+    max-width: 680px;
+    width: 100%;
+    background: #fffef9;
+    border-radius: 12px;
+    padding: 44px 40px 36px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #ede4d8;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .lead {
+    background: linear-gradient(135deg, #fef6ed 0%, #fdf0e0 100%);
+    border-left: 4px solid #e8a850;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 15.5px;
+    color: #5a4030;
+    line-height: 1.85;
+  }
+  .lead strong {
+    color: #c0392b;
+    font-weight: 700;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin: 28px 0 6px;
+    color: #4a3728;
+  }
+
+  .rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    margin: 16px 0 24px;
+  }
+
+  .rule {
+    background: #faf7f2;
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid #efe8dd;
+    transition: box-shadow 0.15s;
+  }
+  .rule:hover {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .rule-num {
+    display: inline-block;
+    background: #e8a850;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+  .rule h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #4a3728;
+  }
+  .rule p {
+    font-size: 13.5px;
+    color: #6b5d4f;
+    line-height: 1.7;
+  }
+  .rule p strong {
+    color: #4a3728;
+  }
+  .rule.important {
+    border: 1.5px solid #e8a850;
+    background: #fffbf5;
+  }
+  .rule.important .rule-num {
+    background: #d4782f;
+  }
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .footer-block {
+    background: #faf6f0;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 20px 0 16px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.85;
+    color: #5a4030;
+    border: 1px solid #efe8dd;
+  }
+  .footer-block strong {
+    color: #b8611a;
+  }
+  .footer-block .doctor {
+    display: block;
+    margin-top: 4px;
+    font-size: 14.5px;
+    color: #7a6855;
+  }
+
+  .rhythm {
+    text-align: center;
+    font-size: 14px;
+    color: #8c7b6b;
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px dashed #e0d5c5;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px dashed #e0d5c5;
+    margin: 20px 0;
+  }
+
+  @media (max-width: 560px) {
+    .page { padding: 28px 18px 24px; }
+    .rules { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page {
+      max-width: 100%;
+      box-shadow: none;
+      border: none;
+      border-radius: 0;
+      padding: 28px 32px 24px;
+    }
+    .rule { break-inside: avoid; }
+    .rule:hover { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>📸 做题拍照小指南</h1>
+
+  <div class="lead">
+    你写的每一笔——包括划掉的、卡住的、做不出的——都是我们一起找你数学"断在哪"的线索。所以<strong>别擦、别撕、别藏</strong>，原样拍给我们就好。
+  </div>
+
+  <div class="section-title">🎯 6 条小习惯</div>
+
+  <div class="rules">
+    <div class="rule">
+      <span class="rule-num">1</span>
+      <h3>📷 整页拍</h3>
+      <p>题目 + 你的解题过程 + 你做的标记，<strong>一起拍进一张</strong>。一道题一张，或整页多题都行——照片就是这道题的"身份证"，不用抄题、不用编号。</p>
+    </div>
+
+    <div class="rule">
+      <span class="rule-num">2</span>
+      <h3>💡 拍清楚</h3>
+      <p>光线够、别反光、手机正对页面别斜、四个边别裁掉、手写要能看清。</p>
+    </div>
+
+    <div class="rule important full-width">
+      <span class="rule-num">3 · 最重要</span>
+      <h3>✍️ 过程全留着</h3>
+      <p>草稿和过程写在题目旁边，<strong>不擦、不涂改、不撕</strong>，全部留着一起拍。你在哪一行停笔、哪一步开始改——正是我们要看的。</p>
+    </div>
+
+    <div class="rule">
+      <span class="rule-num">4</span>
+      <h3>🏷️ 做不出的题</h3>
+      <p>别空着——贴个小标签或折个角露在页边，标出"这道我没做出来"。"做不出"本身就是超有用的信息。</p>
+    </div>
+
+    <div class="rule">
+      <span class="rule-num">5</span>
+      <h3>➡️ 卡住的地方</h3>
+      <p>在卡点画个箭头 ➡️，旁边写几个字"卡在这"（比如"这里不会通分""不知道下一步"）。</p>
+    </div>
+
+    <div class="rule full-width">
+      <span class="rule-num">6</span>
+      <h3>📝 你写的答案留着</h3>
+      <p>你写的答案比"对还是错"有用得多。如果手边有标准答案或题目出处（哪本书第几页），顺手记一下就好——不记也没关系。</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="footer-block">
+    💡 你不只是用户——你是和我们一起打磨这个工具的<strong>合伙人</strong>。你拍的每一张照片，都在让它越来越懂你。
+    <span class="doctor">🩺 就像给医生拍症状照片——越真实、越完整，越能对症。</span>
+  </div>
+
+  <div class="rhythm">
+    周中做题做标记（只用笔，不用手机）→ 周末一起拍给舅舅 📬
+  </div>
+
+</div>
+</body>
+</html>
