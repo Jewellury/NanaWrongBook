@@ -1,338 +1,549 @@
 # 2026 新课标 I 卷 数学 · VLM 识图转写 draft
 
 > 生成方式: 火山方舟豆包 VLM（ep-20260619155735-lx4dr）逐页看图转写
-> 生成时间: 2026-06-19T09:21:56.256Z
-> 页数: 12 页
+> 生成时间: 2026-06-19T11:09:28.330Z
 > 状态: 待参谋长人工复核
 
 ---
 
 ## 第 1 页
 
-# 2026年普通高等学校招生全国统一考试 数学 第1页前置内容
-## 注意事项：
-1. 答卷前，考生务必将自己的姓名、考生号、考场号、座位号填写在答题卡上。
-2. 回答选择题时，选出每小题答案后，用铅笔把答题卡上对应题目的答案标号涂黑。如需改动，用橡皮擦干净后，再选涂其他答案标号。回答非选择题时，将答案写在答题卡上，写在本试卷上无效。
-3. 考试结束后，将本试卷和答题卡一并交回。
 
-## 题型说明（第一部分）
-一、选择题：本题共8小题，每小题5分，共40分。在每小题给出的四个选项中，只有一项是符合题目要求的。
 
----
-qid: 2026-T1
-year: 2026
-number: 1
-type: 单选
-score: 5
-stem: 样本数据$6,8,4,5,12$的中位数为（  ）
-options:
-  - A. $5$
-  - B. $6$
-  - C. $8$
-  - D. $9$
-answer: B
-analysis_brief: 将已知数据从小到大排序为$4,5,6,8,12$，共5个数据，中位数为第3个数据$6$
-has_figure: false
-考点关键词: 中位数、数据排序
----
-qid: 2026-T2
-year: 2026
-number: 2
-type: 单选
-score: 5
-stem: 已知平面向量$\vec{a}$，$\vec{b}$不共线，且$2\vec{a} + y\vec{b} = x\vec{a} - 3\vec{b}$，则（  ）
-options:
-  - A. $x=2$，$y=-3$
-  - B. $x=-2$，$y=3$
-  - C. $x=2$，$y=3$
-  - D. $x=-2$，$y=-3$
-answer: A
-analysis_brief: 根据平面向量基本定理，不共线向量对应系数相等，可得$\begin{cases}x=2 \\ y=-3\end{cases}$
-has_figure: false
-考点关键词: 平面向量基本定理、向量相等
----
-qid: 2026-T3
-year: 2026
-number: 3
-type: 单选
-score: 5
-stem: 已知集合$A=\left\{\sin\frac{7\pi}{6},\cos\frac{5\pi}{3},\tan\frac{5\pi}{4}\right\}$，$B=\left\{-\frac{\sqrt{3}}{2},-\frac{1}{2},1\right\}$，则$A\cap B=$（  ）
-options: [本页未显示选项]
-answer: [本页未显示答案]
-analysis_brief: [本页未显示解析]
-has_figure: false
-考点关键词: 三角函数求值、集合交集运算
----
+
+
 
 ---
 
 ## 第 2 页
 
----
-qid: 2024-T3
-year: 2024
-number: 3
-type: 单选
-score: 5
-stem: "[存疑]题干不在本页，根据解析推测为：已知集合$A=\\left\\{\\sin\\frac{7\\pi}{6},\\cos\\frac{5\\pi}{3},\\tan\\frac{5\\pi}{4}\\right\\}$，$B=\\left\\{-\\frac{\\sqrt{3}}{2},-\\frac{1}{2},1\\right\\}$，则$A\\cap B=$（  ）"
-options:
-  - A. $\\left\\{-\\frac{\\sqrt{3}}{2},-\\frac{1}{2}\\right\\}$
-  - B. $\\left\\{-\\frac{\\sqrt{3}}{2},1\\right\\}$
-  - C. $\\left\\{-\\frac{1}{2},1\\right\\}$
-  - D. $\\left\\{-\\frac{\\sqrt{3}}{2},-\\frac{1}{2},1\\right\\}$
-answer: C
-analysis_brief: 用诱导公式计算三角函数值：$\sin\frac{7\pi}{6}=\sin(\pi+\frac{\pi}{6})=-\sin\frac{\pi}{6}=-\frac{1}{2}$，$\cos\frac{5\pi}{3}=\cos(2\pi-\frac{\pi}{3})=\cos\frac{\pi}{3}=\frac{1}{2}$，$\tan\frac{5\pi}{4}=\tan(\pi+\frac{\pi}{4})=\tan\frac{\pi}{4}=1$，得$A=\left\{-\frac{1}{2},\frac{1}{2},1\right\}$，和$B$取交集即得结果。
-has_figure: false
-考点关键词: 三角函数诱导公式、集合交集运算
----
-qid: 2024-T4
-year: 2024
-number: 4
-type: 单选
-score: 5
-stem: 曲线$y=5x+8\ln x$在点$(1,5)$处的切线方程为（  ）
-options:
-  - A. $y=3x+2$
-  - B. $y=5x$
-  - C. $y=8x-3$
-  - D. $y=13x-8$
-answer: D
-analysis_brief: 先对函数求导得$y'=5+\frac{8}{x}$，代入$x=1$得切线斜率为13，用点斜式写出切线方程$y-5=13(x-1)$，整理得$y=13x-8$。
-has_figure: false
-考点关键词: 导数的几何意义、切线方程
----
-qid: 2024-T5
-year: 2024
-number: 5
-type: 单选
-score: 5
-stem: 已知抛物线$C_1:y^2=2p_1x$（$p_1>0$）和$C_2:x^2=2p_2y$（$p_2>0$）均经过点$(4,8)$，则$C_1$的焦点与$C_2$的焦点之间的距离为（  ）
-options:
-  - A. $12$
-  - B. $4\sqrt{5}$
-  - C. $6$
-  - D. $\frac{\sqrt{65}}{2}$
-answer: D
-analysis_brief: 将点$(4,8)$分别代入两条抛物线方程，解得$p_1=8$，$p_2=1$，得$C_1$焦点为$(4,0)$，$C_2$焦点为$(0,\frac{1}{2})$，代入两点间距离公式计算得结果。
-has_figure: false
-考点关键词: 抛物线方程、焦点坐标、两点间距离公式
----
+
+
+
+
 
 ---
 
 ## 第 3 页
-
 ```yaml
-- qid: 2024-T6
-  year: 2024
-  number: 6
-  type: 单选
-  score: 5
-  stem: 已知函数$f(x)=\frac{x+2}{\mathrm{e}^x + a}$的最大值为1，则$a=（\quad）$
-  options:
-    - A. $\frac{1}{2}$
-    - B. $1$
-    - C. $\frac{3}{2}$
-    - D. $2$
-  answer: B
-  analysis_brief: 首先讨论$a<0$的情况，此时函数存在间断点，在间断点附近函数值趋向正无穷，无最大值，不符合题意；当$a\geq0$时，函数定义域为$\mathbf{R}$，最大值为1等价于$x+2\leq \mathrm{e}^x+a$对任意$x\in\mathbf{R}$恒成立且等号可取，即$a\geq x+2-\mathrm{e}^x$恒成立，求$g(x)=x+2-\mathrm{e}^x$的最大值为1，故$a=1$。
+- qid: 2026-T5
+  year: 2026
+  number: 5
+  type: [存疑]
+  score: [存疑]
+  stem: [存疑，题干不在本页]
+  options: [存疑]
+  answer: $\dfrac{\sqrt{65}}{2}$
+  analysis_brief: 先求解抛物线$C_1$的焦点坐标为$F_1(4,0)$；将点$(4,8)$代入抛物线$C_2:x^2=2p_2y(p_2>0)$，解得$p_2=1$，得$C_2$的焦点坐标为$F_2\left(0,\dfrac{1}{2}\right)$；根据两点间距离公式计算得$F_1$与$F_2$的距离为$\dfrac{\sqrt{65}}{2}$。
   has_figure: false
-  考点关键词: 函数最值、导数应用、不等式恒成立
-```
+  考点关键词: 抛物线焦点求解、两点间距离公式、抛物线方程参数计算
+
+
+
+
+
 
 ---
 
 ## 第 4 页
+| 字段 | 内容 |
+| ---- | ---- |
+| qid | （本页未显示，暂空） |
+| year | 2026 |
+| number | （本页未显示，暂空） |
+| type | 单选 |
+| score | （本页未显示，暂空） |
+| stem | （本页未显示，暂空） |
+| options | （本页未显示，暂空） |
+| answer | B |
+| analysis_brief | 法1：设$g(x)=x+2-\mathrm{e}^x$，则$g'(x)=1-\mathrm{e}^x$，当$x<0$时，$g'(x)>0$，$g(x)$单调递增；当$x>0$时，$g'(x)<0$，$g(x)$单调递减；故$g(x)\leq g(0)=1$，当且仅当$x=0$时，$g(x)_{\text{max}}=1$。由$a\geq x+2-\mathrm{e}^x$对任意$x\in\mathbf{R}$恒成立，可知$a\geq1$，又当$a>1$时，恒有$g(x)<1<a$，取不到等号，所以$a=1$，故选B。<br>法2：$f(x)=\frac{x+2}{\mathrm{e}^x+a}$，由选项知$a>0$，则定义域为$\mathbf{R}$，故最大值必在极值点处取到，不妨设此极值点为$x_0$，由$f'(x)=\frac{(\mathrm{e}^x+a)-(x+2)\mathrm{e}^x}{(\mathrm{e}^x+a)^2}=\frac{-(x+1)\mathrm{e}^x+a}{(\mathrm{e}^x+a)^2}$，则由$f'(x_0)=0$，可得$a=(x_0+1)\mathrm{e}^{x_0}$①，且$f(x_0)=\frac{x_0+2}{\mathrm{e}^{x_0}+a}=1$，即$a=x_0+2-\mathrm{e}^{x_0}$②，联立①②解得$\begin{cases}x_0=0\\a=1\end{cases}$。验证：当$a=1$时，$f(x)=\frac{x+2}{\mathrm{e}^x+1}$，则$f'(x)=\frac{-(x+1)\mathrm{e}^x+1}{(\mathrm{e}^x+1)^2}$，设$g(x)=-(x+1)\mathrm{e}^x+1$，则$g'(x)=-(x+2)\mathrm{e}^x$，当$x<-2$时，$g'(x)>0$，则$g(x)$在$(-\infty,-2)$上单调递增；当$x>-2$时，$g'(x)<0$，则$g(x)$在$(-\infty,-2)$上单调递减；$g(x)_{\text{max}}=g(-2)=\frac{1}{\mathrm{e}^2}+1$，且$g(0)=0$，且当$x\to-\infty$，$g(x)\to0$；当$x\to+\infty$，$g(x)\to-\infty$。 |
+| has_figure | false |
+| 考点关键词 | 导数求单调性、函数最值、恒成立问题、参数求解 |
 
----
-qid: 2024-T8
-year: 2024
-number: 8
-type: 单选
-score: 5
-stem: "[存疑：本页未展示完整题面，仅可确定题面核心为：已知函数$f(x)=\frac{x+2}{\mathrm{e}^x+a}$的最大值为1，求实数$a$的值]"
-options: "[存疑：本页未展示选项内容，仅可确定正确选项为B]"
-answer: B（对应$a=1$）
-analysis_brief: 方法1：将$f(x)\leq1$恒成立变形为$a\geq x+2-\mathrm{e}^x$对任意$x\in\mathbf{R}$恒成立，构造$g(x)=x+2-\mathrm{e}^x$，求导得$g'(x)=1-\mathrm{e}^x$，$x<0$时$g(x)$单调递增，$x>0$时$g(x)$单调递减，最大值为$g(0)=1$，故$a\geq1$；又$a>1$时$g(x)<1<a$无法取到等号，故$a=1$。方法2：由选项知$a>0$，$f(x)$定义域为$\mathbf{R}$，最大值在极值点$x_0$处取得，求导得$f'(x)=\frac{-(x+1)\mathrm{e}^x+a}{(\mathrm{e}^x+a)^2}$，联立$f'(x_0)=0$、$f(x_0)=1$解得$x_0=0,a=1$；验证时构造$g(x)=-(x+1)\mathrm{e}^x+1$，求导得$g'(x)=-(x+2)\mathrm{e}^x$，$x<-2$时$g(x)$在$(-\infty,-2)$单调递增，原文写$x>-2$时$g(x)$在$(-\infty,-2)$单调递减[存疑：此处区间存在笔误，推测应为$(-2,+\infty)$]，$g(x)$最大值为$g(-2)=\frac{1}{\mathrm{e}^2}+1$，$g(0)=0$，符合要求。
-has_figure: false
-考点关键词: 函数最值、导数求单调性、不等式恒成立
----
+
+
+
+
+
 
 ---
 
 ## 第 5 页
-
+### 第1题（跨页题，本页仅为后半部分解析）
 ```yaml
-qid: 2024-T7
-year: 2024
-number: 7
-type: 单选
-score: 5
-stem: 一百零八塔位于宁夏回族自治区青铜峡市，以其独特的建筑格局和深远的历史文化闻名遐迩。该塔群共有108座塔，依山势自上而下排成12行，将第$i$行中塔的座数记为$a_i(i=1,2,\cdots,12)$，其中$a_1=1$，$a_2=a_3=3$，$a_4=a_5=5$，且$a_6$，$a_7$，$\cdots$，$a_{12}$是一个首项为7，公差为2的等差数列。将$a_1$，$a_2$，$\cdots$，$a_{12}$分为6组，每组2个数，使得每组的2个数之和可构成一个项数为6且公差为$d(d>0)$的等差数列，则$d=$（  ）
-options:
-  - A. $2$
-  - B. $4$
-  - C. $6$
-  - D. $8$
-answer: B
-analysis_brief: 先计算数列$\{a_i\}$前12项总和为108，设分组后和构成的等差数列为$\{b_n\}$，其前6项和为108，由等差数列求和公式得$2b_1+5d=36$，结合$b_1$、$b_6$的取值范围验证可得$d=4$。
-has_figure: false
-考点关键词: 等差数列求和、分组构造、等差数列性质
+qid: 2026-T6
+year: 2026
+number: 6
+type: [存疑]
+score: [存疑]
+stem: [存疑]
+options: [存疑]
+answer: $a=1$
+analysis_brief: |
+  1. 单调性分析：辅助函数$g(x)$在$x<0$时$g(x)>0$，对应$f'(x)>0$，$f(x)$单调递增；$x>0$时$g(x)<0$，对应$f'(x)<0$，$f(x)$单调递减，故$f(x)_{\text{max}}=f(0)=1$。
+  2. 法3：由选项知$a>0$，定义域为$\mathbf{R}$，由$f(0)=\frac{2}{1+a}\leq1(a>0)$解得$a\geq1$，验证得$a=1$符合要求。
+  3. 法4：同法3得$a\geq1$，结合不等式$\text{e}^x\geq x+1$验证，当$a=1$时$f(x)=\frac{x+2}{\text{e}^x+1}\leq1$，等号仅在$x=0$时成立，符合要求。
+has_figure: true
+考点关键词: [存疑]
+备注：本页仅含该题解析部分，题干/选项在上一页；$g(x)$图像为：直角坐标系$xOy$中，$g(x)$在$x=-2$处取得最大值$\frac{1}{\text{e}^2}+1$，$x<0$时图像在x轴上方，$x>0$时图像在x轴下方。
 ```
+
+
+
+
+
+
 
 ---
 
 ## 第 6 页
+| 字段 | 内容 |
+| ---- | ---- |
+| qid | 2026-T8 |
+| year | 2026 |
+| number | 8 |
+| type | 单选 |
+| score | 5 |
+| stem | 设$U=\left\{(x_1,x_2,x_3)\mid x_i\in\{-2,-1,1,2\},i=1,2,3\right\}$为空间中64个点构成的集合，点$P(1,1,1)$，记样本空间$\Omega=\complement_UP$，从$\Omega$中随机取一个点，定义随机变量$X$如下：对$\Omega$中的每个点$A(x_1,x_2,x_3)$，令$X(A)=x_1+x_2+x_3$，则$X$的数学期望值为（ ） |
+| options | A. $-\dfrac{1}{21}$<br>B. $-\dfrac{1}{63}$<br>C. $0$<br>D. $\dfrac{1}{7}$ |
+| answer | A |
+| analysis_brief | 先计算样本空间总元素数$n(\Omega)=4\times4\times4-1=63$；利用对称性，集合$U$中所有点对应的$x_1+x_2+x_3$总和为0，去掉点$P$对应的$X=3$后，$\Omega$中所有点$X$的总和为$-3$，因此期望$E(X)=\frac{-3}{63}=-\frac{1}{21}$。 |
+| has_figure | false |
+| 考点关键词 | 集合补集、古典概型、随机变量、数学期望 |
 
-```yaml
-qid: 2024-T8
-year: 2024
-number: 8
-type: 单选
-score: 5
-stem: 设$U=\left\{(x_1,x_2,x_3)\mid x_i\in\{-2,-1,1,2\},i=1,2,3\right\}$为空间中64个点构成的集合，点$P(1,1,1)$，记样本空间$\Omega=\complement_U P$，从$\Omega$中随机取一个点，定义随机变量$X$如下：对$\Omega$中的每个点$A(x_1,x_2,x_3)$，令$X(A)=x_1+x_2+x_3$，则$X$的数学期望值为（  ）
-options:
-  - A. $-\dfrac{1}{21}$
-  - B. $-\dfrac{1}{63}$
-  - C. $0$
-  - D. $\dfrac{1}{7}$
-answer: A
-analysis_brief: 首先计算得样本空间元素总数$n(\Omega)=4^3-1=63$，利用对称性，除$X=\pm3$外其余正负取值的期望相互抵消，结合$P(X=-3)=\dfrac{4}{63},P(X=3)=\dfrac{3}{63}$，计算即可得期望结果。
-has_figure: false
-考点关键词: 古典概型，随机变量，数学期望，集合补集
-```
+
+
+
+
+
 
 ---
 
 ## 第 7 页
+### 第8题（跨页，本页仅含解析部分）
+| 字段 | 内容 |
+| --- | --- |
+| qid | 2026-T8 |
+| year | 2026 |
+| number | 8 |
+| type | 单选 |
+| score | 5 |
+| stem | [存疑，题干未在本页出现] |
+| options | [存疑，选项未在本页出现] |
+| answer | 对应$E(X)=-\dfrac{1}{21}$的选项 |
+| analysis_brief | 解法一：先列出X所有取值的对应概率：$P(X = -6) = P(X = 6) = \dfrac{1}{63}$，$P(X = -5) = P(X = 5) = P(X = -4) = P(X = 4) = \dfrac{3}{63}$，$P(X = -3) = \dfrac{4}{63}$，$P(X = 3) = \dfrac{3}{63}$，$P(X = -2) = P(X = 2) = P(X = -1) = P(X = 1) = \dfrac{9}{63}$，$P(X = 0) = \dfrac{6}{63}$，代入离散型随机变量期望公式计算得$E(X)=(-6+6)\times\dfrac{1}{63}+(-5+5-4+4)\times\dfrac{3}{63}-3\times\dfrac{4}{63}+3\times\dfrac{3}{63}+(-2+2-1+1)\times\dfrac{9}{63}+0\times\dfrac{6}{63}=-\dfrac{1}{21}$；<br>解法二：利用对称性，互为相反数的X取值概率相等，期望贡献抵消，仅计算$X=-3$和$X=3$的贡献即可得$E(X)=-3\times\dfrac{4}{63}+3\times\dfrac{3}{63}=-\dfrac{1}{21}$；<br>解法三：利用样本点的对称对应关系，所有样本点的坐标和总和为$-3$，总样本数为$63$，故期望$E(X)=\dfrac{-3}{63}=-\dfrac{1}{21}$ |
+| has_figure | [存疑，题干未提供，无法判断] |
+| 考点关键词 | [存疑，可推测为离散型随机变量期望、概率分布计算、对称性简化运算] |
 
-```yaml
-- qid: 2024-T9
-  year: 2024
-  number: 9
-  type: 多选
-  score: 6
-  stem: 设$z=3+2\mathrm{i}$，则（  ）
-  options:
-    A. $\overline{z}=3-2\mathrm{i}$
-    B. $|z|=5$
-    C. $z^2=5+12\mathrm{i}$
-    D. $\frac{z+3}{z-\mathrm{i}}\in\mathbb{R}$
-  answer: ACD
-  analysis_brief: A选项根据共轭复数定义，实部不变虚部取反，得$\overline{z}=3-2\mathrm{i}$，正确；B选项计算复数模得$|z|=\sqrt{3^2+2^2}=\sqrt{13}\neq5$，错误；C选项展开计算$z^2=(3+2\mathrm{i})^2=9+12\mathrm{i}-4=5+12\mathrm{i}$，正确；D选项化简分式$\frac{6+2\mathrm{i}}{3+\mathrm{i}}=2$为实数，正确。
-  has_figure: false
-  考点关键词: 共轭复数、复数的模、复数乘除运算、复数为实数的判定
-```
+
+
+
+
+
 
 ---
 
 ## 第 8 页
-
 ```yaml
-qid: 2024-T10
-year: 2024
+qid: 2026-T10
+year: 2026
 number: 10
 type: 多选
 score: 5
-stem: 在空间中，$A$、$B$为两个定点，动点$C$到直线$AB$的距离为2，动点$D$到直线$AB$的距离为1，若二面角$C-AB-D$为$60^\circ$，则（  ）
+stem: 在空间中，$A$、$B$为两个定点，动点$C$到直线$AB$的距离为2，动点$D$到直线$AB$的距离为1．若二面角$C-AB-D$为$60^\circ$，则（　　）
 options:
   A: $\angle CAD \geq 60^\circ$
   B: $CD \geq \sqrt{3}$
   C: 当$AB \perp CD$时，$CD \perp$平面$ABD$
   D: 当$AB \perp$平面$ACD$时，$AC \perp AD$
 answer: BC
-analysis_brief: 过$C$作$CE \perp AB$，$E$为垂足，过$D$作$DF \perp AB$，$F$为垂足，作$EG \parallel FD$且$EG=FD$，可得二面角平面角$\angle CEG=60^\circ$，由余弦定理得$CG=\sqrt{3}$，故$CD\geq CG=\sqrt{3}$，B正确；当点$A$与点$E$距离无限大时$\angle CAD$趋近于$0^\circ$，A错误；$AB\perp CD$时可证$AB\perp$平面$CDG$，推得$D$与$G$重合，故$CD\perp$平面$ABD$，C正确；$AB\perp$平面$ACD$时推得$A$与$E$重合、$D$与$G$重合，此时$AC$与$AD$夹角不一定为$90^\circ$，D错误。
+analysis_brief: 构造辅助线：过$C$作$CE\perp AB$垂足为$E$，过$D$作$DF\perp AB$垂足为$F$，过$E$作$EG\parallel FD$且$EG=FD$，得二面角平面角$\angle CEG=60^\circ$；由余弦定理计算得$CG=\sqrt{3}$，故$CD\geq CG=\sqrt{3}$，B正确；当$A$距$E$无限远时$\angle CAD$趋近于$0^\circ$，A错误；先证$AB\perp$平面$CEG$得$AB\perp CG$，结合$AB\perp CD$可推得$D$与$G$重合，故$CD\perp$平面$ABD$，C正确；由$AB\perp$平面$ACD$可推得$A$与$E$重合、$D$与$G$重合，验证得$AC$与$AD$不垂直，D错误。
 has_figure: true
-考点关键词: 空间线面位置关系、二面角、空间距离、线面垂直判定
+考点关键词: 二面角，空间点线面位置关系，线面垂直判定，空间距离计算
 ```
+
+
+
+
+
+
 
 ---
 
 ## 第 9 页
-
----
-qid: 2024-T11
-year: 2024
+```yaml
+qid: 2026-T11
+year: 2026
 number: 11
 type: 多选
 score: 5
 stem: 已知圆$C_1:(x+1)^2+y^2=1$，圆$C_2:(x-1)^2+y^2=1$，圆$C_3:x^2+(y-\sqrt{3})^2=1$，直线$l:y=kx+b$与$C_1$，$C_2$，$C_3$均有两个交点。记$l$被$C_1$，$C_2$，$C_3$截得的弦长分别为$s_1$、$s_2$、$s_3$，则（  ）
 options:
-  A: $k$可以取任意实数
-  B: 满足$s_1=s_2=s_3$的直线$l$共有3条
-  C: 满足$s_1+s_2+s_3=3$的直线$l$多于3条
-  D: 当$b=0$时，$s_1+s_2+s_3$的最大值为$\frac{2\sqrt{21}}{3}$
+  - A. $k$可以取任意实数
+  - B. 满足$s_1=s_2=s_3$的直线$l$共有3条
+  - C. 满足$s_1+s_2+s_3=3$的直线$l$多于3条
+  - D. 当$b=0$时，$s_1+s_2+s_3$的最大值为$\frac{2\sqrt{21}}{3}$
 answer: BCD
-analysis_brief: 三个圆均为半径$r=1$的等圆，圆心构成边长为2的正三角形，弦长公式为$s_i=2\sqrt{1-d_i^2}$（$d_i$为直线$l$到对应圆心的距离，且$d_i<1$）；A可推出$k$存在取值约束，错误；B到三个圆心距离相等的直线共3条，正确；C代入弦长和为3可解得多组合法解，直线多于3条，正确；D$b=0$时将和表示为$k$的函数求导可得最大值，正确。
+analysis_brief: 三个圆均为半径$r=1$的等圆，圆心分别为$C_1(-1,0)$、$C_2(1,0)$、$C_3(0,\sqrt{3})$，利用弦长公式$s_i=2\sqrt{1-d_i^2}$（$d_i$为直线$l$到对应圆心的距离，且$d_i<1$保证直线与圆有两个交点），先写出直线到三个圆心的距离表达式$d_1=\frac{|b-k|}{\sqrt{1+k^2}}$、$d_2=\frac{|b+k|}{\sqrt{1+k^2}}$、$d_3=\frac{|b-\sqrt{3}|}{\sqrt{1+k^2}}$，再逐个分析选项即可。
 has_figure: false
-考点关键词: 直线与圆位置关系,弦长计算,函数最值,正三角形性质
----
+考点关键词: 直线与圆相交、弦长计算、参数范围、最值求解
+```
+
+
+
+
 
 ---
 
 ## 第 10 页
+```yaml
+- qid: 2026-T[存疑，题号未在本页显示]
+  year: 2026
+  number: [存疑，题号未在本页显示]
+  type: 多选[存疑，从解析的选项形式判断为多选]
+  score: [存疑，分值未在本页显示]
+  stem: [存疑，题干未在本页显示，从解析可知本题围绕直线与三个圆的位置关系、弦长相关问题设置]
+  options: [存疑，选项未在本页完整显示，仅从解析可知A选项核心表述为k可取任意实数，B选项核心表述为三条弦长相等时符合条件的直线共3条]
+  answer: [存疑，本页仅可知A错误、B正确，其余选项正误未显示]
+  analysis_brief: 1. 选项A推导：不妨取$k>0$，推导得直线与三个圆均相交时$b$的范围集合$A=\left(k-\sqrt{1+k^2},-k+\sqrt{1+k^2}\right)$、$B=\left(\sqrt{3}-\sqrt{1+k^2},\sqrt{3}+\sqrt{1+k^2}\right)$，当$k=\frac{\sqrt{3}}{3}$时$A\cap B=\emptyset$，无符合条件的直线，故$k$不能取任意实数，A错误；2. 选项B推导：若$s_1=s_2=s_3$，则$d_1=d_2=d_3$，由$d_1=d_2$得$\left|b-k\right|=\left|b+k\right|$，平方得$k=0$或$b=0$：①$k=0$时直线为$y=b$，解得$b=\frac{\sqrt{3}}{2}$，$d_1=\frac{\sqrt{3}}{2}<1$，对应1条符合条件的直线；②$b=0$时直线为$y=kx$，解得$k=\pm\sqrt{3}$，$d_1=\frac{\sqrt{3}}{2}<1$，对应2条符合条件的直线，综上共3条直线满足条件，B正确；3. 选项C部分推导：令$b=0$，得弦长$s_1=s_2=\frac{2}{\sqrt{1+k^2}}$，$s_3=\frac{2\sqrt{k^2-2}}{\sqrt{1+k^2}}$，换元$t=\sqrt{k^2-2}(t>0)$，得$s_1+s_2+s_3=\frac{2(2+t)}{\sqrt{t^2+3}}$，后续推导未在本页显示
+  has_figure: [存疑，本页未显示图形，无法确定题干是否含几何图形]
+  考点关键词: 直线与圆位置关系, 弦长计算, 参数范围求解, 绝对值方程
+```
 
----
-qid: 2024-T12
-year: 2024
-number: 12
-type: 多选
-score: 5
-stem: [题面见前序页面，本页仅为该题解析部分]
-options: [选项见前序页面]
-answer: [本页仅判断A错误、B正确，完整答案见后续页面]
-analysis_brief: |
-  A选项后半段解析：不妨取$k>0$，
-  $\because k+\sqrt{1+k^2} > -k+\sqrt{1+k^2} >0 >k-\sqrt{1+k^2} >-k-\sqrt{1+k^2}$，
-  $\therefore k-\sqrt{1+k^2} <b<-k+\sqrt{1+k^2}$，记$A=\left(k-\sqrt{1+k^2},-k+\sqrt{1+k^2}\right)$，
-  解$d_3<1$，得$\sqrt{3}-\sqrt{1+k^2} <b<\sqrt{3}+\sqrt{1+k^2}$，记$B=\left(\sqrt{3}-\sqrt{1+k^2},\sqrt{3}+\sqrt{1+k^2}\right)$，
-  当$\sqrt{3}-\sqrt{1+k^2} \geq -k+\sqrt{1+k^2}$，即$k=\frac{\sqrt{3}}{3}$时，$A\cap B=\emptyset$，此时不存在符合条件的直线，故A错误；
-  B选项解析：$\because s_1=s_2=s_3$，$\therefore d_1=d_2=d_3$，
-  由$d_1=d_2$得$|b-k|=|b+k|$，平方得$-4bk=0$，即$k=0$或$b=0$：
-  ①当$k=0$时，直线为$y=b$，由$d_1=d_3$得$|b|=|b-\sqrt{3}|$，解得$b=\frac{\sqrt{3}}{2}$，此时$d_1=\frac{\sqrt{3}}{2}<1$，对应1条符合条件的直线；
-  ②当$b=0$时，直线为$y=kx$，由$d_1=d_3$得$\frac{|k|}{\sqrt{1+k^2}}=\frac{\sqrt{3}}{\sqrt{1+k^2}}$，解得$k=\pm\sqrt{3}$，此时$d_1=\frac{\sqrt{3}}{2}<1$，对应2条符合条件的直线；
-  综上共3条符合条件的直线，故B正确；
-  C选项前半段解析：令$b=0$，
-  $\therefore s_1=s_2=2\sqrt{1-\frac{k^2}{1+k^2}}=\frac{2}{\sqrt{1+k^2}}$，$s_3=2\sqrt{1-\frac{3}{1+k^2}}=\frac{2\sqrt{k^2-2}}{\sqrt{1+k^2}}$，
-  令$t=\sqrt{k^2-2}(t>0)$，则$k^2=t^2+2$，$\therefore s_1+s_2+s_3=\frac{2(2+t)}{\sqrt{t^2+3}}$，后续推导见后续页面。
-has_figure: false
-考点关键词: 直线与圆相交, 弦长公式, 分类讨论, 绝对值运算
----
+
+
+
 
 ---
 
 ## 第 11 页
+### 第1题（跨页题，本页仅显示部分内容）
 
----
-qid: 2024-T12
-year: 2024
-number: 12
-type: 填空
-score: 5
-stem: 双曲线$5x^2 - 6y^2 = 1$的离心率为__________。
-options: []
-answer: $\dfrac{\sqrt{66}}{6}$
-analysis_brief: 先将双曲线方程化为标准形式$\dfrac{x^2}{\frac{1}{5}} - \dfrac{y^2}{\frac{1}{6}} = 1$，得$a^2=\dfrac{1}{5}$，$b^2=\dfrac{1}{6}$，由$c^2=a^2+b^2$计算得$c^2=\dfrac{11}{30}$，再代入离心率公式$e=\dfrac{c}{a}=\sqrt{\dfrac{c^2}{a^2}}=\sqrt{\dfrac{11}{6}}=\dfrac{\sqrt{66}}{6}$。
-has_figure: false
-考点关键词: 双曲线标准方程、离心率计算
----
+
+
 
 ---
 
 ## 第 12 页
-
 ```yaml
-- qid: 2024-T13
-  year: 2024
-  number: 13
-  type: 填空
-  score: 5
-  stem: 已知 $f(x)=2\sin(ax+\theta)$（$a\in\mathbf{Z}$，$0\leq\theta<2\pi$）是偶函数，$f(x)$在区间$\left(0,\frac{\pi}{2}\right)$单调递增。则$\theta=$________，$f\left(\frac{2\pi}{3}\right)=$________。
+qid: 2026-T13
+year: 2026
+number: 13
+type: 填空
+score: [存疑，本页未标注本题分值]
+stem: 已知$f(x)=2\sin(ax+\theta)$（$a\in\mathbf{Z}$，$0\leq\theta<2\pi$）是偶函数，$f(x)$在区间$\left(0,\frac{\pi}{2}\right)$单调递增．则$\theta=$________，$f\left(\frac{2\pi}{3}\right)=$________．
+options: 
+answer: ① $\frac{3\pi}{2}$；② $1$
+analysis_brief: 第一步由$f(x)$在$\left(0,\frac{\pi}{2}\right)$单调递增推出最小正周期$T\geq\pi$，解得$|a|\leq2$，结合$a\in\mathbf{Z}$且$a\neq0$得$|a|=1$或$2$；第二步根据偶函数性质得$\theta=\frac{\pi}{2}$或$\frac{3\pi}{2}$，代入单调性条件检验得$\theta=\frac{3\pi}{2}$；第三步将$\theta=\frac{3\pi}{2}$、$x=\frac{2\pi}{3}$代入函数式计算得$f\left(\frac{2\pi}{3}\right)=1$。
+has_figure: false
+考点关键词: 正弦函数奇偶性、正弦函数单调性、三角函数求值、整数参数范围
+```
+
+
+
+
+
+---
+
+## 第 13 页
+
+
+
+
+---
+
+## 第 14 页
+
+
+
+
+---
+
+## 第 15 页
+### 2026-T14
+| 字段 | 内容 |
+| ---- | ---- |
+| qid | 2026-T14 |
+| year | 2026 |
+| number | 14 |
+| type | [存疑，本页仅显示该题解析结尾，未显示题型，推测为填空] |
+| score | [存疑，本页未标注该题分值] |
+| stem | [存疑，该题题干在上一页，本页仅显示答案解析部分] |
+| options |  |
+| answer | $q$的最大值为$\sqrt[3]{\dfrac{3}{2}}$ |
+| analysis_brief | 分$k$的三类取值情况讨论完整三项块的对应位置，根据对应项等量关系推导$q^3$的取值上限，最终得到$q$的最大值 |
+| has_figure | false |
+| 考点关键词 | 分类讨论，等比数列性质，不等式推导 |
+
+
+
+
+
+---
+
+## 第 16 页
+| 字段 | 内容 |
+| --- | --- |
+| qid | 2026-T[存疑，本页未显示对应题号] |
+| year | 2026 |
+| number | [存疑，本页未显示题号] |
+| type | 解答 |
+| score | [存疑，本页未显示分值] |
+| stem | 本页可确定题面部分：<br>直三棱柱$ABC-A_1B_1C_1$中，$\angle ACB=90^\circ$，含对应示意图：以$C$为坐标原点，$CA$在$x$轴正方向，$CB$在$y$轴正方向，$CC_1$在$z$轴正方向，点$D$位于$AB$边上，点$E$位于线段$A_1C$上。<br>（1）证明：$DE\parallel$平面$BCC_1B_1$；<br>（2）若直线$DE$与平面$ACC_1A_1$所成的角为$45^\circ$，求$DE$到平面$BCC_1B_1$的距离。<br>[存疑：题干中$D、E$的定义等其余内容在上一页，未在本页显示] |
+| options |  |
+| answer | （1）证明成立；（2）距离为1 |
+| analysis_brief | （1）通过证明$DE\parallel BC_1$，结合线面平行判定定理即可得结论；<br>（2）方法一：设$AC=BC=2t(t>0)$，建立空间直角坐标系，根据直线$DE$与平面$ACC_1A_1$所成角为$45^\circ$求解参数$t$，再结合几何关系求线面距离；方法二：利用线面角条件求得$AC=BC=CC_1=2$，借助几何关系求解距离。 |
+| has_figure | true |
+| 考点关键词 | 线面平行判定、线面距离求解、空间向量应用、线面角计算、直三棱柱性质 |
+
+
+
+
+
+---
+
+## 第 17 页
+```yaml
+- qid: 2026-T[存疑]
+  说明: 本页未显示对应题目题号，题号待前页确认
+  year: 2026
+  number: [存疑]
+  说明: 本页未标注题目题号
+  type: 解答
+  score: [存疑]
+  说明: 本页未标注题目分值
+  stem: [存疑]
+  说明: 完整题干位于前页，本页可提取题干要素：直三棱柱$ABC-A_1B_1C_1$中，$\angle ACB=90^\circ$，$AC=BC$，$D,E$分别为$AB,AC_1$中点，直线$DE$与平面$ACC_1A_1$所成的角为$45^\circ$，本题包含至少2小问，其中一小问为求$DE$到平面$BCC_1B_1$的距离
   options: ""
-  answer: ① $\frac{3\pi}{2}$；② $1$
-  analysis_brief: 先由函数在$\left(0,\frac{\pi}{2}\right)$单调递增推导得最小正周期$T\geq\pi$，解得$|a|\leq2$，结合$a\in\mathbf{Z}$且$a\neq0$得$|a|=1,2$；再根据偶函数性质得$\theta=\frac{\pi}{2}+k\pi,k\in\mathbf{Z}$，结合取值范围和单调性检验得$\theta=\frac{3\pi}{2}$，代入计算得$f\left(\frac{2\pi}{3}\right)=1$。
+  answer: [存疑]
+  说明: 仅可确认求距离的小问答案为1，其余小问答案待前页确认
+  analysis_brief: 法一（空间向量法）：建立空间直角坐标系，写出直线$DE$的方向向量与平面$ACC_1A_1$的法向量，利用线面角的向量计算公式解得参数$t=1$，确定各点坐标，结合$DE\parallel$面$BCC_1B_1$，得线面距离等于点$D$的横坐标1；法二（几何法）：先证明$BC\perp$平面$ACC_1A_1$，得直线$BC_1$与平面$ACC_1A_1$所成角为$\angle BC_1C$，结合$DE\parallel BC_1$得$\angle BC_1C=45^\circ$，推出$AC=BC=CC_1=2$，过$D$作$DF\parallel AC$交$BC$于$F$，$DF$即为所求线面距离，值为1
+  has_figure: true
+  考点关键词: 直三棱柱、线面角、线面平行、点面距离、空间向量应用
+```
+
+
+
+---
+
+## 第 18 页
+```yaml
+- qid: 2026-T16
+  year: 2026
+  number: 16
+  type: 解答
+  score: "[存疑] 本页未标注该题分值"
+  stem: "已知在$\triangle ABC$中，$AB=3$，$BC=2\sqrt{3}$，$\cos B=\frac{\sqrt{3}}{3}$。<br>（1）求$\cos A$；<br>（2）设$D$，$E$两点满足：$D$在$BA$的延长线上，$DE\parallel BC$，$AE \perp AC$。若$DE=\sqrt{6}$，求$CE$。"
+  options: ""
+  answer: "（1）$\frac{1}{3}$；（2）$3\sqrt{5}$"
+  analysis_brief: "（1）先由余弦定理$AC^2=AB^2+BC^2-2\cdot AB\cdot BC\cdot \cos B$，代入数值得$AC^2=9$，即$AC=3$，再代入余弦定理公式$\cos A=\frac{AB^2+AC^2-BC^2}{2\cdot AB\cdot AC}$计算即可得到结果；<br>（2）建立平面直角坐标系，设参数表示各点坐标，结合平行、垂直的坐标性质和$DE$的长度求解参数，最终计算$CE$的长度即可。"
   has_figure: false
-  考点关键词: 正弦函数奇偶性、正弦函数单调性、三角函数求值
+  考点关键词: 解三角形、余弦定理、坐标法、平行垂直性质
+```
+
+
+
+---
+
+## 第 19 页
+```yaml
+- qid: 2026-T17
+  year: 2026
+  number: 17
+  type: 解答
+  score: "[存疑，本页原题未标注分值]"
+  stem: |
+    设整数$N \geq 2$。某同学用一个球进行投篮练习，至多投篮$N$次，当且仅当投中1次时或$N$次均未投中时，停止练习。设该同学每次投中的概率为$p(0 < p < 1)$，各次投中与否相互独立。记$X$为停止练习时该同学的投篮次数。
+    （1）当$N=4$，$p=\frac{1}{3}$时，求$X$的分布列；
+    （2）设$k$，$m$均为自然数。
+    （i）当$k \leq N-1$时，求$P(X > k)$；
+    （ii）当$k+m \leq N-1$时，证明：$P(X > k+m \mid X > k) = P(X > m)$。
+  options: ""
+  answer: |
+    （1）$X$的分布列如下：
+    | $X$ | 1 | 2 | 3 | 4 |
+    |-----|---|---|---|---|
+    | $P$ | $\frac{1}{3}$ | $\frac{2}{9}$ | $\frac{4}{27}$ | $\frac{8}{27}$ |
+    （2）（i）$P(X > k) = (1-p)^k$
+    （ii）证明：
+    $P(X>k+m|X>k)=\frac{P(X>k+m \cap X>k)}{P(X>k)}=\frac{P(X>k+m)}{P(X>k)}=\frac{(1-p)^{k+m}}{(1-p)^k}=(1-p)^m=P(X>m)$，得证。
+  analysis_brief: |
+    （1）分别计算$X$取各值的概率：第一次投中停止对应$P(X=1)=p$，第一次未中第二次投中对应$P(X=2)=(1-p)p$，前两次未中第三次投中对应$P(X=3)=(1-p)^2p$，前三次均未中对应$P(X=4)=(1-p)^3$，代入$p=\frac{1}{3}$计算后列分布列即可；
+    （2）（i）$X>k$即前$k$次投篮全部未投中，由独立事件概率公式得结果；
+    （ii）直接套用条件概率公式，结合（i）的结论化简即可完成证明。
+  has_figure: false
+  考点关键词: 独立重复试验、离散型随机变量分布列、条件概率、概率计算
+```
+注：本页顶部为前序题目的解答片段，因题干、题号等核心信息未在本页完整呈现，故未转写。
+
+
+
+---
+
+## 第 20 页
+
+
+---
+
+## 第 21 页
+### 逐题转写结果
+| 字段 | 内容 |
+| --- | --- |
+| qid | 2026-T17 |
+| year | 2026 |
+| number | 17 |
+| type | 解答 |
+| score | [存疑]本页未显示该题分值及完整题干 |
+| stem | 本页仅显示该题部分内容：$\therefore P(X>k)=(1-p)^k$，及标注（ii）略 |
+| options |  |
+| answer | [存疑]本页未显示该题答案 |
+| analysis_brief | [存疑]本页未显示该题完整解析 |
+| has_figure | false |
+| 考点关键词 | [存疑]本页未显示完整题干无法判断 |
+
+
+
+---
+
+## 第 22 页
+```yaml
+- qid: 2026-T21[存疑，题号未在本页显示，为圆锥曲线解答题]
+  year: 2026
+  number: 21[存疑，题号未在本页显示]
+  type: 解答
+  score: 12[存疑，分值未在本页显示]
+  stem: [存疑，题干完整内容在上一页未提供，本页可见相关信息：已知椭圆方程为$\frac{x^2}{4}+\frac{y^2}{3}=1$，直线$l$过点$(-1,0)$，$P,R$为椭圆上关于原点对称的两点，$Q$为直线$l$与椭圆的另一交点。题附几何图：平面直角坐标系$xOy$中，中心在原点、长轴在$x$轴上的椭圆，左焦点为$F$，过$F$的直线$l$交椭圆于第一象限的点$P$和第三象限的点$Q$，$R$为$P$关于原点的对称点，位于第四象限，连接$QR$、$PR$，$PR$过原点$O$。(i)若$\frac{S_{\triangle PQR}}{S_{\triangle PFO}}=3$，求直线$l$的方程；(ii)求$\tan\angle PQR$的最值]
+  options: 
+  answer: (i) $y=\frac{\sqrt{5}}{2}(x+1)$；(ii) $\tan\angle PQR$的最小值为$4\sqrt{3}$，当且仅当$k=\frac{\sqrt{3}}{2}$时取等号
+  analysis_brief: (i)联立直线$l:y=k(x+1)$与椭圆方程，整理得$(3+4k^2)x^2+8k^2x+4k^2-12=0$，由韦达定理得$x_1+x_2=-\frac{8k^2}{3+4k^2},x_1x_2=\frac{4k^2-12}{3+4k^2}$；根据$P,R$关于原点对称得$R(-x_1,-y_1)$，利用三角形面积公式得到$S_{\triangle PQR}=k(x_1-x_2)$，$S_{\triangle PFO}=\frac{k(x_1+1)}{2}$，结合面积比为3得$x_1+2x_2=-3$，联立韦达定理的和式，令$u=k^2$解得$x_1,x_2$关于$u$的表达式，代入韦达定理的积式解得$u=\frac{5}{4}$，即$k=\frac{\sqrt{5}}{2}$，得直线方程。(ii)先求出直线$QR$的斜率为$-\frac{3}{4k}$，利用两角差的正切公式得到$\tan\angle PQR=\left|\frac{k+\frac{3}{4k}}{1-\frac{3}{4}}\right|=4k+\frac{3}{k}$，由基本不等式得$4k+\frac{3}{k}\geq 2\sqrt{4k\cdot\frac{3}{k}}=4\sqrt{3}$，当且仅当$k=\frac{\sqrt{3}}{2}$时取等号。
+  has_figure: true
+  考点关键词: 椭圆与直线位置关系、韦达定理、三角形面积计算、斜率公式、基本不等式求最值
+```
+
+
+
+---
+
+## 第 23 页
+```yaml
+- qid: 2026-T[存疑，本页未显示对应题号，为圆锥曲线解答题部分]
+  year: 2026
+  number: [存疑，本页未显示题号]
+  type: 解答
+  score: 12[存疑，本页未显示对应分值]
+  stem: 本页可见内容：① 上一解法结论：$\tan\angle PQR$的最小值为$4\sqrt{3}$；② 解法二（i）相关题干：如图所示，平面直角坐标系$xOy$中，原点为$O$，中心在原点的椭圆长轴在$x$轴上，左焦点$F$在$x$轴负半轴，过$F$的直线$l$交椭圆于上半部分的点$P$、下半部分的点$Q$，$R$为$P$关于原点的对称点，位于椭圆下半部分。设直线$l$的方程为$x=my-1$，其中斜率$k=\frac{1}{m}>0\Rightarrow m>0$；椭圆方程为$\frac{x^2}{4}+\frac{y^2}{3}=1$，设点$P(x_1,y_1)$，点$Q(x_2,y_2)$，且$x_2,y_2<0$；已知$S_{\triangle PQR}=3S_{\triangle PFO}$，求$m$的值。[存疑，完整题干未在本页显示]
+  options: ""
+  answer: 本页可见部分答案：$\tan\angle PQR$的最小值为$4\sqrt{3}$，解法二（i）中$m=\frac{2\sqrt{5}}{5}$[存疑，完整答案未在本页显示]
+  analysis_brief: 1. 本页开头给出前序解法结论：$\tan\angle PQR$的最小值为$4\sqrt{3}$；2. 解法二（i）推导：设直线方程$x=my-1$，与椭圆方程联立化简得$(3m^2+4)y^2-6my-9=0$，由韦达定理得$y_1+y_2=\frac{6m}{3m^2+4},y_1y_2=\frac{-9}{3m^2+4}$；3. 利用椭圆中心对称性质得$S_{\triangle PQR}=2S_{\triangle PQO}$，结合已知面积关系代入三角形面积公式化简得$|y_1-y_2|=\frac{3}{2}|y_1|$；4. 结合$y_1>0,y_2<0$得$y_1=-2y_2$，代入韦达定理结果化简解得$m=\frac{2\sqrt{5}}{5}$。
+  has_figure: true
+  考点关键词: 直线与椭圆位置关系, 韦达定理, 三角形面积计算, 椭圆中心对称性
+```
+
+
+
+---
+
+## 第 24 页
+
+
+---
+
+## 第 25 页
+| 字段 | 内容 |
+| ---- | ---- |
+| qid | 2026-T22 |
+| year | 2026 |
+| number | 22 |
+| type | 解答 |
+| score | 12[存疑，本页未标注分值，按新高考数学压轴题常规分值填写] |
+| stem | （3）设$f(x)$满足：①若$f(x_1) \leq f(x_2)$，则$D(x_2) \subseteq D(x_1)$；②当$0 < x < 1$时，$f(x) < f(0)$。<br>（i）证明：$f(0) \geq 1$；<br>（ii）证明：$f(x)$在区间$(0,+\infty)$单调递增。<br>[注：本题第（1）（2）问题干在上一页，本页未收录] |
+| options |  |
+| answer | （1）$D(-1)=\left(0,\frac{3}{2}\right)$；第（2）（3）问答案本页未完全收录 |
+| analysis_brief | （2）解法步骤：先利用$f(x)$是奇函数的性质，结合$x<0$时$f(x)=2^x \in (0,1)$的条件，求出$f(x)$的分段解析式$\displaystyle f(x)=\begin{cases}2^x,x<0 \\0,x=0 \\-2^{-x},x>0\end{cases}$；再根据$D(x_0)=\left\{d \in \mathbf{R}\mid f(x_0+d)>f(x_0)\right\}$的定义，分类讨论$x_0<0$、$x_0=0$、$x_0>0$三种情况，得到$D(x)$的分段表示；最后针对$f(x_1)\leq f(x_2)$的不同取值情况逐一验证$D(x_2)\subseteq D(x_1)$，本页仅展示到第二种讨论情况开头；（3）问解析本页未收录 |
+| has_figure | false |
+| 考点关键词 | 函数新定义、奇函数性质、集合包含关系、单调性证明 |
+
+---
+
+## 第 26 页
+---
+qid: 2026-T22
+year: 2026
+number: 22
+type: 解答
+score: 12
+stem: 完整题干见前页，本页为该题后续推导及第(3)(i)问内容：
+前接第(2)问推导：③当$0<f(x_1)\leq f(x_2)$时，解得$x_1$[存疑，$x_1$与$x_2$之间的关系符号模糊]$x_2$[存疑，$x_2$与0之间的关系符号模糊]$0$，$D(x_1)=\left(0,-x_1\right)$，$D(x_2)=\left(0,-x_2\right)$，此时$D(x_2)\subseteq D(x_1)$。综上，$D(x_2)\subseteq D(x_1)$。
+(3) (i) 证明：$f(0)\geq1$
+options:
+answer: 本部分结论为$f(0)\geq1$
+analysis_brief: 第(2)问分类讨论$f(x_1),f(x_2)$的正负情况，分别推导$D(x_1),D(x_2)$的区间，验证集合包含关系即可得结论；第(3)(i)问用反证法，两种证法均先假设$f(0)<1$，构造符合条件的参数$t$，结合题设$D(x)$的包含性质构造中间量，推导出自相矛盾的结论，即可证得$f(0)\geq1$。
+has_figure: false
+考点关键词: 函数新定义、集合包含关系、反证法、不等式证明
+---
+
+---
+
+## 第 27 页
+```yaml
+- qid: 2026-T22
+  year: 2026
+  number: 22
+  number_note: 存疑，本页未标注题号，根据新高考全国I卷常规题量推断为最后一道解答题题号22
+  type: 解答
+  score: 12
+  score_note: 存疑，本页未标注分值，根据新高考全国I卷压轴解答题常规分值推断
+  stem: （3）（ii）证明$f(x)$在$(0,+\infty)$上单调递增。
+  stem_note: 存疑，本题完整题面、前置已知条件均位于前页，本页仅显示该小问待证结论
+  options: ""
+  answer: $f(x)$在$(0,+\infty)$上单调递增，得证
+  analysis_brief: 本页为该小问证明的第一部分：首先将$f(x)$在$(0,+\infty)$单调递增等价转化为对任意$x_0>0,d>0$，都有$f(x_0+d)>f(x_0)$；随后用反证法证明$x>0$时$f(x)\leq 0$：假设存在$x_0>0$使$f(x_0)>0$，结合$x<0$时$f(x)=2^x$的性质推出$D(x_0)\subseteq D(x_1)\subseteq [0,+\infty)$，进而得到$f(0)\leq f(x_0)$，结合$f(0)\geq1$及$0<x<1$时$f(x)<f(0)$的条件推出$x_0\geq 1$，最终得到存在$x_2<x_3<0$满足$f(x_2)<f(x_3)<f(x_0)$。
+  has_figure: false
+  考点关键词: 函数单调性证明、反证法、集合包含关系、指数函数性质
 ```
 
 ---
+
+## 第 28 页
+---
+qid: 2026-T22
+year: 2026
+number: 22
+type: 解答
+score: 12[存疑，本页未标注分值，为新高考全国I卷压轴解答题常规分值]
+stem: [存疑，题干位于前序页面，本页未展示完整题面]
+options: 
+answer: [存疑，本页仅展示该题第(3)问的部分证明过程：
+1. 可证当$x>0$时，$f(x) \leq 0$；
+2. 可证对$\forall x_0>0,d>0$，都有$d \in D(x_0)$，故$f(x)$在$(0,+\infty)$上单调递增；
+完整答案未完全展示]
+analysis_brief: 本页展示的解析要点如下：
+(1) 求出$f(-1)$，写出$f(x)$表达式，即可求出$D(-1)$；
+(2) 求出$f(x)$表达式，化简集合$D(x_0)$并得出表达式，利用$x_1x_2 \neq 0$得出$f(x_1) \neq 0$与$f(x_2) \neq 0$，对$f(x_1) \leq f(x_2)$的三种情况分类讨论即可证明结论；
+(3)(i) 法一：假设$f(0)<1$，存在$t \in (-1,0)$使得$f(t) \geq f(0)$，取$d_0=-\frac{t}{2}$得$d_0 \in D(t)$，与$d_0=-\frac{t}{2} \in \left(0,\frac{1}{2}\right)$矛盾，进而证明结论；
+法二：假设$f(0)<1$，存在$t \in (0,2)$使得$f(-t)=2^{-t} \geq f(0)$，取$d_1=\frac{t}{2} \in (0,1)$得$d_1 \in D(t)$，后续证明步骤本页未展示。
+has_figure: false
+考点关键词: 函数新定义、反证法、单调性证明、集合包含关系
+---
+
+---
+
+## 第 29 页
+| 字段 | 内容 |
+| ---- | ---- |
+| qid | 2026-T[存疑，本页未显示题号，为试卷最后一道解答题] |
+| year | 2026 |
+| number | [存疑，本页未显示题号，为试卷最后一道解答题] |
+| type | 解答 |
+| score | [存疑，本页未显示分值] |
+| stem | [存疑，题干位于前页，本页仅显示该题部分已知条件：$f(x)=\begin{cases}2^x,x<0 \\1-x,x\geq0\end{cases}$，$D(x_0)=\left\{d\in\mathbf{R}\mid f(x_0+d)>f(x_0)\right\}$，其余题干信息见前页] |
+| options |  |
+| answer | 小问1：$\boldsymbol{\left(0,\frac{3}{2}\right)}$；小问2、3答案本页未显示[存疑] |
+| analysis_brief | 小问1：分$-1+d<0$和$-1+d\geq0$两种情况，分别代入对应分段函数解析式解不等式$f(-1+d)>\frac{1}{2}$，分别解得$d>0$和$d<\frac{3}{2}$，取并集得$D(-1)=\left(0,\frac{3}{2}\right)$；小问2、3解析本页标注略 |
+| has_figure | false |
+| 考点关键词 | 分段函数、集合定义、分段解不等式、函数单调性证明 |
+
+---
+
+
+> 📝 本文件为合并稿，共 29 页。最后更新: 2026-06-19T11:29:53.847Z。

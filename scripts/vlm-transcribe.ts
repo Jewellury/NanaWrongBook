@@ -160,6 +160,7 @@ async function processPage(
   client: OpenAI,
   config: Config,
   pageNum: number,
+  totalPages: number,
   pagesDir: string
 ): Promise<{ pageNum: number; text: string; usage: any }> {
   const imgPath = path.join(pagesDir, `page-${String(pageNum).padStart(2, '0')}.jpg`);
@@ -180,7 +181,7 @@ async function processPage(
         content: [
           {
             type: 'text',
-            text: SYSTEM_PROMPT + `\n\n请转写这张试卷图片（第 ${pageNum} 页）。每道题按要求的 YAML 格式逐题输出。`,
+            text: SYSTEM_PROMPT + `\n\n【当前任务】转写 ${config.year} 年新高考全国I卷数学真题的第 ${pageNum} 页（共 ${totalPages} 页）。\n\n【注意】\n- qid 必须用 ${config.year}-T题号 格式\n- 如果一道题跨页（题干在上一页、选项在下一页），本页只写本页能确定的字段，不要写"见后续页"——后续页会单独转写\n- 每一道出现的题都要转写完整，一题不漏`,
           },
           {
             type: 'image_url',
@@ -282,7 +283,7 @@ async function main() {
   for (const pageNum of pagesToProcess) {
     console.log(`📄 第 ${pageNum}/${totalPages} 页`);
     try {
-      const result = await processPage(client, config, pageNum, pagesDir);
+      const result = await processPage(client, config, pageNum, totalPages, pagesDir);
       results.push(result);
       if (result.usage) {
         totalPromptTokens += result.usage.prompt_tokens || 0;
@@ -311,32 +312,70 @@ async function main() {
   console.log(`  估算费用: ¥${estCost}`);
   console.log('========================================\n');
 
-  // --- 写入输出文件 ---
+  // --- 合并写入输出文件（方案 B：读已有 → 按页去重 → 合并写回）---
   const outDir = path.resolve('doc/research/transcripts');
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, `${year}-vlm-draft.md`);
 
-  const outLines: string[] = [];
-  outLines.push(`# ${year} 新课标 I 卷 数学 · VLM 识图转写 draft\n`);
-  outLines.push(`> 生成方式: 火山方舟豆包 VLM（${config.model}）逐页看图转写`);
-  outLines.push(`> 生成时间: ${new Date().toISOString()}`);
-  outLines.push(`> 页数: ${results.length} 页`);
-  outLines.push(`> 状态: 待参谋长人工复核\n`);
-  outLines.push('---\n');
-
-  for (const r of results) {
-    outLines.push(`## 第 ${r.pageNum} 页\n`);
-    if (r.text) {
-      outLines.push(r.text.trim());
-    } else {
-      outLines.push('（本页无转写内容）');
+  // Step 1: 读取已有文件，按页拆分
+  const existingPages = new Map<number, string>(); // pageNum → content
+  if (fs.existsSync(outPath)) {
+    const oldContent = fs.readFileSync(outPath, 'utf-8');
+    const pageRegex = /^## 第 (\d+) 页\n([\s\S]*?)(?=\n## 第 \d+ 页\n|---\n*$|$(?![\s\S]))/gm;
+    let match;
+    while ((match = pageRegex.exec(oldContent)) !== null) {
+      const pn = parseInt(match[1]);
+      if (!isNaN(pn)) {
+        existingPages.set(pn, match[0]);
+      }
     }
-    outLines.push('\n---\n');
+    // 也扫首页头（元信息 header，非页内容）
+    const headerEnd = oldContent.indexOf('\n---\n');
+    if (headerEnd > 0 && existingPages.size > 0) {
+      existingPages.set(0, oldContent.substring(0, headerEnd)); // page 0 = header
+    }
+    console.log(`  📂 已有 ${existingPages.size - (existingPages.has(0) ? 1 : 0)} 页，将合并 ${results.filter(r => r.text).length} 页新内容`);
   }
 
+  // Step 2: 用本次结果覆盖/新增对应页
+  for (const r of results) {
+    if (r.text) {
+      existingPages.set(r.pageNum, `## 第 ${r.pageNum} 页\n${r.text.trim()}`);
+    }
+    // 空页不覆盖已有
+  }
+
+  // Step 3: 排序写出
+  const sortedPages = Array.from(existingPages.entries())
+    .sort((a, b) => a[0] - b[0]); // page 0 (header) first
+
+  const outLines: string[] = [];
+  // Header
+  if (existingPages.has(0)) {
+    outLines.push(existingPages.get(0)!);
+  } else {
+    outLines.push(`# ${year} 新课标 I 卷 数学 · VLM 识图转写 draft\n`);
+    outLines.push(`> 生成方式: 火山方舟豆包 VLM（${config.model}）逐页看图转写`);
+    outLines.push(`> 生成时间: ${new Date().toISOString()}`);
+    outLines.push(`> 状态: 待参谋长人工复核\n`);
+  }
+  outLines.push('---\n');
+
+  let writtenPages = 0;
+  for (const [pn, content] of sortedPages) {
+    if (pn === 0) continue; // skip header placeholder
+    outLines.push(content);
+    outLines.push('\n---\n');
+    writtenPages++;
+  }
+
+  // Footer: 更新元信息
+  const footerNote = `\n> 📝 本文件为合并稿，共 ${writtenPages} 页。最后更新: ${new Date().toISOString()}。`;
+  outLines.push(footerNote);
+
   fs.writeFileSync(outPath, outLines.join('\n'), 'utf-8');
-  console.log(`📝 输出: ${outPath}`);
-  console.log('✅ 完成。请对照 doc/research/transcripts/2024-verified.md 逐字复核。');
+  console.log(`📝 输出: ${outPath}（合并后共 ${writtenPages} 页）`);
+  console.log(`✅ 完成。请对照 doc/research/transcripts/${year}-vlm-draft.md 逐页复核。`);
 }
 
 main().catch((err) => {
