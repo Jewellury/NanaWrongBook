@@ -290,3 +290,27 @@ model Item {
   source   String?                 // 真题来源标注
   reviewed Boolean  @default(false) // LLM生成题须过审；已人工复核=true
 }
+
+// ============================================================
+// 第 1 阶段：采集壳（个性化数学诊断辅导系统 · 增量）
+// 全部新增表，不改 wrong-notebook 已有模型
+// ============================================================
+
+model Case {
+  id        String     @id @default(cuid())
+  studentId String     // → 上游 User.id（不改其表，与 mistakeId 同款处理）
+  createdAt DateTime   @default(now())
+  artifacts Artifact[]
+}
+
+model Artifact {
+  id       String @id @default(cuid())
+  caseId   String
+  case     Case   @relation(fields: [caseId], references: [id])
+  type     String // "image" | "audio" | "transcript" | "aiSummary"
+  content  String // URL（image/audio）或纯文本（transcript/aiSummary）
+  seq      Int    @default(0) // 同类型多 artifact 的顺序
+  createdAt DateTime @default(now())
+
+  @@index([caseId])
+}
