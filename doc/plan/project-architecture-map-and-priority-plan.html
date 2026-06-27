@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nana 项目全景架构图 + 下一步优先级盘点</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --border: #dee2e6;
+    --text: #1a1a2e;
+    --text-secondary: #495057;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-bg: #d1fae5;
+    --yellow: #d97706;
+    --yellow-bg: #fef3c7;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --gray: #6b7280;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .header { margin-bottom: 2.5rem; }
+  .header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .header .meta {
+    font-size: 0.875rem;
+    color: var(--gray);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .header .meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
+
+  /* Section */
+  .section { margin-bottom: 2.5rem; }
+  .section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+  .section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem;
+    color: var(--text);
+  }
+  .section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    color: var(--text-secondary);
+  }
+  .section p { margin-bottom: 0.75rem; color: var(--text-secondary); }
+  .section hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* Blockquote / Callout */
+  .callout {
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent);
+    padding: 0.75rem 1rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1rem;
+    font-size: 0.925rem;
+    color: var(--text-secondary);
+  }
+  .callout code { background: rgba(37,99,235,0.12); }
+  .callout-warn {
+    background: var(--yellow-bg);
+    border-left-color: var(--yellow);
+  }
+  .callout-green {
+    background: var(--green-bg);
+    border-left-color: var(--green);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    background: var(--card);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 0.65rem 0.75rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code, th code {
+    background: #f1f5f9;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  }
+  table .tag {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .tag-done { background: var(--green-bg); color: var(--green); }
+  .tag-todo { background: var(--yellow-bg); color: var(--yellow); }
+  .tag-open { background: #e5e7eb; color: var(--gray); }
+  .tag-gap { background: var(--red-bg); color: var(--red); }
+
+  /* Mermaid container */
+  .mermaid-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    overflow-x: auto;
+  }
+  .mermaid-wrap .mermaid { text-align: center; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+  /* Priority card */
+  .priority-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .priority-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .priority-card.recommended {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+  }
+  .priority-card .badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--accent-light);
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  .priority-card .badge.star { background: #fef3c7; color: #d97706; }
+  .priority-card h4 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .priority-card .period {
+    font-size: 0.85rem;
+    color: var(--gray);
+    margin-bottom: 0.5rem;
+  }
+  .priority-card ul { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--text-secondary); }
+  .priority-card ul li { margin-bottom: 0.3rem; }
+
+  /* What not to do */
+  .dont-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .dont-item {
+    background: var(--card);
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  .dont-item .title { font-weight: 600; color: var(--red); }
+  .dont-item .reason { color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem; }
+
+  /* Decision questions */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .decision-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .decision-card .qnum {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+  }
+  .decision-card h4 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .decision-card .options { font-size: 0.9rem; color: var(--text-secondary); }
+  .decision-card .options .opt { margin-bottom: 0.4rem; }
+  .decision-card .options code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 3px; }
+  .decision-card .impact { font-size: 0.85rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); color: var(--gray); }
+
+  /* Sequence diagram */
+  .sequence {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+  }
+  .sequence .step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .sequence .step.a { background: var(--accent-light); color: var(--accent); }
+  .sequence .step.b { background: var(--green-bg); color: var(--green); }
+  .sequence .step.c { background: var(--yellow-bg); color: var(--yellow); }
+  .sequence .arrow { color: var(--gray); font-weight: 700; }
+
+  /* Inline status dots */
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.3rem; }
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-gray { background: #d1d5db; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    body { padding: 1rem 0.5rem; }
+    .header h1 { font-size: 1.4rem; }
+    table { font-size: 0.8rem; }
+    td, th { padding: 0.4rem 0.5rem; }
+    .priority-grid, .decision-grid { grid-template-columns: 1fr; }
+    .dont-list { grid-template-columns: 1fr; }
+  }
+
+  /* Tag styles in tables */
+  .status-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .status-complete { background: var(--green-bg); color: var(--green); }
+  .status-incomplete { background: var(--yellow-bg); color: var(--yellow); }
+  .status-gap { background: var(--red-bg); color: var(--red); }
+
+  .file-path {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.85rem;
+    background: #f1f5f9;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>🏗️ Nana 项目全景架构图 + 下一步优先级盘点</h1>
+  <div class="meta">
+    <span>📄 性质: <code>/plan</code> 阶段产出</span>
+    <span>📅 日期: 2026-06-27</span>
+    <span>🔗 工单: <code>2026-06-27_project-architecture-map-workorder.md</code></span>
+  </div>
+</div>
+
+<!-- ======================== 1. Architecture Diagram ======================== -->
+<div class="section">
+  <h2>1. 当前全景架构图</h2>
+
+  <div class="legend">
+    <span class="legend-item"><span class="dot dot-green"></span> 已完成并验证</span>
+    <span class="legend-item"><span class="dot dot-yellow"></span> 方案已定待建</span>
+    <span class="legend-item"><span class="dot" style="background:#d1d5db;"></span> 开放项 / 后续阶段</span>
+    <span class="legend-item">🔗 外部服务</span>
+  </div>
+
+  <div class="mermaid-wrap">
+    <div class="mermaid">
+flowchart TB
+    subgraph Frontend["前端 · /nana 路由命名空间 （全部 🟡 待建）"]
+        direction TB
+        Entry["🟡 /nana · 场景入口\n两个行动按钮：拍题 / 口述"]
+        Capture["🟡 /nana/capture · 采集壳\n上半屏：题图固定可见\n下半屏：录音 / 逐字稿 / AI 提要 tab"]
+        Map["🟡 /nana/knowledge-map · 知识地图\n阶段 1：绿点 + 1-2 前沿"]
+        Session["🟡 /nana/session · 周末诊断\nitem_dispatch → answer_collect → probe_drill → paper_pack"]
+        PaperPack["🟡 /nana/paper-pack · 纸质包预览\n复用已有 /diagnosis/paper-pack 打印页"]
+    end
+
+    subgraph Components["前端组件 （全部 🟡 待建）"]
+        VoiceRecorder["🟡 VoiceRecorder\nAsrProvider 抽象\n波形可视化 + 实时转写流"]
+        CaseCard["🟡 CaseCard\n四层 artifact 容器"]
+        TransPanel["🟡 TranscriptionPanel\n逐字稿可编辑"]
+        MapCanvas["🟡 KnowledgeMapCanvas\nReact Flow / Cytoscape"]
+        SessionFlow["🟡 SessionFlow\n答题卡片 + 探针交互"]
+    end
+
+    subgraph API_Top["API 层"]
+        subgraph API_Diag["✅ /api/diagnosis/* （9 个路由，已实现）"]
+            D_Sessions["POST/GET sessions"]
+            D_SessionItems["POST session-items"]
+            D_SubmitAnswers["POST submit-answers"]
+            D_Probes["POST sessions/:id/probes"]
+            D_Errors["POST sessions/:id/errors"]
+            D_Map["GET map"]
+            D_Initial["POST initial"]
+            D_PaperPack["GET paper-pack"]
+        end
+        subgraph API_Nana["⬜ /api/nana/* （全部待建）"]
+            N_Cases["⬜ POST /api/nana/cases\n⬜ GET /api/nana/cases/:id"]
+            N_ASR["⬜ /api/nana/asr/stream\n豆包流式 ASR 中转"]
+            N_ASRFile["⬜ /api/nana/asr/file\n文件 ASR fallback"]
+            N_CaptureBridge["⬜ capture → diagnosis 桥接"]
+        end
+    end
+
+    subgraph Logic["诊断逻辑层 （全部 ✅ 已实现）"]
+        Graph["✅ lib/graph.ts\n内存邻接表\nprereqsOf / dependentsOf / frontier"]
+        KST["✅ lib/kst-lite.ts\n祖先/后代传播\n仅一层 dependents"]
+        BKT["✅ lib/bkt.ts\nP(L) 贝叶斯更新\nT=0.15 G=0.20 S=0.10"]
+        StateMachine["✅ lib/session-machine.ts\n8 步状态机\nidle → ... → closed"]
+        Orchestrator["✅ lib/diagnosis-orchestrator.ts\nboundary 选题 / BKT 作答\nKST 传播 / 纸质包节点选择"]
+    end
+
+    subgraph Data["数据层 （全部 ✅ 已实现）"]
+        direction LR
+        Models["Prisma 12 张新表\nKnowledgeNode / KnowledgeEdge\nMainline / NodeMainline / MainlineBridge\nItem / StudentNodeState / DiagnosisSession\nProbeRecord / ErrorRecord\nMisconception / MistakeNode"]
+        Seeds["种子数据\n48 节点 / 36 边 / 18 桥\n101 题 batch1\n20+ 误解四联体 （未灌）"]
+    end
+
+    subgraph ExtServices["🔗 外部 AI 服务"]
+        DoubaoASR["🔗 豆包流式 ASR\n热词表 300+ 数学术语"]
+        DoubaoVLM["🔗 豆包 Seed2.0 VLM\n真题逐页识图"]
+        DeepSeek["🔗 DeepSeek-V3\n对话 / 归因 （当前未启用）"]
+    end
+
+    subgraph Others["其它已实现"]
+        VLMScript["✅ scripts/vlm-transcribe.ts\n真题转写用，非产品识图链"]
+        ExistingPaper["✅ src/app/diagnosis/paper-pack/\n打印预览页 242 行"]
+        PhotoGuide["✅ doc/guide/photo-guide-*.md\n拍照指引 + HTML 打印版"]
+    end
+
+    subgraph OpenItems["⬜ 开放项 / 后续阶段"]
+        direction LR
+        O1["⬜ Newman 归因 / AI 追问"]
+        O2["⬜ FSRS 复习排程"]
+        O3["⬜ OATutor 掌握度对比"]
+        O4["⬜ block editor 选型\nAFFiNE/BlockSuite 参考"]
+        O5["⬜ step/block 级地图展开\nSiYuan 参考"]
+        O6["⬜ 本地 ASR\nwhisper.cpp / Vosk"]
+    end
+
+    Entry --> Capture
+    Entry --> Map
+    Entry --> Session
+    Session --> PaperPack
+    PaperPack --> ExistingPaper
+
+    Capture --> VoiceRecorder
+    Capture --> CaseCard
+    Capture --> TransPanel
+    Map --> MapCanvas
+    Session --> SessionFlow
+
+    VoiceRecorder --> N_ASR
+    VoiceRecorder --> N_ASRFile
+    CaseCard --> N_Cases
+    Capture --> N_CaptureBridge
+
+    N_ASR --> DoubaoASR
+    N_ASRFile --> DoubaoASR
+
+    Session --> D_Sessions
+    Session --> D_SessionItems
+    SessionFlow --> D_SubmitAnswers
+    SessionFlow --> D_Probes
+    SessionFlow --> D_Errors
+    Map --> D_Map
+    PaperPack --> D_PaperPack
+    Entry --> D_Sessions
+
+    D_SessionItems --> Orchestrator
+    D_SubmitAnswers --> BKT
+    D_SubmitAnswers --> KST
+    D_Map --> Graph
+    D_Map --> BKT
+    Orchestrator --> Graph
+    Orchestrator --> BKT
+    Orchestrator --> KST
+
+    StateMachine --> D_Sessions
+
+    BKT --> Models
+    KST --> Models
+    Graph --> Models
+    Orchestrator --> Models
+    StateMachine --> Models
+
+    DoubaoVLM --> VLMScript
+    DeepSeek -.-> O1
+
+    O2 -.-> Models
+    O3 -.-> BKT
+    O4 -.-> Capture
+    O5 -.-> Map
+    O6 -.-> VoiceRecorder
+    </div>
+  </div>
+</div>
+
+<!-- ======================== 2. 已完成 / 待完成矩阵 ======================== -->
+<div class="section">
+  <h2>2. 已完成 / 待完成矩阵</h2>
+
+  <!-- 2.1 数据层 -->
+  <h3>2.1 数据层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>12 张 Prisma 新表（M1 8 张 + M2 3 张 + M3a Item 表），全部 CREATE TABLE</td>
+        <td>—</td>
+        <td>铁律 3：不改上游 model</td>
+      </tr>
+      <tr>
+        <td>种子数据：48 节点 / 36 边 / 18 桥 / 101 题 batch1</td>
+        <td>长尾配题（M1 B/C 层、M2a 其余、M3–M8、BG001-099）</td>
+        <td>教研持续线，不阻塞前端</td>
+      </tr>
+      <tr>
+        <td>Misconception 表已建</td>
+        <td>20+ 条四联体种子未灌</td>
+        <td>小活，可并入归因轮</td>
+      </tr>
+      <tr>
+        <td>StudentNodeState 支持 masteryProb / status / slipFlag</td>
+        <td>slipFlag 仅单 boolean，复诊需 slipCount</td>
+        <td>设计债 TD-1</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2.2 诊断逻辑层 -->
+  <h3>2.2 诊断逻辑层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td>内存图引擎 <code>lib/graph.ts</code>：prereqsOf / allPrereqsOf / dependentsOf / mainlineSubgraph / frontier / 环检测</td><td>—</td><td>&lt;400 节点，毫秒级</td></tr>
+      <tr><td>KST-lite：祖先传播 stable / 后代传播 gap</td><td>递归传播深层 dependents</td><td>已知限制：只传一层，M4 补</td></tr>
+      <tr><td>BKT：P(L) 贝叶斯更新，T=0.15, G=0.20, S=0.10</td><td>—</td><td>专家参数，首版不学习</td></tr>
+      <tr><td>8 步状态机：idle → boundary_select → item_dispatch → answer_collect → bkt_update → kst_propagate → gap_detect → paper_pack → closed</td><td>—</td><td>probe_drill 可选跳转</td></tr>
+      <tr><td>诊断编排器：boundary 选题 / BKT 作答 / KST 传播 / 纸质包节点选择 / 练习题选择</td><td>—</td><td>24 单元测试</td></tr>
+      <tr><td>Newman 归因：五阶段 Prompt 设计已完成</td><td>未启用 LLM 调用</td><td>决策 D-8：当前不调 LLM</td></tr>
+      <tr><td>探针下探：二分定位病根逻辑设计完成</td><td>未实现自动化</td><td>M4 深化</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.3 API 层 -->
+  <h3>2.3 API 层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /api/diagnosis/sessions</code></td><td>—</td><td>创建 session</td></tr>
+      <tr><td><code>GET /api/diagnosis/sessions/[id]</code></td><td>—</td><td>查询 session 详情</td></tr>
+      <tr><td><code>POST /api/diagnosis/sessions/[id]/probes</code></td><td>—</td><td>探针下探</td></tr>
+      <tr><td><code>POST /api/diagnosis/sessions/[id]/errors</code></td><td>—</td><td>记录答题错误</td></tr>
+      <tr><td><code>GET /api/diagnosis/map</code></td><td>—</td><td>返回 StudentNodeState 地图</td></tr>
+      <tr><td><code>POST /api/diagnosis/initial</code></td><td>—</td><td>一步式初诊（设计债 TD-2：后续废弃）</td></tr>
+      <tr><td><code>POST /api/diagnosis/session-items</code></td><td>—</td><td>编排器分发题目</td></tr>
+      <tr><td><code>POST /api/diagnosis/submit-answers</code></td><td>—</td><td>提交答案 → BKT+KST → StudentNodeState</td></tr>
+      <tr><td><code>GET /api/diagnosis/paper-pack</code></td><td>—</td><td>生成纸质包</td></tr>
+      <tr style="background: var(--red-bg);"><td>—</td><td><code>POST /api/nana/cases</code></td><td><strong>核心缺口</strong>：采集壳需要存 case</td></tr>
+      <tr style="background: var(--red-bg);"><td>—</td><td><code>GET /api/nana/cases/:id</code></td><td><strong>核心缺口</strong>：采集壳需要读 case</td></tr>
+      <tr style="background: var(--red-bg);"><td>—</td><td><code>/api/nana/asr/stream</code></td><td><strong>核心缺口</strong>：豆包流式 ASR 中转</td></tr>
+      <tr><td>—</td><td><code>/api/nana/asr/file</code></td><td>文件 ASR fallback</td></tr>
+      <tr><td>—</td><td>capture → diagnosis 桥接</td><td>case 完成后如何触发生成 session</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.4 前端页面层 -->
+  <h3>2.4 前端页面层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td>—</td><td><code>/nana</code> 场景入口首页</td><td>切片 1</td></tr>
+      <tr><td>—</td><td><code>/nana/capture</code> 采集壳</td><td>切片 1，产品主验证点</td></tr>
+      <tr><td>—</td><td><code>/nana/knowledge-map</code> 知识地图</td><td>切片 2</td></tr>
+      <tr><td>—</td><td><code>/nana/session</code> 周末诊断</td><td>切片 3</td></tr>
+      <tr><td>—</td><td><code>/nana/paper-pack</code> 纸质包预览</td><td>切片 3，可复用已有打印页</td></tr>
+      <tr><td><code>src/app/diagnosis/paper-pack/page.tsx</code>（242 行）</td><td>—</td><td>已有雏形，切片 3 包一层到 /nana 下</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.5 采集 / ASR 层 -->
+  <h3>2.5 采集 / ASR 层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td>—</td><td>VoiceRecorder 组件（波形 + 实时转写）</td><td>切片 1 壳可先用 mock</td></tr>
+      <tr><td>—</td><td>AsrProvider 抽象接口定义</td><td><strong>需先定契约再开工</strong></td></tr>
+      <tr><td>—</td><td>豆包流式 ASR 中转后端</td><td>切片 4 接通</td></tr>
+      <tr><td>—</td><td>文件 ASR fallback 链路</td><td>切片 4 接通</td></tr>
+      <tr><td>whisper.cpp / Vosk 调研完成</td><td>—</td><td>开放项，非当前主线</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.6 题库 / 内容层 -->
+  <h3>2.6 题库 / 内容层</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td>batch1 101 题（34 节点，确定性 ID）</td><td>M1 B/C 层、M2a 其余、M3–M8、BG001-099</td><td>持续教研线</td></tr>
+      <tr><td>八条主线节点设计完成</td><td>其余主线节点内容生产</td><td>LLM 起草 + 人工过审</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.7 真题 / VLM 管线 -->
+  <h3>2.7 真题 / VLM 管线</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td><code>scripts/vlm-transcribe.ts</code>（385 行）</td><td>—</td><td>提示词 A 就绪</td></tr>
+      <tr><td>2024 真题完整版人工核实</td><td>—</td><td>24 页全卷逐题转写</td></tr>
+      <tr><td>2025 / 2026 真题 VLM draft</td><td>我方核对数字/符号/公式 → 入库</td><td>逐卷核对</td></tr>
+      <tr><td>—</td><td>产品内 VLM 识图链路</td><td>不等于真题转写脚本；切片 4 接通</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2.8 运营 / 人肉回路 -->
+  <h3>2.8 运营 / 人肉回路</h3>
+  <table>
+    <thead><tr><th>已完成</th><th>待完成</th><th>风险 / 备注</th></tr></thead>
+    <tbody>
+      <tr><td>拍照指引（双版 + HTML 打印版）</td><td>—</td><td>外甥女极简版 + 舅舅说明版</td></tr>
+      <tr><td>外甥女已启动错题拍照</td><td>素材用于诊断链路验证</td><td>E 线，持续进行</td></tr>
+      <tr><td>运营反馈闭环 backlog</td><td>实施</td><td>前置：真实使用数据积累</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ======================== 3. 前后端接口缺口清单 ======================== -->
+<div class="section">
+  <h2>3. 前后端接口缺口清单</h2>
+  <div class="callout">只盘点 API 契约缺口，不涉及 Prisma schema 修改或数据库迁移。</div>
+
+  <h3>3.1 采集壳核心缺口：case API</h3>
+  <table>
+    <thead><tr><th>接口</th><th style="width:80px;">状态</th><th>缺口说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /api/nana/cases</code></td><td><span class="status-badge status-gap">缺失</span></td><td>创建 case（含四层 artifact：题图 URL / 录音 URL / 逐字稿文本 / AI 提要文本）。后端尚无此路由。</td></tr>
+      <tr><td><code>GET /api/nana/cases/:id</code></td><td><span class="status-badge status-gap">缺失</span></td><td>读取单条 case 及其 artifact 列表。</td></tr>
+      <tr><td><code>GET /api/nana/cases</code></td><td><span class="status-badge status-incomplete">暂不建</span></td><td>case 列表（学生名下，含分页/筛选）。切片 1 可暂不建，等 case 累积后再做列表页。</td></tr>
+    </tbody>
+  </table>
+  <div class="callout callout-warn"><strong>建议</strong>：切片 1 前端先用 mock 数据跑通 UI 流程，case API 在切片 1 期间并行推进后端实现，或等切片 4 一并接通。</div>
+
+  <h3>3.2 ASR 缺口</h3>
+  <table>
+    <thead><tr><th>接口</th><th style="width:80px;">状态</th><th>缺口说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>/api/nana/asr/stream</code></td><td><span class="status-badge status-gap">缺失</span></td><td>WebSocket 或 SSE 流式中转。前端录音 → 后端转发豆包 ASR → 回推转写文字流到前端。这是采集壳"实时转写"体验的前提。</td></tr>
+      <tr><td><code>/api/nana/asr/file</code></td><td><span class="status-badge status-gap">缺失</span></td><td>HTTP 文件上传 → 后端调豆包文件 ASR → 返回完整逐字稿。作为流式失败时的 fallback。</td></tr>
+    </tbody>
+  </table>
+  <div class="callout callout-warn"><strong>建议</strong>：VoiceRecorder 组件的 AsrProvider 抽象应预先定义两个方法签名（<code>streamTranscribe</code> / <code>fileTranscribe</code>），切片 1 先用 mock 实现，ASR 后端在切片 4 接通。不要在切片 1 阻塞于 ASR 后端。</div>
+
+  <h3>3.3 capture → diagnosis 桥接缺口</h3>
+  <p>当前状态：采集壳和诊断流程是两条独立链路，尚无连接点。</p>
+  <p>采集壳产出一条 case（题图 + 原音 + 逐字稿 + AI 提要）→ 如何进入诊断流程？三种路径（待选择）：</p>
+  <table>
+    <thead><tr><th>路径</th><th>说明</th><th>复杂度</th></tr></thead>
+    <tbody>
+      <tr><td>A：case → session</td><td>从 case 创建诊断 session，把 case 的节点标注传给 session 作为边界提示</td><td>中</td></tr>
+      <tr><td>B：case 只做归档</td><td>case 存为独立实体，session 仍从零选题（不读 case 数据）</td><td>低</td></tr>
+      <tr><td>C：人工桥接</td><td>用户手动触发"开始诊断"，case 数据作为上下文传入 session 创建</td><td>中</td></tr>
+    </tbody>
+  </table>
+  <div class="callout callout-warn"><strong>建议</strong>：切片 1 期间先不做桥接设计。采集壳 MVP 只需要存 case、读 case。case 和 session 的连接在切片 3（Session UI）时再定契约。</div>
+
+  <h3>3.4 知识地图接口评估</h3>
+  <table>
+    <thead><tr><th>接口</th><th style="width:100px;">是否够用</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/diagnosis/map</code></td><td><span class="status-badge status-complete">✅ 够用</span></td><td>返回 StudentNodeState 列表（含 masteryProb / status），前端阶段 1 只需要据此渲染绿点 + 前沿。当前接口字段已覆盖。</td></tr>
+    </tbody>
+  </table>
+  <p>不需要新 API。如后续需要节点间边数据和主线分组，可扩展现有 map 接口的返回字段，不新建路由。</p>
+
+  <h3>3.5 Session 流程接口评估</h3>
+  <table>
+    <thead><tr><th>步骤</th><th>前端 UI</th><th>后端 API</th><th style="width:100px;">是否够用</th></tr></thead>
+    <tbody>
+      <tr><td>创建 session</td><td>SessionFlow 入口</td><td><code>POST /api/diagnosis/sessions</code></td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td>查看题目</td><td>答题卡片列表</td><td><code>POST /api/diagnosis/session-items</code></td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td>提交答案</td><td>答题卡片 → 提交按钮</td><td><code>POST /api/diagnosis/submit-answers</code></td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td>探针下探</td><td>探针交互组件</td><td><code>POST /api/diagnosis/sessions/[id]/probes</code></td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td>生成纸质包</td><td>纸质包预览</td><td><code>GET /api/diagnosis/paper-pack</code></td><td><span class="status-badge status-complete">✅</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout callout-green"><strong>结论</strong>：Session UI 的后端 API 已 100% 就绪，这是它相对于采集壳的最大优势——前端开建即能接通真实数据。</div>
+
+  <h3>3.6 纸质包接口评估</h3>
+  <table>
+    <thead><tr><th>接口 / 页面</th><th style="width:100px;">是否可复用</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/diagnosis/paper-pack</code></td><td><span class="status-badge status-complete">✅</span></td><td>已有 API，返回 frontier + gap 选题</td></tr>
+      <tr><td><code>src/app/diagnosis/paper-pack/page.tsx</code></td><td><span class="status-badge status-complete">✅</span></td><td>已有 242 行打印预览页，含封面 + 练习区 + 答案分页 + @media print</td></tr>
+      <tr><td><code>/nana/paper-pack</code></td><td><span class="status-badge status-incomplete">🟡 待建</span></td><td>在已有雏形上包一层，统一 <code>/nana</code> 路由入口</td></tr>
+    </tbody>
+  </table>
+  <p>不需要新 API。<code>/nana/paper-pack</code> 页面复用已有 <code>paper-pack</code> API 和打印逻辑。</p>
+</div>
+
+<!-- ======================== 4. 下一步优先级建议 ======================== -->
+<div class="section">
+  <h2>4. 下一步优先级建议</h2>
+
+  <div class="callout"><strong>推荐</strong>：先花 1-2 天定稿 <code>case API</code> 和 <code>AsrProvider</code> 的接口契约（短文），然后切到切片 1 开工——场景入口 + 采集壳轻量 UI。</div>
+
+  <div class="priority-grid">
+    <div class="priority-card recommended">
+      <div class="badge star">⭐ 推荐先做</div>
+      <h4>方案 A：架构图 + API 契约定稿</h4>
+      <div class="period">周期：1-2 天</div>
+      <ul>
+        <li>确认本条架构图文档</li>
+        <li>产出 <code>asr-and-case-api-boundary-note.md</code>（AsrProvider 接口 + case/artifact 字段草图）</li>
+        <li>更新 <code>DECISIONS.md</code> 开放项</li>
+      </ul>
+    </div>
+
+    <div class="priority-card">
+      <div class="badge">方案 B</div>
+      <h4>切片 1：场景入口 + 采集壳 UI</h4>
+      <div class="period">周期：1-2 周</div>
+      <ul>
+        <li>建 <code>/nana</code> 首页 + <code>/nana/capture</code> 采集页</li>
+        <li>VoiceRecorder / CaseCard / TransPanel 组件壳</li>
+        <li>先用 mock 跑通 UI，不接真实 ASR/VLM</li>
+      </ul>
+    </div>
+
+    <div class="priority-card">
+      <div class="badge">方案 C</div>
+      <h4>切片 3：Session UI</h4>
+      <div class="period">周期：2-3 周</div>
+      <ul>
+        <li>串 M3c 全部 API：答题卡片 + 提交按钮 + 纸质包预览</li>
+        <li>后端 100% 就绪，风险最低</li>
+        <li>缺少采集壳前门，入口体验割裂</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sequence">
+    <span class="step a">方案 A</span>
+    <span class="arrow">→</span>
+    <span class="step b">方案 B</span>
+    <span class="arrow">→</span>
+    <span class="step c">方案 C</span>
+    <span style="color:var(--gray);margin-left:0.5rem;font-size:0.85rem;">定契约 → 建采集壳 → 建 Session UI</span>
+  </div>
+
+  <div class="callout callout-warn"><strong>务实折中</strong>：如果 1-2 天也觉得奢侈，方案 A 可以压缩到和方案 B 的头 1 天重叠——在写 VoiceRecorder 组件之前先定 AsrProvider 接口，在写 CaseCard 之前先定 case 字段。但需要明确：若跳过方案 A 直接开工，execute-agent 必须承认"接口契约是边做边定的"这个风险。</div>
+</div>
+
+<!-- ======================== 5. 当前不建议做的事 ======================== -->
+<div class="section">
+  <h2>5. 当前不建议做的事</h2>
+
+  <div class="dont-list">
+    <div class="dont-item">
+      <div class="title">🚫 不引入 block editor</div>
+      <div class="reason">切片 1 是轻量采集壳，用普通 React 组件 + 固定布局即可。block editor（AFFiNE/BlockSuite/SiYuan）会让 MVP 膨胀到 6-10 周。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不接入 AFFiNE / BlockSuite / SiYuan 运行时依赖</div>
+      <div class="reason">它们只作为结构参考写入 DECISIONS.md 开放项，不是当前 npm install 对象。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不把 Vosk / whisper.cpp 替代豆包流式 ASR 主线</div>
+      <div class="reason">TECH_PLAN_v2 §5 已定豆包为首选 ASR。本地 ASR 是降级/离线开放项，等出现隐私或离线刚需再评估。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不做 FSRS 复习排程实现</div>
+      <div class="reason">复习系统不在当前 MVP 切片内。只需在 case/session 契约中不阻塞未来的 reviewSchedule 字段。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不做 OATutor 集成</div>
+      <div class="reason">BKT 已实现（lib/bkt.ts），OATutor 的 BKT 变体是未来算法迭代参考，非当前瓶颈。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不做 Newman 归因（除非用户改优先级）</div>
+      <div class="reason">决策 D-8：当前不调 LLM。Newman 追问依赖 LLM 调用，等 M4 或用户主动提升优先级。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不改上游目录结构或文件</div>
+      <div class="reason">铁律 2 + 铁律 3。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 切片 1 不修改 Prisma schema</div>
+      <div class="reason">采集壳 UI 可先用 mock case 跑通。后续 case 持久化如需新增表或 artifact 表，必须单独出计划并按铁律确认。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不按调研报告 6-10 周 Gantt 图排期</div>
+      <div class="reason">那个时间线假设了自建编辑器 + 全链路语音 + 教育分析全家桶，与当前切片节奏冲突。</div>
+    </div>
+    <div class="dont-item">
+      <div class="title">🚫 不把学生端做成 PKM 或知识库后台</div>
+      <div class="reason">SiYuan 的 SQL embed / 自定义属性 / block zoom-in 能力只适合老师端或后台，学生端保持"场景入口 + 低压感"的简洁路线。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== 6. 需要用户拍板的问题 ======================== -->
+<div class="section">
+  <h2>6. 需要用户拍板的问题</h2>
+
+  <div class="decision-grid">
+    <div class="decision-card">
+      <div class="qnum">1</div>
+      <h4>下一步先做哪个？</h4>
+      <div class="options">
+        <div class="opt"><strong>A</strong>：架构图 + API 契约定稿（1-2 天）⭐ 推荐</div>
+        <div class="opt"><strong>B</strong>：直接开建切片 1 采集壳 UI（1-2 周）</div>
+        <div class="opt"><strong>C</strong>：先建 Session UI（2-3 周）</div>
+      </div>
+      <div class="impact">决定下一个 <code>/execute</code> 轮次的任务范围。推荐 A → B → C。</div>
+    </div>
+
+    <div class="decision-card">
+      <div class="qnum">2</div>
+      <h4>采集壳首期是否必须接真实 ASR？</h4>
+      <div class="options">
+        <div class="opt"><strong>是</strong>：切片 1 就接豆包流式 ASR</div>
+        <div class="opt"><strong>否</strong>：切片 1 用 mock 转写先跑通 UI，切片 4 再接真实 ASR ⭐ 推荐</div>
+      </div>
+      <div class="impact">如果选"是"，切片 1 范围扩大到含 ASR 后端开发，很可能从 1-2 周变 3-4 周。</div>
+    </div>
+
+    <div class="decision-card">
+      <div class="qnum">3</div>
+      <h4>是否把 Session UI 放到采集壳之前？</h4>
+      <div class="options">
+        <div class="opt"><strong>是</strong>：先做切片 3</div>
+        <div class="opt"><strong>否</strong>：保持切片 1 → 2 → 3 顺序 ⭐ 推荐</div>
+      </div>
+      <div class="impact">Session 后端全就绪、技术风险低。但它缺少采集壳做前门，入口体验割裂。</div>
+    </div>
+
+    <div class="decision-card">
+      <div class="qnum">4</div>
+      <h4>是否允许新增接口短文档？</h4>
+      <div class="options">
+        <div class="opt"><strong>是</strong>：新增 <code>asr-and-case-api-boundary-note.md</code> ⭐ 推荐</div>
+        <div class="opt"><strong>否</strong>：把接口定义直接写进前端方案附录</div>
+      </div>
+      <div class="impact">短文不超过 100 行，独立于前端方案，方便后续 execute-agent 直接消费。</div>
+    </div>
+
+    <div class="decision-card">
+      <div class="qnum">5</div>
+      <h4>case 存什么？</h4>
+      <div class="options">
+        <div class="opt"><strong>选项 1</strong>：挂接已有 MistakeNode + 独立 artifact 表</div>
+        <div class="opt"><strong>选项 2</strong>：纯 JSON 字段存在新表</div>
+        <div class="opt"><strong>选项 3</strong>：先用 mock，等采集后端轮再定 schema ⭐ 推荐</div>
+      </div>
+      <div class="impact">切片 1 无需建表，case 用内存 mock，等切片 4 再定持久化方式。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== 附录 ======================== -->
+<div class="section">
+  <h2>附录：关键文件路径速查</h2>
+
+  <table>
+    <thead><tr><th>文件</th><th>用途</th><th style="width:80px;">状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>lib/graph.ts</code></td><td>内存图引擎（邻接表，prereqsOf / dependentsOf / frontier）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>lib/kst-lite.ts</code></td><td>KST-lite 传播（祖先 stable / 后代 gap，仅一层）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>lib/bkt.ts</code></td><td>BKT 贝叶斯更新（T=0.15 G=0.20 S=0.10）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>lib/session-machine.ts</code></td><td>8 步状态机（idle → ... → closed）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>lib/diagnosis-orchestrator.ts</code></td><td>诊断编排器（选题 / BKT 作答 / KST 传播 / 纸质包节点）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>scripts/vlm-transcribe.ts</code></td><td>豆包 Seed2.0 逐页识图（真题转写用）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>src/app/api/diagnosis/*</code></td><td>9 个诊断 API 路由</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>src/app/diagnosis/paper-pack/page.tsx</code></td><td>纸质包打印预览（242 行）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>src/app/nana/</code></td><td>Nana 前端路由命名空间</td><td><span class="status-badge status-incomplete">⬜</span></td></tr>
+      <tr><td><code>src/components/nana/</code></td><td>Nana 前端组件目录</td><td><span class="status-badge status-incomplete">⬜</span></td></tr>
+      <tr><td><code>src/lib/nana/</code></td><td>Nana 前端工具目录</td><td><span class="status-badge status-incomplete">⬜</span></td></tr>
+      <tr><td><code>doc/plan/frontend-architecture-plan.md</code></td><td>前端架构方案（570 行）</td><td><span class="status-badge status-complete">✅</span></td></tr>
+      <tr><td><code>doc/DECISIONS.md</code></td><td>技术决策台账</td><td><span class="status-badge status-incomplete">待增开放项</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    maxTextSize: 99999,
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    themeVariables: {
+      primaryColor: '#e8f0fe',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#6b7280',
+      secondaryColor: '#d1fae5',
+      tertiaryColor: '#fef3c7',
+      fontSize: '13px'
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -17,6 +17,22 @@
 
 这样将来上游更新时，我们的文件不会参与冲突——因为物理上完全隔离。
 
+## 1.5 原则引用（P1-P5）
+
+本方案多处引用 P1-P5 五条原则，统一定义与出处如下：
+
+| 原则 | 内容 | 出处 |
+|------|------|------|
+| P1 | 原音是真相/转写是索引 | `doc/spec/capture-layer-design-backlog.md`（+本方案在 5.2 节扩展为"题图固定可见"） |
+| P2 | 结构先于模型 | ⚠️ 本方案内部约定（暂无 canonical 定义，待回填） |
+| P3 | 多问少断 | ⚠️ 本方案内部约定（暂无 canonical 定义，待回填） |
+| P4 | 前台不评判，术语清零，只报增量不报缺陷 | `doc/reference/OPS_handbook.md` §4 前台措辞铁律 + §3 日常运营 |
+| P5 | 周中无手机、周末采集 | `doc/spec/capture-layer-design-backlog.md` |
+
+> **待办**：P2/P3 尚无 canonical 定义。如后续在 `doc/DECISIONS.md` 或 `doc/spec/` 中确立，请回填本表出处列，并删除"本方案内部约定"标注。
+>
+> 建议在 `doc/DECISIONS.md` 设计债表开 TD-3 条目跟踪本回填事项，与 TD-1、TD-2 处理方式一致（本计划文档仅作建议，不直接修改 DECISIONS.md）。
+
 ## 2. 任务 0 勘察结果：上游现有前端清单
 
 ### 2.1 路由结构（src/app/）
@@ -329,7 +345,7 @@ src/lib/
 
 ### 5.2 采集「错题卡片盒」（`/nana/capture`）
 
-**守则**：P1（图为真相源，原音是真相/转写是索引）、P4（不评判）
+**守则**：P1（见 §1.5）、P4（不评判）
 
 **定位**：一条 case 四层结构——题图 / 原音 / 逐字稿 / AI 提要。
 
@@ -345,7 +361,7 @@ src/lib/
 
 ### 5.3 陪伴式录音（`/nana/capture` 内组件）
 
-**守则**：P1（原音是真相源，题图固定可见）
+**守则**：P1（见 §1.5）
 
 **定位**：这是我们的核心超越点——Get 笔记调研指出，竞品都做不到"录音时题图始终在眼前"。
 
@@ -382,11 +398,19 @@ src/lib/
 
 **定位**：串 M3c 已有的 session-items → submit-answers → paper-pack 流程。
 
-**状态机对应**（已有 `lib/session-machine.ts`）：
-1. `session_items` → 展示本次 session 的题目列表
-2. `answer_submission` → 逐题作答 UI（答题卡片 + 提交按钮）
-3. `probe_drill` → 可选：探针下探交互（追问确认理解）
-4. `paper_pack` → 生成/预览纸质包
+**状态机对应**（引用 `doc/DECISIONS.md` D-4 权威定义）：
+canonical 状态序列为
+`idle → boundary_select → item_dispatch → answer_collect → bkt_update → kst_propagate → gap_detect → paper_pack → closed`，
+其中 `probe_drill` 为可选跳转步骤。
+
+Session UI 对应的状态流转：
+
+> 以下仅列出 UI 层显式对应的状态；`boundary_select`/`bkt_update`/`kst_propagate`/`gap_detect` 为后端内嵌步骤，不对应独立 UI。
+
+1. `item_dispatch` → 展示本次 session 的题目列表（对应 `POST /api/diagnosis/session-items`）
+2. `answer_collect` → 逐题作答 UI（答题卡片 + 提交按钮，对应 `POST /api/diagnosis/submit-answers`，触发 BKT+KST 更新）
+3. `probe_drill`（可选）→ 探针下探交互（追问确认理解，对应 `POST /api/diagnosis/sessions/[id]/probes`）
+4. `paper_pack` → 生成/预览纸质包（对应 `POST /api/diagnosis/paper-pack`）
 
 **界面要素**：
 - 答题卡片：题图 + 作答区（选择/填空/解答），一行一个问题
@@ -394,13 +418,14 @@ src/lib/
 - 进度条：显示当前题号/总题数
 - Session 完成后：自动跳转纸质包预览
 
-**对应后端 API**：
-- `POST /api/diagnosis/sessions`（已有）
-- `GET /api/diagnosis/sessions/[id]`（已有）
-- `POST /api/diagnosis/sessions/[id]/probes`（已有）
-- `POST /api/diagnosis/sessions/[id]/errors`（已有）
-- `POST /api/diagnosis/session-items`（已有）
-- `POST /api/diagnosis/paper-pack`（已有）
+**对应后端 API**（按 Session 流程顺序）：
+- `POST /api/diagnosis/sessions`（已有）— 创建 session
+- `GET /api/diagnosis/sessions/[id]`（已有）— 查询 session 详情
+- `POST /api/diagnosis/session-items`（已有）— `item_dispatch`：编排器从题库分发题目
+- `POST /api/diagnosis/submit-answers`（已有）— `answer_collect`：提交答案，BKT+KST 分线更新并写入 `StudentNodeState`（M3c 核心持久化入口）
+- `POST /api/diagnosis/sessions/[id]/probes`（已有）— `probe_drill`（可选）：探针下探
+- `POST /api/diagnosis/sessions/[id]/errors`（已有）— 记录答题错误
+- `POST /api/diagnosis/paper-pack`（已有）— `paper_pack`：生成纸质包
 
 ### 5.6 纸质包预览（`/nana/paper-pack`）
 
@@ -457,9 +482,16 @@ src/lib/
 ### 切片 3（2-3 周）：周末 Session 流程 UI
 
 **为什么第三个建**：
-- 后端 API 已就绪（状态机 + 所有 session API）
+- 后端 API 已 100% 就绪（状态机 + 所有 session API，含 `submit-answers`），技术上**可独立先建**
+- session 中的题目由编排器（`lib/diagnosis-orchestrator.ts`）从题库分发，**不依赖采集流程**
 - 能串起完整的"答题→提交→纸质包"流程
-- 依赖切片 1 的采集壳（session 中的题目来自采集）
+
+> **关于切片排序的说明（产品判断，非技术依赖）**：
+> 当前排序"采集壳优先、Session UI 第三"是**产品取舍**而非技术依赖——
+> - 采集壳优先：验证"题图固定可见的陪伴式录音"这个产品超越点
+> - Session UI 优先：后端全就绪，可立即跑通"答题→提交→纸质包"的可用闭环
+>
+> 两者技术上互不依赖，先建哪个取决于本轮想验证什么。
 
 **建什么**：
 - `/nana/session` 列表页 + `/nana/session/[id]` 流程页
@@ -551,11 +583,12 @@ export default async function NanaLayout({
 
 ### 9.3 依赖增量预估
 
-| 切片 | 可能新增的依赖 | 类型 |
-|------|---------------|------|
-| 切片 1 | `reactflow` 或 `cytoscape` | 可视化 |
-| 切片 2 | 无新依赖（复用上游组件） | - |
-| 切片 3 | `wavesurfer.js` 或 `recordrtc` | 录音波形 |
+| 切片 | 切片内容 | 可能新增的依赖 | 类型 |
+|------|---------|---------------|------|
+| 切片 1 | 采集壳（拍题 + 陪伴式录音） | `wavesurfer.js` 或 `recordrtc` | 录音波形 |
+| 切片 2 | 知识地图可视化 | `reactflow` 或 `cytoscape` | 可视化 |
+| 切片 3 | Session UI（答题 / 纸质包流程） | 无新依赖（复用上游组件） | - |
+| 切片 4 / 切片 5 | 采集后端接通 / 知识地图完整版+动画 | 待评估（含 ASR/VLM 后端管线） | - |
 
 所有新增依赖在对应切片开工前单独评估，写入 `doc/DECISIONS.md`。
 

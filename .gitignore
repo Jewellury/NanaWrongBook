@@ -70,3 +70,9 @@ upload_test_output*.txt
 # data
 /data/
 .next-prebuilt/
+
+# VLM vision samples (handheld photos, not committed)
+/doc/research/vision-samples/handheld/
+
+# Personal study materials (AI engineer exam, isolated from project)
+/study/

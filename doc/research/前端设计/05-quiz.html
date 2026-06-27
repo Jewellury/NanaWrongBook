@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光点 · 界面4 周末小测</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont/style.css">
+<style>
+  :root{
+    --bg:#FBF7F0; --card:#FFFDF9;
+    --primary:#7FA886; --primary-deep:#5E8868; --btn:#5E8868;
+    --glow:#6BBF8A; --amber:#E5B570; --invite:#93B8D6;
+    --text:#403A33; --text-2:#8C857B; --text-3:#B4ADA3;
+    --line:#EFE8DD;
+    --shadow:0 8px 24px rgba(120,110,95,.10);
+    --r-m:18px; --r-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --hand:"LXGW WenKai","PingFang SC",var(--sans);
+    --serif:"Times New Roman",Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#F2ECE1;color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .stage{max-width:1000px;margin:0 auto;padding:40px 20px 70px;}
+  .stage-head{text-align:center;margin-bottom:32px;}
+  .stage-head .st{display:inline-block;font-size:12px;letter-spacing:.06em;color:var(--primary-deep);background:#EAF2EC;padding:5px 13px;border-radius:999px;}
+  .stage-head h1{font-family:var(--hand);font-size:30px;font-weight:400;margin:14px 0 6px;}
+  .stage-head p{margin:0;color:var(--text-2);font-size:14.5px;max-width:50ch;margin-inline:auto;}
+
+  .frames{display:flex;flex-wrap:wrap;gap:44px;justify-content:center;align-items:flex-start;}
+  .unit{display:flex;flex-direction:column;align-items:center;gap:15px;}
+  .ulabel{font-size:14px;color:var(--text-2);}
+  .ulabel b{color:var(--primary-deep);font-weight:600;}
+
+  .phone{width:390px;border-radius:46px;background:#2E2A25;padding:11px;box-shadow:0 34px 80px rgba(90,80,66,.26);}
+  .screen{width:368px;height:798px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#15130F;border-radius:16px;z-index:5;}
+  .statusbar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 8px;font-size:14px;font-weight:600;color:var(--text);}
+  .bar{display:inline-block;width:17px;height:11px;border:1.4px solid var(--text);border-radius:3px;position:relative;margin-left:6px;}
+  .bar::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--text);border-radius:1px;}
+  .bar i{position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:var(--text);border-radius:1px;}
+
+  .content{height:748px;display:flex;flex-direction:column;padding:6px 22px 26px;}
+
+  .qhead{display:flex;align-items:center;gap:12px;height:40px;}
+  .qhead .back{color:var(--text-2);display:flex;}
+  .qhead .ht{font-size:15px;font-weight:600;}
+  .qhead .rest{margin-left:auto;font-size:13px;color:var(--text-3);}
+  .calm{font-size:13px;color:var(--text-2);margin:6px 0 14px;}
+
+  .prog{display:flex;align-items:center;gap:8px;margin-bottom:22px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.done{background:var(--glow);}
+  .dot.cur{width:11px;height:11px;background:var(--primary);box-shadow:0 0 0 4px rgba(127,168,134,.18);}
+  .ptext{margin-left:6px;font-size:13px;color:var(--text-2);}
+
+  .qstem{font-size:18px;line-height:1.75;font-weight:500;margin-bottom:6px;}
+  .qstem .f{font-family:var(--serif);font-style:italic;}
+  .qhint{font-size:13px;color:var(--text-3);margin-bottom:20px;}
+
+  .opts{display:flex;flex-direction:column;gap:12px;}
+  .opt{display:flex;align-items:center;gap:14px;border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:15px 16px;transition:all .15s ease;cursor:pointer;}
+  .opt .key{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--text-2);background:#F3EEE5;}
+  .opt .otext{font-size:16px;}
+  .opt .otext .f{font-family:var(--serif);font-style:italic;}
+  .opt.sel{border-color:var(--primary);background:#EFF5F0;}
+  .opt.sel .key{background:var(--primary);color:#FFFDF9;}
+  .opt.sel .otext{color:var(--primary-deep);font-weight:500;}
+
+  .fillbox{border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:16px 18px;min-height:130px;font-size:16px;color:var(--text-3);position:relative;}
+  .fillbox .ph{line-height:1.7;}
+  .fillbox .cursor{display:inline-block;width:2px;height:20px;background:var(--primary);vertical-align:-4px;margin-left:1px;animation:blink 1.1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .photo-line{display:flex;align-items:center;gap:7px;margin-top:13px;font-size:13.5px;color:var(--primary-deep);}
+  .photo-line svg{stroke:var(--primary-deep);}
+
+  .accept{background:#EAF2EC;border-radius:var(--r-l);padding:22px 20px;display:flex;gap:14px;align-items:flex-start;}
+  .accept .ic{width:40px;height:40px;border-radius:12px;background:#DCEBE0;flex:none;display:flex;align-items:center;justify-content:center;}
+  .accept .ic svg{stroke:var(--primary-deep);}
+  .accept .at{font-size:15px;line-height:1.65;color:var(--primary-deep);}
+  .accept .at b{font-weight:600;}
+  .qstem.dim{color:var(--text-3);}
+
+  .spacer{margin-top:auto;}
+  .skip{display:block;width:100%;text-align:center;color:var(--text-3);font-size:14px;background:none;border:none;font-family:var(--sans);padding:8px;margin-bottom:10px;cursor:pointer;}
+  .skip.sel{color:var(--primary-deep);font-weight:500;}
+  .submit{width:100%;background:var(--btn);color:#FFFDF9;border:none;border-radius:999px;padding:15px;font-size:16px;font-weight:500;font-family:var(--sans);box-shadow:0 8px 18px rgba(94,136,104,.28);cursor:pointer;}
+  .submit.soft{background:var(--card);color:var(--primary-deep);border:1.5px solid var(--primary);box-shadow:none;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-head">
+    <span class="st">界面 4 · 周末小测 · 第 5 步 / 共 7 步</span>
+    <h1>和我一起做个小检查，不打分</h1>
+    <p>一道一道慢慢来，没有即时对错、没有红叉、没有进度条。答不出就先跳过，温和接住。</p>
+  </div>
+
+  <div class="frames">
+
+    <!-- ===== 帧1 选择题作答中 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>选择题</b> · 作答中</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>20:42</span><span><span class="bar"><i></i></span></span></div>
+        <div class="content">
+          <div class="qhead">
+            <span class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+            <span class="ht">周末小测</span>
+            <span class="rest">随时可以先歇会儿</span>
+          </div>
+          <div class="calm">就当和我一起把把脉，看看现在走到哪了。</div>
+          <div class="prog"><span class="dot done"></span><span class="dot cur"></span><span class="dot"></span><span class="dot"></span><span class="ptext">第 2 个，共 4 个</span></div>
+
+          <div class="qstem">下面哪个是函数 <span class="f">f(x)</span> = √(<span class="f">x</span>−1) 的定义域？</div>
+          <div class="qhint">凭感觉选就好，拿不准也没关系。</div>
+
+          <div class="opts">
+            <div class="opt"><span class="key">A</span><span class="otext"><span class="f">x</span> ≥ 1</span></div>
+            <div class="opt sel"><span class="key">B</span><span class="otext"><span class="f">x</span> &gt; 1</span></div>
+            <div class="opt"><span class="key">C</span><span class="otext"><span class="f">x</span> ≤ 1</span></div>
+            <div class="opt"><span class="key">D</span><span class="otext">全体实数</span></div>
+          </div>
+
+          <div class="spacer"></div>
+          <button class="skip">还没学这个，先跳过</button>
+          <button class="submit">记一下这道</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 帧2 填空/解答作答中 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>填空 / 解答</b> · 作答中</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>20:45</span><span><span class="bar"><i></i></span></span></div>
+        <div class="content">
+          <div class="qhead">
+            <span class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+            <span class="ht">周末小测</span>
+            <span class="rest">随时可以先歇会儿</span>
+          </div>
+          <div class="calm">慢慢写，写一半也算，我都看得到。</div>
+          <div class="prog"><span class="dot done"></span><span class="dot done"></span><span class="dot cur"></span><span class="dot"></span><span class="ptext">第 3 个，共 4 个</span></div>
+
+          <div class="qstem">函数 <span class="f">f(x)</span> = <span class="f">x</span>²−2<span class="f">x</span>−3 的最小值是多少？</div>
+          <div class="qhint">可以直接写答案，也可以写下你怎么想的。</div>
+
+          <div class="fillbox">
+            <span class="ph">我先把它配成完全平方，<span class="cursor"></span></span>
+            <div class="photo-line">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1-1.5h6L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3"/></svg>
+              手写在纸上？拍下来也行
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+          <button class="skip">还没学这个，先跳过</button>
+          <button class="submit">记一下这道</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 帧3 跳过接纳态 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>跳过</b> · 温和接住</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>20:47</span><span><span class="bar"><i></i></span></span></div>
+        <div class="content">
+          <div class="qhead">
+            <span class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+            <span class="ht">周末小测</span>
+            <span class="rest">随时可以先歇会儿</span>
+          </div>
+          <div class="calm">没关系，这道我们先放一放。</div>
+          <div class="prog"><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot cur"></span><span class="ptext">第 4 个，共 4 个</span></div>
+
+          <div class="qstem dim">已知 <span class="f">sin</span>θ = 3/5，且 θ 是锐角，求 <span class="f">cos</span>θ 的值。</div>
+
+          <div class="accept">
+            <div class="ic">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="at">好，<b>先帮你收起来了。</b>等你把前面几步点亮，再回头看它，会比现在轻松很多。</div>
+          </div>
+
+          <div class="spacer"></div>
+          <button class="skip sel">已收起 · 还没学这个 ✓</button>
+          <button class="submit soft">下一道 →</button>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

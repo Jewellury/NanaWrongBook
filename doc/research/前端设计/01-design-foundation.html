@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光点 · 设计基底</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont/style.css">
+<style>
+  :root{
+    --bg:#FBF7F0; --card:#FFFDF9;
+    --primary:#7FA886; --primary-deep:#5E8868; --btn:#5E8868;
+    --glow:#6BBF8A; --amber:#E5B570; --invite:#93B8D6;
+    --text:#403A33; --text-2:#8C857B; --text-3:#B4ADA3;
+    --line:#EFE8DD;
+    --shadow:0 6px 22px rgba(120,110,95,.10);
+    --shadow-sm:0 3px 12px rgba(120,110,95,.08);
+    --r-s:12px; --r-m:18px; --r-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --hand:"LXGW WenKai","PingFang SC",var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.75;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:840px;margin:0 auto;padding:36px 22px 88px;}
+
+  /* hero */
+  .hero{background:var(--card);border-radius:var(--r-l);padding:34px 32px;box-shadow:var(--shadow);border:1px solid var(--line);}
+  .step{display:inline-block;font-size:12px;letter-spacing:.06em;color:var(--primary-deep);background:#EAF2EC;padding:5px 12px;border-radius:999px;margin-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand .dot{width:42px;height:42px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 6px rgba(107,191,138,.16),0 0 22px rgba(107,191,138,.45);flex:none;}
+  .brand h1{font-family:var(--hand);font-size:38px;font-weight:400;margin:0;letter-spacing:.02em;}
+  .hero p{margin:14px 0 0;color:var(--text-2);font-size:15.5px;max-width:54ch;}
+
+  /* sections */
+  .section{margin-top:46px;}
+  .eyebrow{font-size:12.5px;letter-spacing:.16em;color:var(--primary-deep);font-weight:500;}
+  .section h2{font-size:23px;font-weight:600;margin:7px 0 6px;}
+  .section .lead{margin:0 0 20px;color:var(--text-2);font-size:14.5px;}
+
+  /* swatches */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .sw{background:var(--card);border-radius:var(--r-m);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--line);}
+  .sw .chip{height:72px;}
+  .sw .meta{padding:11px 14px 13px;}
+  .sw .nm{font-size:13.5px;}
+  .sw .hex{font-size:12px;color:var(--text-2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px;}
+
+  /* generic display card */
+  .card{background:var(--card);border-radius:var(--r-l);box-shadow:var(--shadow);border:1px solid var(--line);padding:24px;}
+
+  /* type scale */
+  .type-row{display:flex;align-items:baseline;gap:18px;padding:14px 0;border-bottom:1px dashed var(--line);}
+  .type-row:last-child{border-bottom:none;}
+  .type-row .spec{flex:none;width:120px;color:var(--text-3);font-size:12.5px;font-family:ui-monospace,Menlo,monospace;}
+  .t-greet{font-family:var(--hand);font-size:30px;}
+  .t-h1{font-size:24px;font-weight:600;}
+  .t-h2{font-size:19px;font-weight:600;}
+  .t-body{font-size:17px;}
+  .t-cap{font-size:13.5px;color:var(--text-2);}
+
+  /* buttons */
+  .btn-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+  .btn{border:none;border-radius:999px;font-family:var(--sans);font-size:16px;cursor:pointer;transition:transform .12s ease,box-shadow .2s ease,background .2s ease;}
+  .btn-primary{background:var(--btn);color:#FFFDF9;padding:15px 30px;font-weight:500;box-shadow:0 6px 16px rgba(94,136,104,.28);}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(94,136,104,.34);}
+  .btn-secondary{background:transparent;color:var(--primary-deep);border:1.5px solid var(--primary);padding:13.5px 28px;font-weight:500;}
+  .btn-secondary:hover{background:#EAF2EC;}
+  .btn-text{background:transparent;color:var(--primary-deep);padding:8px 4px;font-weight:500;}
+  .btn-text:hover{color:var(--btn);}
+  .hint{font-size:12.5px;color:var(--text-3);margin-top:10px;}
+
+  /* action cards (home preview) */
+  .actions{display:flex;flex-direction:column;gap:14px;}
+  .action{display:flex;align-items:center;gap:16px;background:var(--card);border-radius:var(--r-l);padding:20px 22px;box-shadow:var(--shadow);border:1px solid var(--line);cursor:pointer;transition:transform .12s ease,box-shadow .2s ease;}
+  .action:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(120,110,95,.14);}
+  .action .ic{width:54px;height:54px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .action .ic.green{background:#E7F1E9;}
+  .action .ic.amber{background:#FAF0DC;}
+  .action .tt{font-size:18px;font-weight:600;}
+  .action .ss{font-size:13.5px;color:var(--text-2);margin-top:3px;}
+
+  /* cheer strip */
+  .cheer{display:flex;align-items:center;gap:12px;background:#EAF2EC;border-radius:var(--r-m);padding:16px 20px;}
+  .cheer .gd{width:12px;height:12px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 4px rgba(107,191,138,.2),0 0 14px rgba(107,191,138,.6);flex:none;}
+  .cheer .ct{font-size:15px;color:var(--primary-deep);}
+  .cheer .ct b{font-weight:600;}
+
+  /* knowledge popup */
+  .kpop{max-width:320px;background:var(--card);border-radius:var(--r-l);box-shadow:0 14px 34px rgba(120,110,95,.18);border:1px solid var(--line);padding:20px 22px;}
+  .kpop .kn{font-size:18px;font-weight:600;display:flex;align-items:center;gap:9px;}
+  .kpop .kn .gd{width:11px;height:11px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 4px rgba(107,191,138,.2);}
+  .kpop .kd{font-size:14.5px;color:var(--text-2);margin:10px 0 14px;}
+  .kpop .kdate{font-size:13px;color:var(--amber);font-weight:500;}
+
+  /* tags + nodes */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr;}}
+  .tag{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font-size:13.5px;font-weight:500;padding:8px 15px;}
+  .tag-lit{background:#E7F1E9;color:var(--primary-deep);}
+  .tag-lit .gd{width:8px;height:8px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 3px rgba(107,191,138,.25);}
+  .tag-next{background:#EFF5FA;color:#4E7595;border:1.5px dashed var(--invite);}
+
+  .nodes{display:flex;align-items:center;gap:34px;flex-wrap:wrap;padding:8px 0;}
+  .node{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12.5px;color:var(--text-2);}
+  .node .b{width:60px;height:60px;border-radius:50%;}
+  .node .lit{background:var(--glow);box-shadow:0 0 0 7px rgba(107,191,138,.16),0 0 26px rgba(107,191,138,.5);}
+  .node .next{background:#F4F9FC;border:2.5px dashed var(--invite);}
+  .node .unseen{background:var(--line);}
+
+  /* radius / shadow demo */
+  .demo-row{display:flex;gap:18px;flex-wrap:wrap;}
+  .demo{width:108px;height:84px;background:var(--card);border:1px solid var(--line);display:flex;align-items:flex-end;justify-content:center;padding-bottom:9px;font-size:11.5px;color:var(--text-3);}
+  .d-s{border-radius:var(--r-s);box-shadow:var(--shadow-sm);}
+  .d-m{border-radius:var(--r-m);box-shadow:var(--shadow);}
+  .d-l{border-radius:var(--r-l);box-shadow:0 12px 30px rgba(120,110,95,.15);}
+
+  /* voice table */
+  .voice{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--r-m);overflow:hidden;border:1px solid var(--line);}
+  .voice .h{padding:13px 18px;font-size:13.5px;font-weight:600;}
+  .voice .h.no{background:#F3EDE3;color:#9A8E7C;}
+  .voice .h.yes{background:#EAF2EC;color:var(--primary-deep);}
+  .voice .c{padding:13px 18px;font-size:14.5px;border-top:1px dashed var(--line);background:var(--card);}
+  .voice .c.no{color:var(--text-3);text-decoration:line-through;text-decoration-color:#D8CDBC;}
+  .voice .c.yes{color:var(--text);}
+
+  .ic-svg{width:26px;height:26px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="step">设计基底 · 第 1 步 / 共 7 步</span>
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>光点</h1>
+    </div>
+    <p>把题目里走对的每一步，都点亮成一个光点。这一页是后续所有界面的共用底座——颜色、字、按钮、卡片、节点和说话的方式，都从这里长出来。</p>
+  </div>
+
+  <!-- 配色 -->
+  <div class="section">
+    <div class="eyebrow">COLOR</div>
+    <h2>配色系统</h2>
+    <p class="lead">奶油暖白打底，鼠尾草绿做成长色，琥珀做奖励，天蓝做邀请。没有红，没有橙。</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#FBF7F0;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">奶油暖白 · 背景</div><div class="hex">#FBF7F0</div></div></div>
+      <div class="sw"><div class="chip" style="background:#FFFDF9;border-bottom:1px solid var(--line)"></div><div class="meta"><div class="nm">柔白 · 卡片</div><div class="hex">#FFFDF9</div></div></div>
+      <div class="sw"><div class="chip" style="background:#7FA886"></div><div class="meta"><div class="nm">鼠尾草绿 · 主色</div><div class="hex">#7FA886</div></div></div>
+      <div class="sw"><div class="chip" style="background:#5E8868"></div><div class="meta"><div class="nm">森林绿 · 主色深</div><div class="hex">#5E8868</div></div></div>
+      <div class="sw"><div class="chip" style="background:#6BBF8A"></div><div class="meta"><div class="nm">发光绿 · 点亮</div><div class="hex">#6BBF8A</div></div></div>
+      <div class="sw"><div class="chip" style="background:#E5B570"></div><div class="meta"><div class="nm">蜂蜜琥珀 · 点缀</div><div class="hex">#E5B570</div></div></div>
+      <div class="sw"><div class="chip" style="background:#93B8D6"></div><div class="meta"><div class="nm">柔和天蓝 · 邀请</div><div class="hex">#93B8D6</div></div></div>
+      <div class="sw"><div class="chip" style="background:#403A33"></div><div class="meta"><div class="nm">暖棕灰 · 正文</div><div class="hex">#403A33</div></div></div>
+      <div class="sw"><div class="chip" style="background:#8C857B"></div><div class="meta"><div class="nm">灰褐 · 次要字</div><div class="hex">#8C857B</div></div></div>
+      <div class="sw"><div class="chip" style="background:#EFE8DD"></div><div class="meta"><div class="nm">浅米 · 分隔/未探索</div><div class="hex">#EFE8DD</div></div></div>
+    </div>
+  </div>
+
+  <!-- 字体 -->
+  <div class="section">
+    <div class="eyebrow">TYPE</div>
+    <h2>字体与排版</h2>
+    <p class="lead">正文用系统中文字，清晰偏大；问候语用手写体，带「和舅舅一起打磨」的温度。</p>
+    <div class="card">
+      <div class="type-row"><span class="spec">手写 · 问候 30</span><span class="t-greet">嗨，今天想从哪开始？</span></div>
+      <div class="type-row"><span class="spec">标题 H1 · 24</span><span class="t-h1">我们已经点亮了 5 个点</span></div>
+      <div class="type-row"><span class="spec">标题 H2 · 19</span><span class="t-h2">今天就搞定这一个</span></div>
+      <div class="type-row"><span class="spec">正文 · 17</span><span class="t-body">想到哪说到哪，不用完整，我在听。</span></div>
+      <div class="type-row"><span class="spec">辅助 · 13.5</span><span class="t-cap">上次你点亮的是：函数的定义域</span></div>
+    </div>
+  </div>
+
+  <!-- 按钮 -->
+  <div class="section">
+    <div class="eyebrow">BUTTON</div>
+    <h2>按钮</h2>
+    <p class="lead">圆角到底（pill），主按钮一屏只一个焦点。文案永远是动作本身，不带评判。</p>
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn btn-primary">拍一下这道题</button>
+        <button class="btn btn-secondary">补一段你当时怎么想的</button>
+        <button class="btn btn-text">看看我的知识地图 →</button>
+      </div>
+      <div class="hint">悬停/按下有轻微上浮与柔光，无锐利投影、无红色危险态。</div>
+    </div>
+  </div>
+
+  <!-- 卡片 -->
+  <div class="section">
+    <div class="eyebrow">CARD</div>
+    <h2>卡片</h2>
+    <p class="lead">首页两张行动卡是唯一焦点；进度回顾只报喜；知识点弹卡只记「你哪天点亮的」。</p>
+    <div class="actions">
+      <div class="action">
+        <div class="ic green">
+          <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#5E8868" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+        </div>
+        <div><div class="tt">拍一下这道题</div><div class="ss">把刚卡住的那道拍进来，我们一起看看</div></div>
+      </div>
+      <div class="action">
+        <div class="ic amber">
+          <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#C28F3E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </div>
+        <div><div class="tt">补一段你当时怎么想的</div><div class="ss">说说看就好，想到哪说到哪</div></div>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="cheer"><span class="gd"></span><span class="ct">上次你点亮了：<b>函数的定义域</b></span></div>
+    <div style="height:18px"></div>
+    <div class="kpop">
+      <div class="kn"><span class="gd"></span>函数的定义域</div>
+      <div class="kd">就是「x 能取哪些值不会出问题」——分母不能是 0，根号里不能是负数。</div>
+      <div class="kdate">你是在 5 月 12 日点亮的 ✦</div>
+    </div>
+  </div>
+
+  <!-- 标签与节点 -->
+  <div class="section">
+    <div class="eyebrow">TAG &amp; NODE</div>
+    <h2>标签与地图节点</h2>
+    <p class="lead">已点亮发光、下一个是虚线邀请、未探索只是淡淡的影子——绝不出现红色或「未掌握」。</p>
+    <div class="grid2">
+      <div class="card">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <span class="tag tag-lit"><span class="gd"></span>已点亮</span>
+          <span class="tag tag-next">下一个：二次函数图像</span>
+        </div>
+        <div class="hint">已点亮=暖绿实心；下一个=天蓝虚线，像在邀请。</div>
+      </div>
+      <div class="card">
+        <div class="nodes">
+          <div class="node"><div class="b lit"></div>已点亮</div>
+          <div class="node"><div class="b next"></div>下一个</div>
+          <div class="node"><div class="b unseen"></div>未探索</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 圆角阴影 -->
+  <div class="section">
+    <div class="eyebrow">SHAPE</div>
+    <h2>圆角与阴影</h2>
+    <p class="lead">三档圆角配三档柔和阴影，越重要的卡片越圆、越软。没有直角。</p>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo d-s">12px · 小</div>
+        <div class="demo d-m">18px · 中</div>
+        <div class="demo d-l">24px · 大</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 语气 -->
+  <div class="section">
+    <div class="eyebrow">VOICE</div>
+    <h2>声音与语气</h2>
+    <p class="lead">每一句文案都过一遍滤镜：她看到会不会觉得「我又不行了」。会，就换掉。</p>
+    <div class="voice">
+      <div class="h no">不要这样说</div>
+      <div class="h yes">要这样说</div>
+      <div class="c no">正确率 62%，错 3 题</div>
+      <div class="c yes">我们已经点亮了 5 个点</div>
+      <div class="c no">你又错了 / 未掌握</div>
+      <div class="c yes">今天就搞定这一个</div>
+      <div class="c no">欢迎回来，继续学习</div>
+      <div class="c yes">嗨，今天想从哪开始？</div>
+      <div class="c no">开始录音 / 停止</div>
+      <div class="c yes">说说看 / 我听完了</div>
+      <div class="c no">提交答案 / 判分</div>
+      <div class="c yes">记一下这道</div>
+      <div class="c no">你还没有任何数据</div>
+      <div class="c yes">第一道题，就从你手边这张开始吧</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光点 · 界面2 拍照采集页</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont/style.css">
+<style>
+  :root{
+    --bg:#FBF7F0; --card:#FFFDF9;
+    --primary:#7FA886; --primary-deep:#5E8868;
+    --glow:#6BBF8A; --amber:#E5B570; --invite:#93B8D6;
+    --text:#403A33; --text-2:#8C857B; --text-3:#B4ADA3;
+    --line:#EFE8DD;
+    --shadow:0 8px 24px rgba(120,110,95,.10);
+    --r-m:18px; --r-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --hand:"LXGW WenKai","PingFang SC",var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#F2ECE1;color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .stage{max-width:1000px;margin:0 auto;padding:40px 20px 70px;}
+  .stage-head{text-align:center;margin-bottom:34px;}
+  .stage-head .st{display:inline-block;font-size:12px;letter-spacing:.06em;color:var(--primary-deep);background:#EAF2EC;padding:5px 13px;border-radius:999px;}
+  .stage-head h1{font-family:var(--hand);font-size:30px;font-weight:400;margin:14px 0 6px;}
+  .stage-head p{margin:0;color:var(--text-2);font-size:14.5px;max-width:50ch;margin-inline:auto;}
+
+  .frames{display:flex;flex-wrap:wrap;gap:44px 46px;justify-content:center;align-items:flex-start;}
+  .unit{display:flex;flex-direction:column;align-items:center;gap:15px;}
+  .ulabel{font-size:14px;color:var(--text-2);}
+  .ulabel b{color:var(--primary-deep);font-weight:600;}
+
+  .phone{width:390px;border-radius:46px;background:#2E2A25;padding:11px;box-shadow:0 34px 80px rgba(90,80,66,.26);}
+  .screen{width:368px;height:798px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#15130F;border-radius:16px;z-index:5;}
+  .statusbar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 8px;font-size:14px;font-weight:600;color:var(--text);}
+  .bar{display:inline-block;width:17px;height:11px;border:1.4px solid var(--text);border-radius:3px;position:relative;margin-left:6px;}
+  .bar::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--text);border-radius:1px;}
+  .bar i{position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:var(--text);border-radius:1px;}
+
+  /* top nav */
+  .topnav{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;}
+  .topnav .tt{font-size:15px;font-weight:600;}
+  .topnav .nb,.topnav .rb{display:flex;align-items:center;gap:5px;color:var(--text-2);font-size:13.5px;}
+  .topnav .nb svg,.topnav .rb svg{stroke:var(--text-2);}
+
+  /* fixed question image area */
+  .imgwrap{height:412px;background:#EFE7DA;border-bottom:1px solid #E4DACB;display:flex;align-items:center;justify-content:center;padding:18px 20px;position:relative;}
+  .pin{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:11px;color:#A99A82;background:rgba(255,253,249,.7);padding:3px 11px;border-radius:999px;}
+  .paper{width:100%;height:100%;background:#FFFDF8;border-radius:10px;box-shadow:0 10px 26px rgba(90,80,66,.18);padding:26px 24px;position:relative;overflow:hidden;}
+  .paper::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#F4E7CE;}
+  .paper .qno{font-size:13px;color:#B4905A;font-weight:600;letter-spacing:.04em;}
+  .paper .qmain{font-size:19px;line-height:1.7;margin-top:12px;color:#2F2A23;font-family:"Times New Roman",Georgia,serif;}
+  .paper .qmain .var{font-style:italic;}
+  .paper .qsub{font-size:16.5px;line-height:1.9;margin-top:14px;color:#3A352D;font-family:"Times New Roman",Georgia,serif;}
+  .paper .qsub .var{font-style:italic;}
+
+  /* lower interactive area */
+  .lower{height:294px;display:flex;flex-direction:column;}
+  .tabs{display:flex;padding:0 22px;border-bottom:1px solid var(--line);}
+  .tab{flex:1;text-align:center;padding:13px 0 11px;font-size:14.5px;color:var(--text-3);position:relative;}
+  .tab.on{color:var(--primary-deep);font-weight:600;}
+  .tab.on::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:30px;height:3px;border-radius:2px;background:var(--glow);}
+  .pane{flex:1;padding:18px 22px 20px;display:flex;flex-direction:column;}
+
+  /* before recording */
+  .recctr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  .recbtn{width:88px;height:88px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 8px rgba(127,168,134,.16),0 10px 24px rgba(94,136,104,.32);cursor:pointer;}
+  .recbtn svg{stroke:#FFFDF9;}
+  .reclabel{font-family:var(--hand);font-size:21px;color:var(--primary-deep);}
+  .recsub{font-size:13.5px;color:var(--text-2);}
+
+  /* recording */
+  .listening{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--primary-deep);}
+  .ldots{display:inline-flex;gap:4px;}
+  .ldots i{width:5px;height:5px;border-radius:50%;background:var(--glow);animation:blink 1.4s ease-in-out infinite;}
+  .ldots i:nth-child(2){animation-delay:.2s;} .ldots i:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,100%{opacity:.25;}50%{opacity:1;}}
+  .wave{height:46px;display:flex;align-items:center;justify-content:center;gap:4px;margin:12px 0 10px;}
+  .wave span{width:4px;height:38px;border-radius:3px;background:#8FBE9C;transform:scaleY(.4);transform-origin:center;animation:wv 1.1s ease-in-out infinite;}
+  @keyframes wv{0%,100%{transform:scaleY(.32);}50%{transform:scaleY(1);}}
+  .transcript{flex:1;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;font-size:14px;line-height:1.55;color:var(--text-2);}
+  .transcript .ln{opacity:.55;}
+  .transcript .ln.cur{color:var(--text);opacity:1;animation:fadeUp .6s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  .donebtn{margin-top:12px;align-self:center;background:var(--primary-deep);color:#FFFDF9;border:none;border-radius:999px;padding:13px 34px;font-size:15.5px;font-weight:500;font-family:var(--sans);display:flex;align-items:center;gap:8px;box-shadow:0 8px 18px rgba(94,136,104,.3);cursor:pointer;}
+  .donebtn svg{stroke:#FFFDF9;}
+
+  /* my words (editable) */
+  .mywords{flex:1;font-size:14.5px;line-height:1.85;color:var(--text);overflow:auto;}
+  .mywords .edit{border-bottom:1.5px dashed var(--invite);padding:0 2px;position:relative;cursor:text;}
+  .mywords .tagedit{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#4E7595;background:#EFF5FA;padding:2px 8px;border-radius:999px;margin-left:4px;vertical-align:middle;}
+  .savehint{margin-top:10px;font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:6px;}
+  .savehint svg{stroke:var(--primary);}
+
+  /* tidy-up summary */
+  .tidy{flex:1;overflow:auto;}
+  .tidy .stag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#9A7B3C;background:#FAF0DC;padding:5px 11px;border-radius:999px;}
+  .tidy p{font-size:14.5px;line-height:1.75;color:var(--text);margin:12px 0 0;}
+  .tidy p .hi{color:var(--primary-deep);font-weight:600;}
+  .tidy .formula{font-family:"Times New Roman",Georgia,serif;font-style:italic;background:#EAF2EC;padding:1px 7px;border-radius:6px;}
+  .nextbtn{margin-top:14px;width:100%;background:var(--primary);color:#FFFDF9;border:none;border-radius:var(--r-m);padding:14px;font-size:15.5px;font-weight:500;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 18px rgba(94,136,104,.28);cursor:pointer;}
+  .nextbtn .gd{width:9px;height:9px;border-radius:50%;background:#FFFDF9;box-shadow:0 0 0 3px rgba(255,255,255,.35);}
+
+  @media(prefers-reduced-motion:reduce){.wave span,.ldots i,.transcript .ln.cur{animation:none;}.transcript .ln.cur{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-head">
+    <span class="st">界面 2 · 拍照采集页 · 第 3 步 / 共 7 步</span>
+    <h1>题图一直在，有人在认真听你说</h1>
+    <p>上半屏永远是这道题，不被滚走、不被遮挡；下半屏才是讲思路、改逐字稿、看整理。</p>
+  </div>
+
+  <div class="frames">
+
+    <!-- ===== 帧1 录音前 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>录音前</b> · 讲讲思路</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:14</span><span><span class="bar"><i></i></span></span></div>
+        <div class="topnav">
+          <span class="nb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <span class="tt">这道题</span>
+          <span class="rb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1-1.5h6L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3"/></svg>重拍</span>
+        </div>
+        <div class="imgwrap">
+          <span class="pin">题目一直在这儿 ✦</span>
+          <div class="paper">
+            <div class="qno">第 3 题</div>
+            <div class="qmain">已知函数 <span class="var">f(x)</span> = <span class="var">x</span><sup>2</sup> − 2<span class="var">x</span> − 3</div>
+            <div class="qsub">(1) 求函数的定义域与值域；<br>(2) 求 <span class="var">f(x)</span> 的最小值，并指出此时 <span class="var">x</span> 的取值。</div>
+          </div>
+        </div>
+        <div class="lower">
+          <div class="tabs"><div class="tab on">讲讲思路</div><div class="tab">我的话</div><div class="tab">帮你整理</div></div>
+          <div class="pane">
+            <div class="recctr">
+              <div class="recbtn"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></div>
+              <div class="reclabel">说说看</div>
+              <div class="recsub">想到哪说到哪，不用完整。</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 帧2 录音中（最重要） ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>录音中</b> · 最重要的一帧</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:14</span><span><span class="bar"><i></i></span></span></div>
+        <div class="topnav">
+          <span class="nb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <span class="tt">这道题</span>
+          <span class="rb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1-1.5h6L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3"/></svg>重拍</span>
+        </div>
+        <div class="imgwrap">
+          <span class="pin">题目一直在这儿 ✦</span>
+          <div class="paper">
+            <div class="qno">第 3 题</div>
+            <div class="qmain">已知函数 <span class="var">f(x)</span> = <span class="var">x</span><sup>2</sup> − 2<span class="var">x</span> − 3</div>
+            <div class="qsub">(1) 求函数的定义域与值域；<br>(2) 求 <span class="var">f(x)</span> 的最小值，并指出此时 <span class="var">x</span> 的取值。</div>
+          </div>
+        </div>
+        <div class="lower">
+          <div class="tabs"><div class="tab on">讲讲思路</div><div class="tab">我的话</div><div class="tab">帮你整理</div></div>
+          <div class="pane">
+            <div class="listening">正在听你说<span class="ldots"><i></i><i></i><i></i></span></div>
+            <div class="wave">
+              <span style="animation-delay:-.2s;animation-duration:1.0s"></span><span style="animation-delay:-.6s;animation-duration:1.3s"></span><span style="animation-delay:-.1s;animation-duration:.9s"></span><span style="animation-delay:-.8s;animation-duration:1.2s"></span><span style="animation-delay:-.4s;animation-duration:1.1s"></span><span style="animation-delay:-.3s;animation-duration:1.4s"></span><span style="animation-delay:-.7s;animation-duration:1.0s"></span><span style="animation-delay:-.2s;animation-duration:1.2s"></span><span style="animation-delay:-.9s;animation-duration:.95s"></span><span style="animation-delay:-.5s;animation-duration:1.3s"></span><span style="animation-delay:-.1s;animation-duration:1.1s"></span><span style="animation-delay:-.6s;animation-duration:1.0s"></span><span style="animation-delay:-.35s;animation-duration:1.35s"></span><span style="animation-delay:-.75s;animation-duration:1.15s"></span><span style="animation-delay:-.25s;animation-duration:.9s"></span><span style="animation-delay:-.55s;animation-duration:1.25s"></span><span style="animation-delay:-.15s;animation-duration:1.05s"></span><span style="animation-delay:-.85s;animation-duration:1.3s"></span><span style="animation-delay:-.45s;animation-duration:1.0s"></span><span style="animation-delay:-.65s;animation-duration:1.2s"></span>
+            </div>
+            <div class="transcript">
+              <div class="ln">嗯…这道题我先看了定义域，</div>
+              <div class="ln">因为它就是个多项式，x 好像什么都能取，</div>
+              <div class="ln cur">然后值域我有点不确定，我想配成完全平方但配到一半就乱了…</div>
+            </div>
+            <button class="donebtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>我听完了</button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 帧3 我的话 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>我的话</b> · 逐字稿可改</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:15</span><span><span class="bar"><i></i></span></span></div>
+        <div class="topnav">
+          <span class="nb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <span class="tt">这道题</span>
+          <span class="rb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1-1.5h6L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3"/></svg>重拍</span>
+        </div>
+        <div class="imgwrap">
+          <span class="pin">题目一直在这儿 ✦</span>
+          <div class="paper">
+            <div class="qno">第 3 题</div>
+            <div class="qmain">已知函数 <span class="var">f(x)</span> = <span class="var">x</span><sup>2</sup> − 2<span class="var">x</span> − 3</div>
+            <div class="qsub">(1) 求函数的定义域与值域；<br>(2) 求 <span class="var">f(x)</span> 的最小值，并指出此时 <span class="var">x</span> 的取值。</div>
+          </div>
+        </div>
+        <div class="lower">
+          <div class="tabs"><div class="tab">讲讲思路</div><div class="tab on">我的话</div><div class="tab">帮你整理</div></div>
+          <div class="pane">
+            <div class="mywords">这道题我先看了定义域，因为它就是个多项式，<span class="edit">x 好像什么都能取<span class="tagedit"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4E7595" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>可以改</span></span>。然后值域我有点不确定，我想配成完全平方但配到一半就乱了。</div>
+            <div class="savehint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>轻点任意一句就能改，改好会自动存，不急。</div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ===== 帧4 帮你整理 ===== -->
+    <div class="unit">
+      <div class="ulabel"><b>帮你整理</b> · 温和的小结</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:15</span><span><span class="bar"><i></i></span></span></div>
+        <div class="topnav">
+          <span class="nb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <span class="tt">这道题</span>
+          <span class="rb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1-1.5h6L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3"/></svg>重拍</span>
+        </div>
+        <div class="imgwrap">
+          <span class="pin">题目一直在这儿 ✦</span>
+          <div class="paper">
+            <div class="qno">第 3 题</div>
+            <div class="qmain">已知函数 <span class="var">f(x)</span> = <span class="var">x</span><sup>2</sup> − 2<span class="var">x</span> − 3</div>
+            <div class="qsub">(1) 求函数的定义域与值域；<br>(2) 求 <span class="var">f(x)</span> 的最小值，并指出此时 <span class="var">x</span> 的取值。</div>
+          </div>
+        </div>
+        <div class="lower">
+          <div class="tabs"><div class="tab">讲讲思路</div><div class="tab">我的话</div><div class="tab on">帮你整理</div></div>
+          <div class="pane">
+            <div class="tidy">
+              <span class="stag"><svg width="11" height="11" viewBox="0 0 24 24" fill="#9A7B3C"><path d="M12 2.5l1.6 4.4 4.4 1.6-4.4 1.6L12 14.5l-1.6-4.4L6 8.5l4.4-1.6L12 2.5z"/></svg>下一个光点</span>
+              <p>你已经<span class="hi">想到先看定义域</span>，这一步抓得很准。你也想到要配成完全平方——方向完全对，只是配到一半有点乱。其实它能写成 <span class="formula">(x−1)² − 4</span>，最小值 −4 就藏在这儿。</p>
+              <button class="nextbtn"><span class="gd"></span>一起点亮「配方法」</button>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

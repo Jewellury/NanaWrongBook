@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光点 · 界面3 知识地图（全图底色版）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont/style.css">
+<style>
+  :root{
+    --bg:#FBF7F0; --card:#FFFDF9;
+    --primary:#7FA886; --primary-deep:#5E8868;
+    --glow:#6BBF8A; --amber:#E5B570; --invite:#93B8D6;
+    --text:#403A33; --text-2:#8C857B; --text-3:#B4ADA3;
+    --line:#EFE8DD;
+    --gray-node:#D9D1C3; --gray-edge:#E7DFD0; --gray-label:#BDB3A3;
+    --r-m:18px; --r-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --hand:"LXGW WenKai","PingFang SC",var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#F2ECE1;color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .stage{max-width:1000px;margin:0 auto;padding:40px 20px 70px;}
+  .stage-head{text-align:center;margin-bottom:24px;}
+  .stage-head .st{display:inline-block;font-size:12px;letter-spacing:.06em;color:var(--primary-deep);background:#EAF2EC;padding:5px 13px;border-radius:999px;}
+  .stage-head h1{font-family:var(--hand);font-size:30px;font-weight:400;margin:14px 0 6px;}
+  .stage-head p{margin:0;color:var(--text-2);font-size:14.5px;max-width:56ch;margin-inline:auto;}
+  .legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--text-2);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .lg-gray{width:10px;height:10px;border-radius:50%;background:var(--gray-node);}
+  .lg-lit{width:11px;height:11px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 3px rgba(107,191,138,.2);}
+  .lg-next{width:12px;height:12px;border-radius:50%;background:#F2F8FC;border:2px dashed var(--invite);}
+
+  .frames{display:flex;flex-wrap:wrap;gap:46px;justify-content:center;align-items:flex-start;margin-top:26px;}
+  .unit{display:flex;flex-direction:column;align-items:center;gap:15px;}
+  .ulabel{font-size:14px;color:var(--text-2);}
+  .ulabel b{color:var(--primary-deep);font-weight:600;}
+
+  .phone{width:390px;border-radius:46px;background:#2E2A25;padding:11px;box-shadow:0 34px 80px rgba(90,80,66,.26);}
+  .screen{width:368px;height:798px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#15130F;border-radius:16px;z-index:5;}
+  .statusbar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 8px;font-size:14px;font-weight:600;color:var(--text);}
+  .bar{display:inline-block;width:17px;height:11px;border:1.4px solid var(--text);border-radius:3px;position:relative;margin-left:6px;}
+  .bar::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--text);border-radius:1px;}
+  .bar i{position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:var(--text);border-radius:1px;}
+
+  .maphead{height:64px;display:flex;align-items:center;gap:12px;padding:0 18px;}
+  .maphead .back{color:var(--text-2);flex:none;display:flex;}
+  .maphead h2{font-size:18px;font-weight:600;margin:0;}
+  .maphead .sub{font-size:12.5px;color:var(--primary-deep);margin-top:2px;}
+
+  .canvas{position:relative;width:368px;height:684px;overflow:hidden;}
+  .canvas svg{display:block;width:368px;height:684px;}
+
+  .kcard{position:absolute;left:14px;right:14px;bottom:14px;background:var(--card);border-radius:var(--r-l);box-shadow:0 16px 40px rgba(90,80,66,.24);border:1px solid var(--line);padding:13px 18px 16px;}
+  .kcard .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 11px;}
+  .kcard .kn{font-size:17.5px;font-weight:600;display:flex;align-items:center;gap:9px;}
+  .kcard .kn .gd{width:12px;height:12px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 4px rgba(107,191,138,.2),0 0 12px rgba(107,191,138,.55);flex:none;}
+  .kcard .kd{font-size:13.5px;line-height:1.55;color:var(--text-2);margin:8px 0 10px;}
+  .kcard .div{height:1px;background:var(--line);margin:0 -4px 9px;}
+  .kcard .row{display:flex;gap:10px;font-size:12.5px;line-height:1.5;margin-top:6px;}
+  .kcard .row .lab{flex:none;color:var(--text-3);width:50px;}
+  .kcard .row .val{color:var(--text);}
+  .kcard .row .val.eg{font-family:"Times New Roman",Georgia,serif;font-size:13.5px;}
+  .kcard .kdate{font-size:12.5px;color:var(--amber);font-weight:500;margin-top:11px;}
+
+  .ecap{position:absolute;left:0;right:0;top:150px;text-align:center;font-family:var(--hand);font-size:25px;color:var(--primary-deep);}
+  .ecap .s{display:block;font-family:var(--sans);font-size:13.5px;color:var(--text-2);margin-top:9px;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-head">
+    <span class="st">界面 3 · 知识地图（全图底色版）· 第 4 步 / 共 7 步</span>
+    <h1>整张地图一直都在，你走过的地方会亮起来</h1>
+    <p>10 条主线的全图始终铺成淡淡的灰色底图；你点亮过的节点和走通的连线染成绿色，下一步用蓝色邀请你。地图不会缩小，只会被你一点点点亮。</p>
+    <div class="legend">
+      <span><i class="lg-gray"></i>全图底色（还没走到）</span>
+      <span><i class="lg-lit"></i>已点亮（染上绿色）</span>
+      <span><i class="lg-next"></i>下一个（蓝色邀请）</span>
+    </div>
+  </div>
+
+  <div class="frames">
+
+    <!-- ================= 常规态 ================= -->
+    <div class="unit">
+      <div class="ulabel"><b>常规态</b> · 已点亮 13 个，点开「求函数定义域」</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:20</span><span><span class="bar"><i></i></span></span></div>
+        <div class="maphead">
+          <span class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <div><h2>我的知识地图</h2><div class="sub">你已经点亮了 13 个光点 ✦</div></div>
+        </div>
+        <div class="canvas">
+          <svg viewBox="0 0 368 684" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="g" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="6"/></filter>
+            </defs>
+
+            <!-- ===== 全图灰色底图：连线 ===== -->
+            <g stroke="#E7DFD0" stroke-width="1.4" fill="none" stroke-linecap="round">
+              <path d="M120 200 C150 250 150 280 150 318"/>
+              <line x1="200" y1="368" x2="318" y2="225"/>
+              <line x1="200" y1="368" x2="330" y2="360"/>
+              <line x1="235" y1="430" x2="150" y2="318"/>
+              <line x1="235" y1="430" x2="180" y2="445"/>
+              <line x1="318" y1="225" x2="316" y2="98"/>
+              <line x1="46" y1="152" x2="50" y2="300"/>
+              <line x1="50" y1="300" x2="52" y2="252"/>
+              <line x1="58" y1="420" x2="50" y2="300"/>
+              <line x1="316" y1="98" x2="318" y2="225"/>
+              <line x1="292" y1="250" x2="290" y2="290"/>
+              <line x1="200" y1="368" x2="250" y2="338"/>
+              <line x1="250" y1="338" x2="296" y2="352"/>
+              <line x1="170" y1="120" x2="305" y2="150"/>
+            </g>
+
+            <!-- ===== 远方主线灰节点 + 名称 ===== -->
+            <g fill="#D9D1C3">
+              <circle cx="310" cy="86" r="6"/><circle cx="326" cy="98" r="6"/><circle cx="316" cy="106" r="5"/>
+              <circle cx="318" cy="212" r="6"/><circle cx="334" cy="226" r="6"/><circle cx="320" cy="236" r="5"/>
+              <circle cx="330" cy="352" r="6"/><circle cx="344" cy="366" r="6"/><circle cx="330" cy="374" r="5"/>
+              <circle cx="58" cy="412" r="6"/><circle cx="44" cy="426" r="6"/><circle cx="62" cy="430" r="5"/>
+              <circle cx="44" cy="294" r="6"/><circle cx="56" cy="306" r="6"/><circle cx="42" cy="314" r="5"/>
+              <circle cx="46" cy="244" r="6"/><circle cx="58" cy="256" r="6"/><circle cx="44" cy="264" r="5"/>
+              <circle cx="172" cy="438" r="6"/><circle cx="188" cy="448" r="6"/><circle cx="176" cy="452" r="5"/>
+              <circle cx="220" cy="436" r="6"/><circle cx="238" cy="448" r="6"/>
+            </g>
+            <g font-size="10" fill="#BDB3A3" text-anchor="middle">
+              <text x="318" y="124">平面向量</text>
+              <text x="328" y="254">三角函数</text>
+              <text x="338" y="392">导数</text>
+              <text x="56" y="448">概率统计</text>
+              <text x="48" y="332">立体几何</text>
+              <text x="50" y="282">解析几何</text>
+              <text x="180" y="470">数列</text>
+              <text x="228" y="468">地基层</text>
+            </g>
+
+            <!-- ===== M1/M2a 区里【还没点亮】的灰节点 ===== -->
+            <g fill="#D9D1C3">
+              <circle cx="305" cy="150" r="6"/><circle cx="322" cy="164" r="5"/>
+              <circle cx="290" cy="290" r="6"/>
+              <circle cx="250" cy="338" r="6"/><circle cx="296" cy="352" r="6"/><circle cx="235" cy="405" r="6"/>
+            </g>
+
+            <!-- ===== 已点亮：绿色连线 ===== -->
+            <g stroke="#9CCBA6" stroke-width="2.4" fill="none" stroke-linecap="round">
+              <line x1="52" y1="95" x2="118" y2="88"/>
+              <line x1="52" y1="95" x2="46" y2="152"/>
+              <line x1="52" y1="95" x2="104" y2="150"/>
+              <line x1="118" y1="88" x2="170" y2="120"/>
+              <line x1="104" y1="150" x2="170" y2="120"/>
+              <line x1="170" y1="120" x2="150" y2="188"/>
+              <line x1="150" y1="188" x2="96" y2="210"/>
+              <line x1="150" y1="188" x2="190" y2="200"/>
+              <line x1="150" y1="188" x2="138" y2="246"/>
+              <path d="M138 246 C150 280 150 300 150 318" stroke="#9CCBA6"/>
+              <line x1="150" y1="318" x2="200" y2="368"/>
+              <line x1="200" y1="368" x2="135" y2="405"/>
+              <line x1="200" y1="368" x2="255" y2="425"/>
+            </g>
+            <g stroke="#9FC3DE" stroke-width="2.2" fill="none" stroke-dasharray="5 4" stroke-linecap="round">
+              <line x1="200" y1="368" x2="270" y2="392"/>
+            </g>
+
+            <!-- ===== 已点亮：M1 集合（绿） ===== -->
+            <g font-weight="500">
+              <circle cx="52" cy="95" r="17" fill="#6BBF8A" opacity="0.20" filter="url(#g)"/><circle cx="52" cy="95" r="8.5" fill="#6BBF8A"/><circle cx="52" cy="95" r="8.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="52" y="79" text-anchor="middle" font-size="9.5" fill="#557A5F">元素与数集关系</text>
+              <circle cx="46" cy="152" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="46" cy="152" r="8" fill="#6BBF8A"/><circle cx="46" cy="152" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="46" y="172" text-anchor="middle" font-size="9.5" fill="#557A5F">集合三特性</text>
+              <circle cx="118" cy="88" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="118" cy="88" r="8" fill="#6BBF8A"/><circle cx="118" cy="88" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="118" y="72" text-anchor="middle" font-size="9.5" fill="#557A5F">列举法</text>
+              <circle cx="104" cy="150" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="104" cy="150" r="8" fill="#6BBF8A"/><circle cx="104" cy="150" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="100" y="138" text-anchor="middle" font-size="9.5" fill="#557A5F">描述法</text>
+              <circle cx="170" cy="120" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="170" cy="120" r="8" fill="#6BBF8A"/><circle cx="170" cy="120" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="172" y="106" text-anchor="middle" font-size="9.5" fill="#557A5F">表示法互化</text>
+              <circle cx="150" cy="188" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="150" cy="188" r="8" fill="#6BBF8A"/><circle cx="150" cy="188" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="168" y="186" text-anchor="middle" font-size="9.5" fill="#557A5F">判断子集</text>
+              <circle cx="96" cy="210" r="15" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="96" cy="210" r="7.5" fill="#6BBF8A"/><circle cx="96" cy="210" r="7.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="92" y="229" text-anchor="middle" font-size="9.5" fill="#557A5F">求交集</text>
+              <circle cx="190" cy="200" r="15" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="190" cy="200" r="7.5" fill="#6BBF8A"/><circle cx="190" cy="200" r="7.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="206" y="200" text-anchor="middle" font-size="9.5" fill="#557A5F">求并集</text>
+              <circle cx="138" cy="246" r="15" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="138" cy="246" r="7.5" fill="#6BBF8A"/><circle cx="138" cy="246" r="7.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="138" y="265" text-anchor="middle" font-size="9.5" fill="#557A5F">求补集</text>
+            </g>
+
+            <!-- ===== 已点亮：M2a + BG104（绿） ===== -->
+            <g font-weight="500">
+              <circle cx="150" cy="318" r="17" fill="#6BBF8A" opacity="0.20" filter="url(#g)"/><circle cx="150" cy="318" r="8.5" fill="#6BBF8A"/><circle cx="150" cy="318" r="8.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="146" y="337" text-anchor="middle" font-size="10.5" fill="#456A50">定义域优先</text>
+              <circle cx="135" cy="405" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="135" cy="405" r="8" fill="#6BBF8A"/><circle cx="135" cy="405" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="132" y="424" text-anchor="middle" font-size="10.5" fill="#456A50">求函数值 f(a)</text>
+              <circle cx="255" cy="425" r="16" fill="#6BBF8A" opacity="0.18" filter="url(#g)"/><circle cx="255" cy="425" r="8" fill="#6BBF8A"/><circle cx="255" cy="425" r="8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.7"/>
+              <text x="255" y="444" text-anchor="middle" font-size="9.5" fill="#557A5F">二次函数闭区间最值</text>
+            </g>
+
+            <!-- ===== 下一个（蓝） ===== -->
+            <g>
+              <text x="252" y="234" text-anchor="middle" font-size="9.5" fill="#5E86A8" font-weight="600">下一个</text>
+              <circle cx="252" cy="252" r="11.5" fill="#F2F8FC" stroke="#93B8D6" stroke-width="2" stroke-dasharray="4 3"/>
+              <text x="252" y="276" text-anchor="middle" font-size="9.5" fill="#5E86A8">由图象判定不等式解集</text>
+              <text x="285" y="376" text-anchor="middle" font-size="9.5" fill="#5E86A8" font-weight="600">下一个</text>
+              <circle cx="285" cy="394" r="11.5" fill="#F2F8FC" stroke="#93B8D6" stroke-width="2" stroke-dasharray="4 3"/>
+              <text x="288" y="416" text-anchor="middle" font-size="9.5" fill="#5E86A8">用定义判断单调性</text>
+            </g>
+
+            <!-- ===== 选中：M2a-03 ===== -->
+            <g font-weight="600">
+              <circle cx="200" cy="368" r="24" fill="#6BBF8A" opacity="0.26" filter="url(#g)"/>
+              <circle cx="200" cy="368" r="19" fill="none" stroke="#6BBF8A" stroke-width="2" stroke-dasharray="3 3" opacity="0.85"/>
+              <circle cx="200" cy="368" r="11.5" fill="#5E9C74"/><circle cx="200" cy="368" r="11.5" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width="2.1"/>
+              <text x="200" y="348" text-anchor="middle" font-size="11" fill="#456A50">求函数定义域</text>
+            </g>
+          </svg>
+
+          <div class="kcard">
+            <div class="grip"></div>
+            <div class="kn"><span class="gd"></span>求函数定义域</div>
+            <div class="kd">就是「x 能取哪些值不会出问题」——分母不能是 0，根号里不能是负数。</div>
+            <div class="div"></div>
+            <div class="row"><span class="lab">判定标准</span><span class="val">能求简单解析式定义域</span></div>
+            <div class="row"><span class="lab">例题</span><span class="val eg">求 f(x)=√(x+2)/(x−1) 的定义域</span></div>
+            <div class="kdate">✦ 你是在 5 月 12 日点亮的</div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ================= 空状态 ================= -->
+    <div class="unit">
+      <div class="ulabel"><b>空状态</b> · 全图都在，只亮了第一个</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:20</span><span><span class="bar"><i></i></span></span></div>
+        <div class="maphead">
+          <span class="back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></span>
+          <div><h2>我的知识地图</h2><div class="sub" style="color:var(--text-2)">整张地图都在，正等第一个光点亮起</div></div>
+        </div>
+        <div class="canvas">
+          <svg viewBox="0 0 368 684" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="g2" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="6"/></filter>
+            </defs>
+            <g stroke="#E7DFD0" stroke-width="1.4" fill="none" stroke-linecap="round">
+              <line x1="52" y1="95" x2="118" y2="88"/><line x1="52" y1="95" x2="46" y2="152"/><line x1="52" y1="95" x2="104" y2="150"/>
+              <line x1="118" y1="88" x2="170" y2="120"/><line x1="104" y1="150" x2="170" y2="120"/><line x1="170" y1="120" x2="150" y2="188"/>
+              <line x1="150" y1="188" x2="96" y2="210"/><line x1="150" y1="188" x2="190" y2="200"/><line x1="150" y1="188" x2="138" y2="246"/>
+              <path d="M138 246 C150 280 150 300 150 318"/>
+              <line x1="150" y1="318" x2="200" y2="368"/><line x1="200" y1="368" x2="135" y2="405"/>
+              <line x1="200" y1="368" x2="318" y2="225"/><line x1="200" y1="368" x2="330" y2="360"/>
+              <line x1="235" y1="430" x2="150" y2="318"/><line x1="318" y1="225" x2="316" y2="98"/>
+              <line x1="46" y1="152" x2="50" y2="300"/><line x1="50" y1="300" x2="52" y2="252"/><line x1="58" y1="420" x2="50" y2="300"/>
+            </g>
+            <g fill="#D9D1C3">
+              <circle cx="52" cy="95" r="7"/><circle cx="46" cy="152" r="6.5"/><circle cx="118" cy="88" r="6.5"/><circle cx="104" cy="150" r="6.5"/>
+              <circle cx="170" cy="120" r="6.5"/><circle cx="150" cy="188" r="6.5"/><circle cx="96" cy="210" r="6"/><circle cx="190" cy="200" r="6"/><circle cx="138" cy="246" r="6"/>
+              <circle cx="135" cy="405" r="6.5"/><circle cx="255" cy="425" r="6.5"/>
+              <circle cx="310" cy="86" r="6"/><circle cx="326" cy="98" r="6"/><circle cx="316" cy="106" r="5"/>
+              <circle cx="318" cy="212" r="6"/><circle cx="334" cy="226" r="6"/><circle cx="320" cy="236" r="5"/>
+              <circle cx="330" cy="352" r="6"/><circle cx="344" cy="366" r="6"/><circle cx="330" cy="374" r="5"/>
+              <circle cx="58" cy="412" r="6"/><circle cx="44" cy="426" r="6"/><circle cx="62" cy="430" r="5"/>
+              <circle cx="44" cy="294" r="6"/><circle cx="56" cy="306" r="6"/><circle cx="42" cy="314" r="5"/>
+              <circle cx="46" cy="244" r="6"/><circle cx="58" cy="256" r="6"/><circle cx="44" cy="264" r="5"/>
+              <circle cx="172" cy="438" r="6"/><circle cx="188" cy="448" r="6"/><circle cx="176" cy="452" r="5"/>
+              <circle cx="220" cy="436" r="6"/><circle cx="238" cy="448" r="6"/>
+            </g>
+            <g font-size="10" fill="#BDB3A3" text-anchor="middle">
+              <text x="318" y="124">平面向量</text><text x="328" y="254">三角函数</text><text x="338" y="392">导数</text>
+              <text x="56" y="448">概率统计</text><text x="48" y="332">立体几何</text><text x="50" y="282">解析几何</text>
+              <text x="180" y="470">数列</text><text x="228" y="468">地基层</text>
+            </g>
+            <g stroke="#9FC3DE" stroke-width="2.2" fill="none" stroke-dasharray="5 4" stroke-linecap="round"><line x1="150" y1="318" x2="218" y2="345"/></g>
+            <g font-weight="500">
+              <circle cx="150" cy="318" r="20" fill="#6BBF8A" opacity="0.22" filter="url(#g2)"/>
+              <circle cx="150" cy="318" r="11" fill="#6BBF8A"/><circle cx="150" cy="318" r="11" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+              <text x="150" y="348" text-anchor="middle" font-size="12" fill="#456A50">定义域优先</text>
+            </g>
+            <g>
+              <text x="218" y="328" text-anchor="middle" font-size="10" fill="#5E86A8" font-weight="600">下一个</text>
+              <circle cx="218" cy="345" r="12" fill="#F2F8FC" stroke="#93B8D6" stroke-width="2" stroke-dasharray="4 3"/>
+              <text x="222" y="370" text-anchor="middle" font-size="10.5" fill="#5E86A8">求函数定义域</text>
+            </g>
+          </svg>
+          <div class="ecap">旅程从这一步开始<span class="s">点亮一道题，灰色地图就会染上一块绿 ✦</span></div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

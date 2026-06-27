@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光点 · 界面1 首页</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont/style.css">
+<style>
+  :root{
+    --bg:#FBF7F0; --card:#FFFDF9;
+    --primary:#7FA886; --primary-deep:#5E8868;
+    --glow:#6BBF8A; --amber:#E5B570; --invite:#93B8D6;
+    --text:#403A33; --text-2:#8C857B; --text-3:#B4ADA3;
+    --line:#EFE8DD;
+    --shadow:0 8px 24px rgba(120,110,95,.10);
+    --r-m:18px; --r-l:24px;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --hand:"LXGW WenKai","PingFang SC",var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#F2ECE1;color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .stage{max-width:1080px;margin:0 auto;padding:40px 20px 70px;}
+  .stage-head{text-align:center;margin-bottom:34px;}
+  .stage-head .st{display:inline-block;font-size:12px;letter-spacing:.06em;color:var(--primary-deep);background:#EAF2EC;padding:5px 13px;border-radius:999px;}
+  .stage-head h1{font-family:var(--hand);font-size:30px;font-weight:400;margin:14px 0 6px;}
+  .stage-head p{margin:0;color:var(--text-2);font-size:14.5px;}
+
+  .frames{display:flex;flex-wrap:wrap;gap:46px;justify-content:center;align-items:flex-start;}
+  .unit{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .ulabel{font-size:14px;color:var(--text-2);}
+  .ulabel b{color:var(--primary-deep);font-weight:600;}
+
+  /* phone */
+  .phone{width:390px;border-radius:46px;background:#2E2A25;padding:11px;box-shadow:0 34px 80px rgba(90,80,66,.28);}
+  .screen{width:368px;height:798px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;}
+  .statusbar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 8px;font-size:14px;font-weight:600;color:var(--text);}
+  .statusbar .r{display:flex;align-items:center;gap:6px;}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#15130F;border-radius:16px;}
+  .bar{display:inline-block;width:17px;height:11px;border:1.4px solid var(--text);border-radius:3px;position:relative;}
+  .bar::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--text);border-radius:1px;}
+  .bar i{position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:var(--text);border-radius:1px;}
+
+  .content{height:748px;display:flex;flex-direction:column;padding:10px 24px 30px;}
+
+  .greet{font-family:var(--hand);font-size:29px;line-height:1.35;margin:18px 0 0;}
+  .greet .em{color:var(--primary-deep);}
+  .subline{font-size:15px;color:var(--text-2);margin:9px 0 0;}
+
+  .cards{margin-top:34px;display:flex;flex-direction:column;gap:16px;}
+  .act{position:relative;display:flex;align-items:center;gap:16px;background:var(--card);border-radius:var(--r-l);padding:22px 20px;box-shadow:var(--shadow);border:1px solid var(--line);cursor:pointer;transition:transform .14s ease,box-shadow .25s ease;}
+  .act:active{transform:scale(.985);}
+  .act .ic{width:60px;height:60px;border-radius:18px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .act .ic.green{background:#E7F1E9;}
+  .act .ic.amber{background:#FAF0DC;}
+  .act .tx{flex:1;}
+  .act .tt{font-size:18.5px;font-weight:600;}
+  .act .ss{font-size:13.5px;color:var(--text-2);margin-top:4px;line-height:1.5;}
+  .act .chev{color:var(--text-3);flex:none;}
+  .ic-svg{width:28px;height:28px;}
+
+  .spacer{margin-top:auto;}
+
+  /* recap (has-record) */
+  .recap{background:#EAF2EC;border-radius:var(--r-m);padding:16px 18px;display:flex;align-items:center;gap:13px;}
+  .recap .gd{width:13px;height:13px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 4px rgba(107,191,138,.2),0 0 14px rgba(107,191,138,.6);flex:none;}
+  .recap .rt{flex:1;}
+  .recap .r1{font-size:15px;color:var(--primary-deep);}
+  .recap .r1 b{font-weight:600;}
+  .recap .r2{font-size:12.5px;color:#7E9A84;margin-top:2px;}
+  .maplink{margin-top:16px;text-align:center;}
+  .maplink a{color:var(--primary-deep);font-size:15px;font-weight:500;text-decoration:none;}
+
+  /* empty state cues */
+  .glowring{position:absolute;inset:-4px;border-radius:calc(var(--r-l) + 4px);border:2px solid var(--glow);opacity:.0;animation:pulse 2.6s ease-in-out infinite;pointer-events:none;}
+  @keyframes pulse{0%{opacity:.0;transform:scale(.99);}50%{opacity:.55;transform:scale(1.01);}100%{opacity:0;transform:scale(.99);}}
+  .startcue{display:flex;align-items:center;gap:7px;margin:0 0 10px 8px;font-family:var(--hand);font-size:17px;color:var(--primary-deep);}
+  .startcue svg{transform:rotate(90deg);}
+  .emptyhint{background:#FAF0DC;border-radius:var(--r-m);padding:15px 18px;display:flex;align-items:center;gap:12px;}
+  .emptyhint .sk{flex:none;color:var(--amber);}
+  .emptyhint .et{font-size:14px;color:#9A7B3C;line-height:1.5;}
+  .emptyhint .et b{color:#83642C;font-weight:600;}
+  @media(prefers-reduced-motion:reduce){.glowring{animation:none;opacity:.4;}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-head">
+    <span class="st">界面 1 · 场景入口首页 · 第 2 步 / 共 7 步</span>
+    <h1>嗨，今天想从哪开始？</h1>
+    <p>一屏只做一件事：邀请她挑一个开始。没有分数、没有待办、没有红点。</p>
+  </div>
+
+  <div class="frames">
+
+    <!-- ============ 有记录态 ============ -->
+    <div class="unit">
+      <div class="ulabel"><b>有记录态</b> · 回来的她</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar">
+          <span>21:08</span>
+          <span class="r"><svg width="17" height="12" viewBox="0 0 17 12" fill="var(--text)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><span class="bar"><i></i></span></span>
+        </div>
+
+        <div class="content">
+          <div class="greet">嗨，<span class="em">今天想从哪开始？</span></div>
+          <div class="subline">不急，挑一个就好。</div>
+
+          <div class="cards">
+            <div class="act">
+              <div class="ic green">
+                <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#5E8868" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+              </div>
+              <div class="tx"><div class="tt">拍一下这道题</div><div class="ss">把刚卡住的那道拍进来，我们一起看看</div></div>
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+            <div class="act">
+              <div class="ic amber">
+                <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#C28F3E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+              </div>
+              <div class="tx"><div class="tt">补一段你当时怎么想的</div><div class="ss">说说看就好，想到哪说到哪</div></div>
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <div class="recap">
+            <span class="gd"></span>
+            <div class="rt">
+              <div class="r1">上次你点亮了：<b>函数的定义域</b></div>
+              <div class="r2">你的地图上已经有 5 个光点了</div>
+            </div>
+          </div>
+          <div class="maplink"><a href="#">看看我的知识地图 →</a></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ 空状态 ============ -->
+    <div class="unit">
+      <div class="ulabel"><b>空状态</b> · 第一次见面的她</div>
+      <div class="phone"><div class="screen">
+        <div class="island"></div>
+        <div class="statusbar">
+          <span>21:08</span>
+          <span class="r"><svg width="17" height="12" viewBox="0 0 17 12" fill="var(--text)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><span class="bar"><i></i></span></span>
+        </div>
+
+        <div class="content">
+          <div class="greet">嗨，<span class="em">很高兴遇见你 ✦</span></div>
+          <div class="subline">今天，我们从一道题开始就好。</div>
+
+          <div class="cards">
+            <div class="startcue">
+              从这里开始
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </div>
+            <div class="act">
+              <div class="glowring"></div>
+              <div class="ic green">
+                <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#5E8868" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+              </div>
+              <div class="tx"><div class="tt">拍一下这道题</div><div class="ss">不用准备什么，挑手边一道就好</div></div>
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+            <div class="act">
+              <div class="ic amber">
+                <svg class="ic-svg" viewBox="0 0 24 24" fill="none" stroke="#C28F3E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+              </div>
+              <div class="tx"><div class="tt">补一段你当时怎么想的</div><div class="ss">想录给自己听也行，没人评判</div></div>
+              <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <div class="emptyhint">
+            <svg class="sk" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.6 4.4 4.4 1.6-4.4 1.6L12 14.5l-1.6-4.4L6 8.5l4.4-1.6L12 2.5z"/></svg>
+            <div class="et">你的光点地图还空着，<b>第一道题，会点亮第一个光点。</b></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
