@@ -29,7 +29,7 @@
 | 🔥 | [00_CURRENT.md](00_CURRENT.md) | 当前项目整体状态 + 下一步 + 交接 |
 | ✅ | [DECISIONS.md](DECISIONS.md) | 技术决策台账（D 系列 + 门禁 + 开放项速查） |
 | ✅ | [progress.md](progress.md) | 项目历史轨迹，每轮追加 |
-| 🟡 | [active_spec.md](active_spec.md) | 当前轮任务详情，每轮替换 |
+| 🔥 | [active_spec.md](active_spec.md) | 当前轮任务详情（第 1 阶段开发中），每轮替换 |
 | ✅ | [reference/TECH_PLAN_v2.md](reference/TECH_PLAN_v2.md) | 技术方案权威版：战略定位/知识图谱/诊断引擎/BKT/AI 管线 |
 | ✅ | [reference/OPS_handbook.md](reference/OPS_handbook.md) | 运营手册：共创者框架/医生模式/上线 SOP/措辞铁律 |
 | ✅ | [reference/BOOTSTRAP_new_project_handbook.md](reference/BOOTSTRAP_new_project_handbook.md) | 新项目引导手册 |
@@ -70,6 +70,11 @@
 | 🟡 | [plan/opencode-dual-runtime-plan.md](plan/opencode-dual-runtime-plan.md) | OpenCode 双运行时支持方案 |
 | 🟡 | [plan/frontend-architecture-plan.md](plan/frontend-architecture-plan.md) | 独立前端架构方案（待 Codex 评审） |
 | 🟡 | [plan/project-progress-review-2026-06-20.md](plan/project-progress-review-2026-06-20.md) | 项目进展审查 2026-06-20（已审计修正） |
+| ✅ | [plan/project-architecture-map-and-priority-plan.md](plan/project-architecture-map-and-priority-plan.md) | 项目全景架构图 + API 缺口 + 优先级建议 |
+| ✅ | [plan/capture-to-diagnosis-closed-loop-redesign.md](plan/capture-to-diagnosis-closed-loop-redesign.md) | 采集→诊断闭环重设计：四段闭环 + 优先级表 + 方案边界 |
+| 🔥 | [plan/nana-master-plan.md](plan/nana-master-plan.md) | 项目总纲：完成度/四段闭环/优先级/不做什么/核心约束 |
+| 🔥 | [plan/nana-development-phases.md](plan/nana-development-phases.md) | 5 阶段开发计划 + 依赖关系 + HTML mockup 逐页审计 |
+| 🔥 | [plan/nana-phase1-execution-plan.md](plan/nana-phase1-execution-plan.md) | 第 1 阶段执行计划：case API + 首页 + 采集壳 + 轻反馈（4 commits） |
 | 📦 | [plan/photo-guide-plan.md](plan/photo-guide-plan.md) | 拍照指南计划 |
 
 ### doc/executionlog/ — 执行日志
@@ -93,6 +98,7 @@
 | ✅ | [auditlog/container-split-prod-test-audit.md](auditlog/container-split-prod-test-audit.md) | 容器分层审计报告 ✅ 通过 |
 | ⚠️ | [auditlog/prompt-revision-audit.md](auditlog/prompt-revision-audit.md) | 提示词修订审计 ⚠️ 有条件通过 |
 | ✅ | [auditlog/project-progress-review-2026-06-20-audit.md](auditlog/project-progress-review-2026-06-20-audit.md) | 项目进展审查报告审计 ⚠️ 有条件通过 |
+| ⚠️ | [auditlog/nana-master-plan-audit.md](auditlog/nana-master-plan-audit.md) | 总纲 + 开发计划审计 ⚠️ 有条件通过（已修复） |
 | 📦 | [auditlog/photo-guide-audit.md](auditlog/photo-guide-audit.md) | 拍照指南审计 |
 
 ---
@@ -133,6 +139,14 @@
 | 🟡 | [reference/get-notes-interaction-research-workorder.md](reference/get-notes-interaction-research-workorder.md) | Get Notes 交互调研工单 |
 | 🟡 | [reference/get-notes-research-workorder.md](reference/get-notes-research-workorder.md) | Get Notes 调研工单 |
 | 🟡 | [reference/frontend-architecture-workorder.md](reference/frontend-architecture-workorder.md) | 前端架构工单（在跑） |
+| 🟡 | [reference/2026-06-27_capture-shell-diagnosis-skeleton-workorder.md](reference/2026-06-27_capture-shell-diagnosis-skeleton-workorder.md) | 采集壳 + 诊断骨架优化工单 |
+| 🟡 | [reference/2026-06-27_open-source-reuse-research-workorder.md](reference/2026-06-27_open-source-reuse-research-workorder.md) | 开源轮子补充调研工单（增量版） |
+| 🟡 | [reference/2026-06-27_open-source-absorption-plan-revision-workorder.md](reference/2026-06-27_open-source-absorption-plan-revision-workorder.md) | 开源轮子吸收后的前端方案收敛修订工单 |
+| 🟡 | [reference/2026-06-27_project-architecture-map-workorder.md](reference/2026-06-27_project-architecture-map-workorder.md) | 项目全景架构图 + 下一步优先级盘点工单 |
+| 🟡 | [reference/2026-06-27_external-research-capture-to-diagnosis-loop-workorder.md](reference/2026-06-27_external-research-capture-to-diagnosis-loop-workorder.md) | 外部调研：采集到诊断闭环案例工单 |
+| 🟡 | [reference/2026-06-27_video-resource-supplemental-research-workorder.md](reference/2026-06-27_video-resource-supplemental-research-workorder.md) | 外部调研：高中数学讲解视频资源补充工单 |
+| 🟡 | [reference/2026-06-27_video-resource-supplemental-research-workorder-v2.md](reference/2026-06-27_video-resource-supplemental-research-workorder-v2.md) | 外部调研：高中数学讲解视频资源补充工单（修订版） |
+| 🟡 | [reference/2026-06-27_project-ai-capture-to-diagnosis-loop-revision-workorder.md](reference/2026-06-27_project-ai-capture-to-diagnosis-loop-revision-workorder.md) | 项目 AI：采集到诊断闭环重设计工单 |
 | 📦 | [reference/photo-guide-workorder.md](reference/photo-guide-workorder.md) | 拍照指南工单 |
 | 📦 | [reference/vlm-transcribe-workorder.md](reference/vlm-transcribe-workorder.md) | VLM 转写工单 |
 | 📦 | [reference/M3_node_extraction_workorder.md](reference/M3_node_extraction_workorder.md) | M3 节点提取工单 |
@@ -171,6 +185,8 @@
 | ✅ | [research/技术方案v1.1补丁.md](research/技术方案v1.1补丁.md) | 技术方案 v1.1 补丁 |
 | ✅ | [research/初诊题产出.md](research/初诊题产出.md) | 初诊题产出 |
 | ✅ | [research/M1 初诊题首批.md](research/M1 初诊题首批.md) | M1 初诊题首批 |
+| 🟡 | [research/同品调研/nana_open_source_absorption_summary.md](research/同品调研/nana_open_source_absorption_summary.md) | 开源轮子吸收摘要（给项目 AI） |
+| 🟡 | [research/同品调研/open-source-dialectical-review.md](research/同品调研/open-source-dialectical-review.md) | 开源轮子调研辩证评审 |
 | 📦 | [research/transcripts/](research/transcripts/) | 真题转写（2024 三版 + 2025/2026） |
 | 📦 | [research/extracted/](research/extracted/) | 真题提取 OCR 图片（2024-2026） |
 | 📦 | [research/comp_pages/](research/comp_pages/) | 竞品截图 |
@@ -216,5 +232,5 @@
 
 ---
 
-> 最后更新：2026-06-20 | 维护者：人类 + Claude + 三代理
-> 本次更新：新进展审查报告 + 审计报告 + 参考文件补充
+> 最后更新：2026-06-27 | 维护者：人类 + Claude + 三代理
+> 本次更新：总纲 + 5 阶段计划 + 第 1 阶段执行计划 + 审计报告 + 全景架构图 + 闭环重设计

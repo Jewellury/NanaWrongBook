@@ -270,11 +270,46 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 - **最新提交**: `6d2bd3a` — `docs: 更新参考项目审计笔记 + 新增项目出厂配置指南`
 - **待提交**: 多项文档待 commit（见 git status）
 
+---
+
+## 2026-06-27 · 宏观规划轮：总纲 + 5 阶段计划 + 第 1 阶段执行计划
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 06-27 | 项目全景架构图 + 优先级盘点 | ✅ | `plan/project-architecture-map-and-priority-plan.md` — 架构图、已完成/待完成矩阵、API 缺口清单、优先级建议 |
+| 06-27 | 采集→诊断闭环重设计 | ✅ | `plan/capture-to-diagnosis-closed-loop-redesign.md` — 四段式闭环重定义、优先级调整表、方案边界、文档修订建议 |
+| 06-27 | 总纲文档 | ✅ | `plan/nana-master-plan.md` — 整合所有已有结论：完成度/四段闭环/优先级/不做什么/核心约束 |
+| 06-27 | 5 阶段开发计划 | ✅ | `plan/nana-development-phases.md` — 依赖关系图、每阶段前后端/数据/API 四维度、验收标准、HTML mockup 逐页审计 |
+| 06-27 | 审计 | ⚠️ | 审计发现 2 个问题（M1 表数归属 + vlm 行数），已修复并推送。有条件通过 |
+| 06-27 | 第 1 阶段执行计划 | ✅ | `plan/nana-phase1-execution-plan.md` — 4 commit 拆分、Prisma 规格/API 契约/组件接口/mock 数据/测试要求。可直接交给 execute-agent |
+
+### 关键决策
+
+- **项目重新定义"完整闭环"**：采集→单题轻反馈（情绪闭环）→ 批次诊断（教学闭环）→ 补救动作（开方转诊）→ 复诊验证（疗效确认）→ 状态回流
+- **优先级重排**：case/artifact API 和采集壳提升为 P0；单题轻反馈/知识地图/批次诊断报告/Session UI 为 P1；视频推荐/复诊/Newman/方法族标签为 P2；方法族地图前台化/全自动变式题/FSRS/Block editor 暂缓
+- **AI 模型定 DeepSeek-v4-flash** 为主力开发模型
+
 ### 全景六线（A→F）
 
-- **A. 主代码线**: M0✅ M1✅ M2✅ M3a✅ M3c✅，已合 main。下一轮待定（倾向 session UI 或 Newman 归因）
+- **A. 主代码线**: M0✅ M1✅ M2✅ M3a✅ M3c✅。**第 1 阶段开发中（采集基础壳 P0）**
 - **B. 配题/Item 库**: batch1 101题入库。长尾待产：M1 B/C层、M2a 其余、M3–M8、BG001-099
 - **C. 误解库**: Misconception 表已建，20+条四联体种子未灌（小活，可并入归因轮）
-- **D. 真题解析**: 提示词 A 就绪。2024/2025/2026 三年转写 draft 已产出，待我方核对数字/符号/公式后入库
+- **D. 真题解析**: 提示词 A 就绪。2024/2025/2026 三年转写 draft 已产出，待核对入库
 - **E. 人肉回路**: 已启动（外甥女拍错题），拍照指引已产出。待素材用于诊断链路验证
 - **F. 运营回路/题库健康度**: backlog 在册（`doc/spec/ops-feedback-loop-backlog.md`），未来轮
+
+### 交付物
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `plan/project-architecture-map-and-priority-plan.md` | 新增 | 全景架构图 + API 缺口 |
+| `plan/capture-to-diagnosis-closed-loop-redesign.md` | 新增 | 四段闭环重设计 + 优先级表 |
+| `plan/nana-master-plan.md` | 新增 | 项目总纲 |
+| `plan/nana-development-phases.md` | 新增 | 5 阶段开发计划 + HTML mockup 审计 |
+| `plan/nana-phase1-execution-plan.md` | 新增 | 第 1 阶段可执行计划 |
+| `auditlog/nana-master-plan-audit.md` | 新增 | 审计报告 |
+| `project-architecture-map-and-priority-plan.html` | 新增 | 架构图 HTML 版 |
+| `active_spec.md` | 更新 | 切换为第 1 阶段状态 |
+| `00_CURRENT.md` | 更新 | 同步到新阶段

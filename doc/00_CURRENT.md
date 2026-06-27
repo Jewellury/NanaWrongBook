@@ -5,16 +5,16 @@
 > 历史叙事 → [progress.md](progress.md)
 > 决策台账 → [DECISIONS.md](DECISIONS.md)
 
-Last updated: 2026-06-20 | Updated by: claude (评审 AI 六线全景合并)
+Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产出)
 
 ---
 
 ## Freshness Check（冷启动防陈旧）
 
-- Latest completed milestone: **M3c 周末诊断编排 + 纸质包 PDF**（2026-06-15，审计 ✅ 通过）
-- Latest commit: `6d2bd3a` — `docs: 更新参考项目审计笔记 + 新增项目出厂配置指南`
+- Latest completed milestone: **P0 阶段总纲 + 开发计划产出**（2026-06-27，审计 ✅ 通过）
+- Latest commit: `5f8cea3` — `docs(plan): 第 1 阶段执行计划——采集基础壳（4 commits）`
 - Current branch: `dev`（main 已同步到 M3c）
-- Is current fresh: ✅ fresh — 处于 M3c 完成后的并行推进期
+- Is current fresh: ⚠️ 已进入第 1 阶段开发——采集基础壳。详见下方当前活跃任务
 
 ---
 
@@ -34,7 +34,7 @@ Last updated: 2026-06-20 | Updated by: claude (评审 AI 六线全景合并)
 | M3b 配题灌入 | ⬜ | — | 长尾配题（数据工作，可并行） |
 | M4 探针下探 | ⬜ | — | 深化诊断推理能力 |
 
-**下一步**：等真实使用反馈再定下一轮（倾向 session UI 或 Newman 归因）
+**下一步**：第 1 阶段开发——采集基础壳（P0）。详见 `doc/plan/nana-phase1-execution-plan.md`
 
 ### B. 配题 / Item 库
 
@@ -88,17 +88,19 @@ Last updated: 2026-06-20 | Updated by: claude (评审 AI 六线全景合并)
 
 ---
 
-## 当前活跃任务（双线并行）
+## 当前活跃任务：第 1 阶段开发——采集基础壳（P0）
 
-### 线 1：真题转写复核（D 线）
-- 2024/2025/2026 三年真题 VLM 转写已产出 draft
-- 待我方逐一核对数字、符号、公式
-- 脚本就绪：`scripts/vlm-transcribe.ts`
+**目标**：让用户进入 `/nana`，拍一道题，口述思路，存成 case，收到即时文字回应。
+**执行计划**：`doc/plan/nana-phase1-execution-plan.md`（4 个 commit，严格顺序）
 
-### 线 2：前端架构修改复核（A 线延伸）
-- `doc/plan/frontend-architecture-plan.md`（570 行）已产出
-- 待 Codex 架构评审 → 用户拍板切片 → 开建
-- 核心约束：自己的路由命名空间、不改上游文件、复用=import不改
+| # | 内容 | 状态 |
+|---|------|:--:|
+| ① | Prisma schema + case API | ⬜ |
+| ② | 场景入口首页 + `/nana` layout | ⬜ |
+| ③ | 采集壳 UI + 组件（题图/录音/逐字稿/轻反馈） | ⬜ |
+| ④ | 单题轻反馈规则版 API | ⬜ |
+
+详细拆分见 [active_spec.md](active_spec.md) 和 [plan/nana-phase1-execution-plan.md](plan/nana-phase1-execution-plan.md)。
 
 ---
 
@@ -140,14 +142,16 @@ Last updated: 2026-06-20 | Updated by: claude (评审 AI 六线全景合并)
 
 ## 下一步
 
-**立即并行推进**（不互斥）：
-1. **真题复核**：逐卷核对三年转写 draft 的数字/符号/公式 → 修正 → 入库
-2. **前端评审**：Codex 架构评审前端方案 → 用户拍板切片 1 → execute-agent 实施
+**当前执行**：第 1 阶段开发——采集基础壳，按 `nana-phase1-execution-plan.md` 4 个 commit 推进。
 
-**下一轮开发候选**（待前述完成后决策）：
-- M4 探针下探（深化诊断推理，不依赖前端）
-- Session UI（将 M3c API 串成完整交互界面）
-- Newman 归因（引入 AI 追问/判分）
+**并行保持**：真题转写复核（D 线）与第 1 阶段不互斥，可继续推进。
+- 2024/2025/2026 三年 draft 已产出，待核对数字/符号/公式后入库
+
+**后续阶段候选**（第 1 阶段完成后）：
+- 第 2 阶段：知识地图（P1）
+- 第 3 阶段：批次诊断报告 + Session UI（P1）
+- 第 4 阶段：视频推荐 + 复诊验证（P2）
+- 第 5 阶段：Newman-lite + 方法族标签 + ASR/VLM 接通（P2）
 
 ---
 
