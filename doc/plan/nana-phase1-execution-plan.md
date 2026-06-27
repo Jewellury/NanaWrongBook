@@ -3,7 +3,7 @@
 > 性质：`/plan` 阶段产出。面向 execute-agent 的可执行规格。
 > 依赖总纲：`nana-master-plan.md`、`nana-development-phases.md` §1
 > 产生日期：2026-06-27
-> 预计工期：5 个 commit / ~1-2 周
+> 预计工期：4 个 commit / ~1-2 周
 
 ---
 
@@ -229,7 +229,7 @@ export async function getCase(id: string) {
 "test:nana:integration": "vitest run src/__tests__/integration/nana"
 ```
 
-同时更新 `test:all` 脚本以包含 nana 测试。
+同时更新 `test:all` 脚本以包含 nana 测试：`"test:all": "npm run test:unit && npm run test:integration && npm run test:nana:unit && npm run test:nana:integration"`（串行追加，保持与现有 `test:all` 格式一致）。
 
 ### 2.7 Commit ① 验收
 
@@ -610,6 +610,9 @@ API 集成测试：
 | `src/lib/nana/nana-api-client.ts` | ① | 前端 API 客户端 |
 | `src/app/nana/layout.tsx` | ② | 段级鉴权 layout |
 | `src/app/nana/page.tsx` | ② | 场景入口首页 |
+| `src/components/nana/shared/action-card.tsx` | ② | 首页行动卡组件 |
+| `src/components/nana/shared/recap-bar.tsx` | ② | 首页回顾条组件 |
+| `src/components/nana/shared/empty-hint.tsx` | ② | 首页空提示组件 |
 | `src/app/nana/capture/page.tsx` | ③ | 采集壳主页面 |
 | `src/components/nana/capture/question-image-viewer.tsx` | ③ | 题图查看器 |
 | `src/components/nana/capture/voice-recorder.tsx` | ③ | 录音控件壳 |
