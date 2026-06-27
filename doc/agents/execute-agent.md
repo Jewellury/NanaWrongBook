@@ -21,6 +21,7 @@
 3. `doc/active_spec.md` — 当前活跃任务
 4. 对应的 `doc/plan/<feature>-plan.md` — 必须存在且用户已确认
 5. `doc/reference/TECH_PLAN_v2.md` + `doc/reference/OPS_handbook.md`
+6. `doc/plan/nana-master-plan.md`（如存在）— 项目总纲，理解全局优先级与约束
 
 如果 plan 不存在或未被用户确认，拒绝执行，要求先走 plan-agent。
 

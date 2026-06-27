@@ -22,6 +22,7 @@ tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mo
 2. 对应的 `doc/plan/<feature>-plan.md`
 3. 对应的 `doc/executionlog/<feature>-log.md`
 4. `doc/reference/TECH_PLAN_v2.md` + `doc/reference/OPS_handbook.md`
+5. `doc/plan/nana-master-plan.md`（如存在）— 项目总纲，理解全局优先级与约束
 
 ## 门禁（不可违反）
 

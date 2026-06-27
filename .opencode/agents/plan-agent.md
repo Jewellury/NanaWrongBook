@@ -34,6 +34,7 @@ permission:
 4. `doc/active_spec.md` — 当前活跃任务
 5. `doc/progress.md` — 项目历史轨迹
 6. `doc/reference/TECH_PLAN_v2.md` + `doc/reference/OPS_handbook.md`
+7. `doc/plan/nana-master-plan.md`（如存在）— 项目总纲，整合已有结论与约束
 
 ## 门禁（不可违反）
 
