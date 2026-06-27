@@ -21,7 +21,7 @@
 | 里程碑 | 状态 | 核心产出 |
 |--------|:--:|----------|
 | M0 环境搭建 | ✅ | Docker + AI 切 DeepSeek + Git 三分支 |
-| M1 知识图谱数据层 | ✅ | 12 张 Prisma 新表 + 48 节点/36 边/18 桥 + 内存图引擎 `lib/graph.ts` |
+| M1 知识图谱数据层 | ✅ | 8 张 Prisma 新表 + 48 节点/36 边/18 桥 + 内存图引擎 `lib/graph.ts`（M1 建 8 张，M2+M3a 追加 4 张，累计 12 张） |
 | M2 归因流程骨架 | ✅ | 8 步状态机 `lib/session-machine.ts` + 4 个基础 API |
 | M3a 追踪骨架 | ✅ | 101 题入库 + KST-lite + BKT + `map`/`initial` API |
 | M3c 周末编排+纸质包 | ✅ | 编排器 `lib/diagnosis-orchestrator.ts` + `session-items`/`submit-answers`/`paper-pack` API + 打印页 |
@@ -82,7 +82,7 @@
 | 制品 | 路径 | 状态 |
 |------|------|:--:|
 | 纸质包打印预览 | `src/app/diagnosis/paper-pack/page.tsx`（242 行） | ✅ |
-| VLM 转写脚本 | `scripts/vlm-transcribe.ts`（385 行） | ✅ |
+| VLM 转写脚本 | `scripts/vlm-transcribe.ts`（384 行） | ✅ |
 | 拍照指引 | `doc/guide/photo-guide-*.md` + HTML 打印版 | ✅ |
 | 真题转写 | 2024 完整版 / 2025-2026 draft | 🟡 待复核入库 |
 
