@@ -313,3 +313,46 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 | `project-architecture-map-and-priority-plan.html` | 新增 | 架构图 HTML 版 |
 | `active_spec.md` | 更新 | 切换为第 1 阶段状态 |
 | `00_CURRENT.md` | 更新 | 同步到新阶段
+
+---
+
+## 2026-06-28 · 第 1 阶段：采集基础壳（P0）
+
+### 已完成
+
+4 个 commit 全部完成，经审计通过 ✅。
+
+| Commit | 内容 | 状态 | 说明 |
+|--------|------|:--:|------|
+| ① `df06c9b` | Prisma schema + case API | ✅ | Case + Artifact 表，POST/GET case API，前端客户端，4 单测 + 5 集成测 |
+| ② `a63e36a` | 场景入口首页 + /nana layout | ✅ | 鉴权 layout，双状态首页（有记录/空状态），3 共享组件 |
+| ③ `1de9631` | 采集壳 UI + 组件 | ✅ | 题图查看器/录音控件/逐字稿面板/轻反馈骨架/三 tab 切换/mock 数据 |
+| ④ `643f954` | 单题轻反馈规则版 API | ✅ | 关键词匹配 feedback-rules lib，POST feedback API，完善 light-feedback，16 单测 + 6 集成测 |
+
+### 交付物
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `src/app/nana/` | 新增 | 路由命名空间（layout + page + capture） |
+| `src/components/nana/` | 新增 | 前端组件（shared + capture 两组） |
+| `src/lib/nana/` | 新增 | nana 业务逻辑（api-client + feedback-rules） |
+| `src/app/api/nana/` | 新增 | Nana API 路由（cases + cases/[id] + cases/[id]/feedback） |
+| `prisma/schema.prisma` | 追加 | Case + Artifact 两个 model（末尾追加） |
+| `src/__tests__/unit/nana/` | 新增 | 2 个单元测试文件（20 测试） |
+| `src/__tests__/integration/nana/` | 新增 | 2 个集成测试文件（11 测试） |
+| `package.json` | 修改 | 追加 test:nana:unit + test:nana:integration，更新 test:all |
+| `doc/executionlog/nana-phase1-execution-log.md` | 新增 | 执行日志（含 3 条偏离记录） |
+| `doc/auditlog/nana-phase1-execution-audit.md` | 新增 | 审计报告 |
+
+### 测试结果
+
+- Docker 测试容器全量通过（9 套件 / 141 测试）
+- Production build 通过（exit 0）
+- DB 护栏生效（guard-db.ts 白名单）
+- 零上游表结构修改
+
+### 已知开放项（下一阶段）
+
+- 采集壳当前用 mock 数据（题面、逐字稿、ASR），第 5 阶段接真实 ASR/VLM
+- 轻反馈为关键词规则版（不调 LLM），第 2 阶段可升级为 LLM 驱动
+- `/nana/capture` 中 feedback API 调用使用 fallback ID `__preliminary__`，接真实 API 后需传递真实 caseId

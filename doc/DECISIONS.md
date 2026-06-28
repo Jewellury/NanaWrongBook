@@ -31,9 +31,11 @@
 ## 设计债（TD-###，待裁决）
 
 | ID | DateTime | Type | Decision | Evidence | Status |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | TD-1 | 2026-06-15 | design_debt | slipFlag 当前仅单 boolean，复诊"连续两次"判定需持久化 slipCount 字段 | [active_spec.md](active_spec.md) 设计债 #1 | proposed |
 | TD-2 | 2026-06-15 | design_debt | `/initial` 一步式初诊与 submit-answers 两条路径分叉，建议稳定后废弃 /initial | [active_spec.md](active_spec.md) 设计债 #2 | proposed |
+| TD-3 | 2026-06-28 | design_debt | light-feedback.tsx 中 caseId 未定义时使用 magic string `__preliminary__` 调用反馈 API。当前不引起 bug，但引入不存在的 ID 进入日志。第 5 阶段接通真实 API 时须传递真实 caseId。 | [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md) §问题清单 | accepted |
+| TD-4 | 2026-06-28 | design_debt | feedback API handler 不校验 case 是否存在（不查 DB），接收任意 caseId 返回反馈。第 5 阶段应加入 `prisma.case.findUnique` 校验，case 不存在返回 404。 | [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md) §问题清单 | accepted |
 
 ---
 
@@ -52,6 +54,8 @@
 
 - **TD-1** slipFlag → slipCount 字段迁移时机（建议 M4 一并处理）
 - **TD-2** /initial 废弃时机（建议 M4 稳定 submit-answers 路径后废弃）
+- **TD-3** light-feedback magic string `__preliminary__`（第 5 阶段接通真实 API 时处理）
+- **TD-4** feedback API 未校验 case 存在性（第 5 阶段接通真实 API 时处理）
 - **M3b vs M4 优先级**：下一轮先做哪个（建议 M4，见 [00_CURRENT.md](00_CURRENT.md) 下一步）
 - **上游测试环境隔离**：5 个上游测试在 `.env.test` 下失败，根因是上游对环境变量有隐含默认值假设。建议后续开独立计划处理
 
