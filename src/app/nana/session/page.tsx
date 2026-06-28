@@ -162,7 +162,7 @@ export default function SessionListPage() {
               {cards.map((card) => (
                 <Link
                   key={card.id}
-                  href={`/nana/session/${card.id}`}
+                  href={card.recordCount > 0 ? `/nana/session/${card.id}/report` : `/nana/session/${card.id}`}
                   className="block rounded-2xl border border-[#E8E0D4] bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
@@ -182,7 +182,7 @@ export default function SessionListPage() {
                       </div>
                     </div>
                     <span className="mt-1 text-sm font-medium text-[#7FA886]">
-                      {card.recordCount > 0 ? "再看结果 →" : "继续做 →"}
+                      {card.recordCount > 0 ? "查看结果 →" : "继续做 →"}
                     </span>
                   </div>
                 </Link>

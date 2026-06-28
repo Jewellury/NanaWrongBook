@@ -39,9 +39,9 @@ const RULES = [
   "➡️ 卡住了画个箭头，跳到下一题",
 ];
 
-function PaperPackContent() {
+export function PaperPackContent({ studentId: propStudentId }: { studentId?: string } = {}) {
   const searchParams = useSearchParams();
-  const studentId = searchParams.get("studentId") ?? "";
+  const studentId = propStudentId ?? searchParams.get("studentId") ?? "";
   const [data, setData] = useState<PaperPackData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -147,7 +147,7 @@ function PaperPackContent() {
                 这周咱们练练这个 → {group.nodeName}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {group.reason === "frontier" ? "🎯 新关卡，准备攻克" : "🔄 再巩固一下"} ·{" "}
+                {group.reason === "frontier" ? "🎯 新关卡，准备攻克" : "🔄 再练练这几道"} ·{" "}
                 {group.practiceItems.length} 道练习
               </p>
             </div>
@@ -201,7 +201,7 @@ function PaperPackContent() {
 
         {/* 页脚 */}
         <div className="text-center text-xs text-muted-foreground mt-16 print:mt-8 py-4 border-t">
-          Nana 诊断练习纸 · 仅供个人学习使用
+          Nana 练习小纸条 · 仅供个人学习使用
         </div>
       </div>
 

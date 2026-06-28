@@ -16,6 +16,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Camera, MessageSquareText } from "lucide-react";
 import { ActionCard } from "@/components/nana/shared/action-card";
 import { RecapBar } from "@/components/nana/shared/recap-bar";
@@ -113,12 +114,30 @@ export default function NanaPage() {
             <div className="mt-2 h-4 w-1/2 rounded bg-[#E8E0D4]" />
           </div>
         ) : hasRecords ? (
-          <RecapBar
-            latestNodeName={latestLitNode.name}
-            totalLitCount={litNodes.length}
-          />
+          <>
+            <RecapBar
+              latestNodeName={latestLitNode.name}
+              totalLitCount={litNodes.length}
+            />
+            {/* Session 入口（有记录态） */}
+            <Link
+              href="/nana/session"
+              className="mt-3 block rounded-2xl border border-dashed border-[#E8E0D4] bg-white/50 px-5 py-4 text-center text-sm font-medium text-[#5E8868] transition-all hover:bg-[#EAF2EC] hover:shadow-sm"
+            >
+              做个周末小检查？先从函数这条线看看 ✦
+            </Link>
+          </>
         ) : (
-          <EmptyHint />
+          <>
+            <EmptyHint />
+            {/* Session 入口（空状态） */}
+            <Link
+              href="/nana/session"
+              className="mt-3 block rounded-2xl border border-dashed border-[#E8E0D4] bg-white/50 px-5 py-4 text-center text-sm font-medium text-[#5E8868] transition-all hover:bg-[#EAF2EC] hover:shadow-sm"
+            >
+              做个周末小检查？先从函数这条线看看 ✦
+            </Link>
+          </>
         )}
       </div>
 
