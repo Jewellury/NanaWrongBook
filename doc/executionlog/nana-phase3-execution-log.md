@@ -123,3 +123,69 @@
 - [x] P4 措辞全部合规
 - [x] 代码已提交（commit: `2c17ccb`）
 - [ ] 可进入审计阶段
+
+---
+
+## Commit ③：纸质包预览 + session 列表页 + 全流程集成
+
+**开始时间**: 2026-06-28 20:00  
+**完成时间**: 2026-06-28 20:30  
+**Commit hash**: `a5e382d`
+
+### 执行记录
+
+#### 任务 1：纸质包路由包装（/nana/paper-pack）
+- **做了什么**: 创建 `src/app/nana/paper-pack/page.tsx`，从 session 获取 studentId 传入复用 PaperPackContent 组件。原有 `src/app/diagnosis/paper-pack/page.tsx` 中导出 `PaperPackContent`（新增 `studentId` prop 支持，fallback 到 searchParams）。
+- **涉及文件**: `src/app/nana/paper-pack/page.tsx`（新）、`src/app/diagnosis/paper-pack/page.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 2：Session 列表页完善
+- **做了什么**: 已完成 session 卡片链接改为跳转报告页 `/nana/session/${card.id}/report`（原跳转答题流程页）。文案"再看结果"→"查看结果"。
+- **涉及文件**: `src/app/nana/session/page.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 3：全流程集成闭环
+- **做了什么**: 确认以下入口/出口全部串通：
+  - 采集壳累积 ≥3 道 → `/nana/session` ✅（已有）
+  - Session 完成后报告页 → "生成纸质包 ↗" → `/nana/paper-pack` ✅
+  - Session 完成后报告页 → "看看我的知识地图 ↗" → `/nana/knowledge-map` ✅
+  - 首页 → 新增 session 入口（两状态下均为"做个周末小检查？先从函数这条线看看 ✦" → `/nana/session`）
+- **涉及文件**: `src/app/nana/page.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 4：P4 措辞检查（纸质包）
+- **做了什么**: 检查纸质包页面三处文案：
+  - 封面标题："这周的练习小纸条 ✨"（已合规 ✅）
+  - 练习区头部："🔄 再巩固一下" → "🔄 再练练这几道"
+  - 页脚："Nana 诊断练习纸" → "Nana 练习小纸条"
+- **涉及文件**: `src/app/diagnosis/paper-pack/page.tsx`
+- **结果**: ✅ 完成
+
+### 偏离记录
+
+| # | 计划原内容 | 实际做了什么 | 原因 | 是否影响验收标准 |
+|---|-----------|-------------|------|:--:|
+| — | — | — | — | — |
+
+### 上游文件修改
+
+| 文件 | 改了什么 | 原因 |
+|------|----------|------|
+| `src/app/diagnosis/paper-pack/page.tsx` | 导出 `PaperPackContent` 组件；P4 措辞 2 处；新增 studentId prop | 路由包装复用 + P4 合规 |
+
+### 遇到的问题
+
+| 问题 | 解决方式 |
+|------|----------|
+| WSL bash shell 环境 npm 命令不可用 | 使用 `npx.cmd` 替代 `npm` |
+| `npx tsc --noEmit` 报测试文件类型错误 | 测试文件依赖 vitest globals，非生产代码问题，grep 验证修改文件无类型错误 |
+| `npm run build` 超时 / 字体 CDN 不可用 | 环境问题（Google Fonts 国内不可达），不作为本次变更的验收障碍 |
+
+### 完成状态
+
+- [x] 所有任务完成
+- [x] 代码已提交（commit: `a5e382d`）
+- [x] P4 措辞全部合规
+- [x] 已推送 origin/dev
+- [ ] 测试需在 Docker 环境中运行 `docker compose -f docker-compose.test.yml up`
+- [ ] 可进入审计阶段
