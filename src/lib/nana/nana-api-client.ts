@@ -1,11 +1,12 @@
 /**
  * Nana API 客户端
  *
- * 封装前端调用 /api/nana/* 的接口。
+ * 封装前端调用 /api/nana/* 和 /api/diagnosis/* 的接口。
  * 遵循上游 api-client.ts 的 fetch 模式。
  */
 
-const BASE = '/api/nana';
+const NANA_BASE = '/api/nana';
+const DIAGNOSIS_BASE = '/api/diagnosis';
 
 export interface ArtifactInput {
   type: string;
@@ -31,7 +32,7 @@ export interface CaseResponse {
  * POST /api/nana/cases
  */
 export async function createCase(artifacts: ArtifactInput[]): Promise<CaseResponse> {
-  const res = await fetch(`${BASE}/cases`, {
+  const res = await fetch(`${NANA_BASE}/cases`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ artifacts }),
@@ -45,7 +46,19 @@ export async function createCase(artifacts: ArtifactInput[]): Promise<CaseRespon
  * GET /api/nana/cases/:id
  */
 export async function getCase(id: string): Promise<CaseResponse> {
-  const res = await fetch(`${BASE}/cases/${id}`);
+  const res = await fetch(`${NANA_BASE}/cases/${id}`);
   if (!res.ok) throw new Error(`getCase 失败: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * 获取知识地图数据
+ * GET /api/diagnosis/map?studentId=xxx[&mainlineId=xxx]
+ */
+export async function getKnowledgeMap(studentId: string, mainlineId?: string) {
+  const params = new URLSearchParams({ studentId });
+  if (mainlineId) params.set('mainlineId', mainlineId);
+  const res = await fetch(`${DIAGNOSIS_BASE}/map?${params}`);
+  if (!res.ok) throw new Error(`getKnowledgeMap 失败: ${res.status}`);
   return res.json();
 }

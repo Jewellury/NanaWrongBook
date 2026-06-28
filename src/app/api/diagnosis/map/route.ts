@@ -3,6 +3,7 @@
  *
  * GET /api/diagnosis/map?studentId=xxx[&mainlineId=M1]
  * → 返回学生全部节点的状态 + 学习前沿（最多 1-2，tier→权重排序截断）
+ * + 全量边（edges） + 主线定义（mainlines）+ 详情卡字段
  */
 
 import { NextResponse } from "next/server";
@@ -37,14 +38,17 @@ export async function GET(req: Request) {
     // 查询该学生的全部节点状态
     const states = await prisma.studentNodeState.findMany({
       where: { studentId },
-      select: { nodeId: true, status: true, masteryProb: true },
+      select: { nodeId: true, status: true, masteryProb: true, lastEvidence: true },
     });
 
     const stateMap = new Map(states.map(s => [s.nodeId, s]));
 
-    // 查询所有节点
+    // 查询所有节点（含详情卡字段）
     const nodes = await prisma.knowledgeNode.findMany({
-      select: { id: true, name: true, layer: true, tier: true },
+      select: {
+        id: true, name: true, layer: true, tier: true,
+        judgeCriteria: true, sampleItem: true, teachingNotes: true,
+      },
       where: mainlineId ? {
         mainlines: { some: { mainlineId } },
       } : undefined,
@@ -57,10 +61,44 @@ export async function GET(req: Request) {
     });
 
     const nodeToML: Record<string, string[]> = {};
+    const mlNodeMap: Record<string, string[]> = {};
     for (const nm of nodeMainlines) {
       if (!nodeToML[nm.nodeId]) nodeToML[nm.nodeId] = [];
       nodeToML[nm.nodeId].push(nm.mainlineId);
+      if (!mlNodeMap[nm.mainlineId]) mlNodeMap[nm.mainlineId] = [];
+      mlNodeMap[nm.mainlineId].push(nm.nodeId);
     }
+
+    // ---- 查询全量边 ----
+    const edgeRows = await prisma.knowledgeEdge.findMany({
+      select: { sourceId: true, targetId: true, type: true },
+    });
+
+    let edges: Array<{ sourceId: string; targetId: string; type: "prerequisite" | "tool" }>
+      = edgeRows.map(e => ({
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        type: e.type as "prerequisite" | "tool",
+      }));
+
+    // mainlineId 筛选时只保留两端都在当前 nodes 内的边
+    if (mainlineId) {
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+      edges = edges.filter(e => nodeIdSet.has(e.sourceId) && nodeIdSet.has(e.targetId));
+    }
+
+    // ---- 查询主线定义 ----
+    const mainlineRows = await prisma.mainline.findMany({
+      select: { id: true, name: true, priority: true },
+      ...(mainlineId ? { where: { id: mainlineId } } : {}),
+    });
+
+    const mainlines = mainlineRows.map(m => ({
+      mainlineId: m.id,
+      name: m.name,
+      priority: m.priority,
+      nodeIds: mlNodeMap[m.id] ?? [],
+    }));
 
     // 构建学习前沿
     const graph = await KnowledgeGraph.load(prisma);
@@ -119,9 +157,15 @@ export async function GET(req: Request) {
         tier: n.tier,
         status: stateMap.get(n.id)?.status ?? 'untested',
         masteryProb: stateMap.get(n.id)?.masteryProb ?? 0.5,
+        judgeCriteria: n.judgeCriteria,
+        sampleItem: n.sampleItem,
+        teachingNotes: n.teachingNotes,
+        lastEvidence: stateMap.get(n.id)?.lastEvidence?.toISOString() ?? null,
       })),
       learningFrontier,
       stats: { total: nodes.length, stable, gap, uncertain, untested },
+      edges,
+      mainlines,
     });
   } catch (error) {
     logger.error({ error }, '获取知识地图失败');

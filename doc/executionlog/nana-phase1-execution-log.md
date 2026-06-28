@@ -274,3 +274,91 @@
 - [x] `npm run build` exit code 0 ✅
 - [x] 确认测试在安全路径运行
 - [x] 可进入审计阶段
+
+---
+
+## Commit ④：单题轻反馈规则版 API
+
+**开始时间**: 2026-06-28 09:00  
+**完成时间**: 2026-06-28 09:50  
+**Commit hash**: `643f954`
+
+### 执行记录
+
+#### 任务 4.1：创建关键词匹配逻辑（feedback-rules.ts）
+- **做了什么**: 创建 `src/lib/nana/feedback-rules.ts`，包含 3 条 KEYWORD_RULES（配方法/定义域与值域/计算习惯）、`matchTranscript()` 匹配函数、`getFeedback()` 核心函数。纯逻辑，无外部依赖，可独立测试。导出 `FeedbackResult` 接口（hint + relatedTags + isPreliminary: true）。
+- **涉及文件**: `src/lib/nana/feedback-rules.ts`
+- **结果**: ✅ 完成
+
+#### 任务 4.2：创建 POST /api/nana/cases/:id/feedback
+- **做了什么**: 创建 POST handler，鉴权 → 校验 transcript → 调用 `getFeedback(transcript)` 关键词匹配 → 返回 `{ hint, relatedTags, isPreliminary: true }`。400 校验（transcript 缺失或非字符串）。遵循现有 API 模式（next/server/next-auth/api-errors/logger）。
+- **涉及文件**: `src/app/api/nana/cases/[id]/feedback/route.ts`
+- **结果**: ✅ 完成
+
+#### 任务 4.3：完善 LightFeedback 组件（连接真实 API）
+- **做了什么**: 将组件从 Props 传入数据模式改为自动 fetch 模式。Props 改为 `{ transcript: string; caseId?: string }`。三态：loading（"正在看你的描述…" skeleton）→ loaded（hint + tags + "不是终诊"标识 + fade-in 动画）→ error（"这条先记下来了" fallback）。使用 useEffect + Abort 防止竞态。
+- **涉及文件**: `src/components/nana/capture/light-feedback.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 4.4：更新采集页（去掉 mock 反馈逻辑）
+- **做了什么**: 去掉 `MOCK_FEEDBACK` 引用、`feedbackData` 状态、`isProcessing` 状态、`autoSwitchTimerRef`。录音完成后直接设置 transcript，800ms 后自动切换到 feedback tab（LightFeedback 自动 fetch）。"再拍一道"重置时只用重置 tab + transcript，不再管理 mock 反馈状态。
+- **涉及文件**: `src/app/nana/capture/page.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 4.5：创建单元测试（feedback-rules.test.ts）
+- **做了什么**: 16 个测试用例覆盖：匹配"配方"/"完全平方"/"平方"/"定义域"/"值域"/"算错"/"算不对"/"算不出来"→ 各规则；多关键词优先第一条规则；无匹配/空字符串返回 null；`getFeedback` 完整输出（含 isPreliminary 断言）。
+- **涉及文件**: `src/__tests__/unit/nana/feedback-rules.test.ts`
+- **结果**: ✅ 完成（16/16 通过）
+
+#### 任务 4.6：创建集成测试（feedback-api.test.ts）
+- **做了什么**: 6 个测试用例，mock next/server/next-auth/logger/auth/api-errors。测试："配方"→配方法 hint，"定义域"→定义域 hint，"算不出来"→计算 hint，无匹配→默认 hint，空 transcript → 400，missing transcript → 400。
+- **涉及文件**: `src/__tests__/integration/nana/feedback-api.test.ts`
+- **结果**: ✅ 完成（6/6 通过）
+
+#### 任务 4.7：验证
+- **做了什么**:
+  1. `test:nana:unit`（20/20）✅ — case-api 4 + feedback-rules 16
+  2. `test:nana:integration`（11/11）✅ — case-api 5 + feedback-api 6
+  3. **Docker 测试容器全部通过** ✅ — `test:all` 9 个脚本全部绿色
+  4. **`npm run build` exit code 0** ✅ — 增量构建（通过 cmd shell 绕开 WSL 问题）
+  5. 确认测试在安全路径运行（`./data/test/test.db`）
+- **结果**: ✅ 完成
+
+#### 任务 4.8：提交
+- **做了什么**: `git add -A && git commit && git push origin dev`
+- **涉及文件**: 6 个文件（4 新增 + 2 修改）
+- **结果**: ✅ 完成（commit: `643f954`）
+
+### 偏离记录
+
+| # | 计划原内容 | 实际做了什么 | 原因 | 是否影响验收标准 |
+|---|-----------|-------------|------|:--:|
+| 1 | 关键词匹配逻辑在 route.ts 中实现 | 抽取到独立的 `src/lib/nana/feedback-rules.ts` 中 | 便于单元测试不依赖 Next.js 环境 | 否 |
+| 2 | 计划中的 KEYWORD_RULES hint 措辞略有不同 | 配方法 hint 改为"你提到配方法——可能和完全平方公式的灵活运用有关…"，添加 tags 字段 | 与测试文案一致、tags 支持 UI 展示 | 否 |
+| 3 | LightFeedback Props 原为 `{ feedback, isPreliminary }` | 改为 `{ transcript, caseId }`，自动 fetch 而非传数据 | 符合"连接真实 API"目标，Props 语义更清晰 | 否 |
+
+### 上游文件修改
+
+| 文件 | 改了什么 | 原因 |
+|------|----------|------|
+| `src/components/nana/capture/light-feedback.tsx` | 从 Props 驱动改为 auto-fetch 模式，Props 接口变更 | Commit ④ 要求连接真实 API |
+| `src/app/nana/capture/page.tsx` | 去掉 mock 反馈逻辑及相关 import/state | 改为由 LightFeedback 组件自动 fetch |
+
+### 遇到的问题
+
+| 问题 | 解决方式 |
+|------|----------|
+| WSL bash 环境持续不可用（CreateProcessCommon 错误） | 使用 `node -e` + `child_process.execSync` + `shell:'cmd.exe'` 运行 `next build` |
+| guard-db.ts 拦截本地测试（DATABASE_URL 为空） | 设置 `DATABASE_URL="file:./data/test/test.db"` 环境变量 |
+| 测试"算不对"用例文本不包含"算不对"子串 | 将"这个我怎么算都不对"改为"这个题我怎么算不对" |
+
+### 完成状态
+
+- [x] 所有任务完成（4.1~4.8）
+- [x] 代码已提交（commit: `643f954`）
+- [x] `test:nana:unit` 通过（20/20）
+- [x] `test:nana:integration` 通过（11/11）
+- [x] Docker 测试容器全部通过（`test:all` exit code 0）
+- [x] `npm run build` exit code 0 ✅
+- [x] 确认测试在安全路径运行（`./data/test/test.db` 被更新，`./data/dev.db` 未被触碰）
+- [x] 可进入审计阶段

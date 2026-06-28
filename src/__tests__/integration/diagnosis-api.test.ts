@@ -240,12 +240,45 @@ describe('M3 诊断 API（集成测试 · mock session）', () => {
     expect(body.learningFrontier.length).toBeLessThanOrEqual(2);
     expect(body.stats).toBeDefined();
     expect(typeof body.stats.total).toBe('number');
+
+    // 新增字段验证：edges / mainlines / 详情卡字段
+    expect(Array.isArray(body.edges)).toBe(true);
+    expect(Array.isArray(body.mainlines)).toBe(true);
+    if (body.nodes.length > 0) {
+      expect(body.nodes[0]).toHaveProperty('judgeCriteria');
+      expect(body.nodes[0]).toHaveProperty('sampleItem');
+      expect(body.nodes[0]).toHaveProperty('lastEvidence');
+    }
   });
 
   test('GET /api/diagnosis/map 缺 studentId 返回 400', async () => {
     const req = new Request('http://localhost/api/diagnosis/map');
     const res = await getMap(req);
     expect(res.status).toBe(400);
+  });
+
+  test('GET /api/diagnosis/map?mainlineId=M1 过滤主线下节点和边', async () => {
+    const req = new Request('http://localhost/api/diagnosis/map?studentId=test-user-001&mainlineId=M1');
+    const res = await getMap(req);
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(Array.isArray(body.nodes)).toBe(true);
+    expect(body.nodes.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.edges)).toBe(true);
+    expect(Array.isArray(body.mainlines)).toBe(true);
+    // 只返回 M1 主线
+    expect(body.mainlines.length).toBe(1);
+    expect(body.mainlines[0].mainlineId).toBe('M1');
+    expect(body.mainlines[0]).toHaveProperty('name');
+    expect(body.mainlines[0]).toHaveProperty('priority');
+    expect(Array.isArray(body.mainlines[0].nodeIds)).toBe(true);
+    // edges 两端节点均在 nodes 中
+    const nodeIdSet = new Set(body.nodes.map((n: { nodeId: string }) => n.nodeId));
+    for (const edge of body.edges) {
+      expect(nodeIdSet.has(edge.sourceId)).toBe(true);
+      expect(nodeIdSet.has(edge.targetId)).toBe(true);
+    }
   });
 
   test('POST /api/diagnosis/initial 运行初诊', async () => {
