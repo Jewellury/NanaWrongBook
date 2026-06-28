@@ -68,7 +68,7 @@
 
 **开始时间**: 2026-06-28 13:00  
 **完成时间**: 2026-06-28 13:30  
-**Commit hash**: `待提交`
+**Commit hash**: `cfc60de`
 
 ### 执行记录
 
@@ -128,6 +128,6 @@
 - [x] `test:nana:unit` 29/29 通过（含 9 个新增知识地图布局测试）
 - [x] `npm run build` exit code 0 ✅
 - [x] P4 措辞全部合规
-- [ ] 代码已提交（待执行 `git add` + `git commit`）
+- [x] 代码已提交（commit: `cfc60de`），已推送 `origin dev`
 - [ ] Docker 测试容器验证
 - [ ] 可进入审计阶段
