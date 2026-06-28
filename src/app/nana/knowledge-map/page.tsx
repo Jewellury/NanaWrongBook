@@ -17,9 +17,12 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import KnowledgeMapCanvas from "@/components/nana/knowledge-map/knowledge-map-canvas";
+import KnowledgeDetailCard from "@/components/nana/knowledge-map/knowledge-detail-card";
+import type { KnowledgeNodeData, EdgeData, MainlineData } from "@/components/nana/knowledge-map/knowledge-map-canvas";
 
 interface MapNode {
   nodeId: string;
@@ -44,14 +47,21 @@ interface MapResponse {
     uncertain: number;
     untested: number;
   };
-  edges: Array<{ sourceId: string; targetId: string; type: "prerequisite" | "tool" }>;
-  mainlines: Array<{ mainlineId: string; name: string; priority: number; nodeIds: string[] }>;
+  edges: EdgeData[];
+  mainlines: MainlineData[];
 }
 
 export default function KnowledgeMapPage() {
   const { data: session } = useSession();
   const [mapData, setMapData] = useState<MapResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // 空状态判定：少于 2 个节点有状态记录
+  const litNodeCount = mapData
+    ? mapData.stats.stable + mapData.stats.gap + mapData.stats.uncertain
+    : 0;
+  const isEmpty = !loading && mapData && litNodeCount < 2;
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -73,11 +83,42 @@ export default function KnowledgeMapPage() {
       });
   }, [session]);
 
-  // 空状态判定：少于 2 个节点有状态记录
-  const litNodeCount = mapData
-    ? mapData.stats.stable + mapData.stats.gap + mapData.stats.uncertain
-    : 0;
-  const isEmpty = !loading && mapData && litNodeCount < 2;
+  // 节点点击处理
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      if (!mapData) return;
+      const node = mapData.nodes.find((n) => n.nodeId === nodeId);
+      if (!node) return;
+
+      const isStable = node.status === "stable";
+      const isFrontier = mapData.learningFrontier.includes(nodeId);
+
+      // 未探索节点点击不弹出
+      if (!isStable && !isFrontier) return;
+
+      setSelectedNodeId(nodeId);
+    },
+    [mapData]
+  );
+
+  // 选中的节点详情数据
+  const selectedNode = mapData && selectedNodeId
+    ? mapData.nodes.find((n) => n.nodeId === selectedNodeId) ?? null
+    : null;
+
+  const selectedDetail = selectedNode
+    ? {
+        nodeId: selectedNode.nodeId,
+        name: selectedNode.name,
+        status: selectedNode.status,
+        masteryProb: selectedNode.masteryProb,
+        judgeCriteria: selectedNode.judgeCriteria ?? null,
+        sampleItem: selectedNode.sampleItem ?? null,
+        teachingNotes: selectedNode.teachingNotes ?? null,
+        lastEvidence: selectedNode.lastEvidence ?? null,
+        isFrontier: mapData?.learningFrontier.includes(selectedNode.nodeId) ?? false,
+      }
+    : null;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-[#FBF7F0]">
@@ -164,27 +205,25 @@ export default function KnowledgeMapPage() {
         </div>
       )}
 
-      {/* ===== SVG 画布容器（Commit ② 渲染实际图谱） ===== */}
+      {/* ===== SVG 画布容器 ===== */}
       {!loading && mapData && !isEmpty && (
         <div className="flex-1 overflow-auto px-2 pb-6">
-          <svg
-            className="w-full h-full min-h-[600px]"
-            viewBox="0 0 368 600"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* 占位提示 —— Commit ② 替换为实际节点/边渲染 */}
-            <text
-              x="184"
-              y="300"
-              textAnchor="middle"
-              fill="#B4ADA3"
-              fontSize="14"
-              fontFamily="-apple-system, BlinkMacSystemFont, sans-serif"
-            >
-              知识图谱渲染中...
-            </text>
-          </svg>
+          <KnowledgeMapCanvas
+            nodes={mapData.nodes as KnowledgeNodeData[]}
+            edges={mapData.edges}
+            mainlines={mapData.mainlines}
+            frontier={mapData.learningFrontier}
+            onNodeClick={handleNodeClick}
+          />
         </div>
+      )}
+
+      {/* ===== 节点详情卡 ===== */}
+      {selectedDetail && (
+        <KnowledgeDetailCard
+          node={selectedDetail}
+          onClose={() => setSelectedNodeId(null)}
+        />
       )}
     </div>
   );
