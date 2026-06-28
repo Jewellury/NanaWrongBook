@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(record, { status: 201 });
   } catch (error) {
-    logger.error('创建诊断会话失败', error);
+    logger.error({ error }, '创建诊断会话失败');
     return internalError();
   }
 }
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(sessions);
   } catch (error) {
-    logger.error('获取诊断会话列表失败', error);
+    logger.error({ error }, '获取诊断会话列表失败');
     return internalError();
   }
 }

@@ -33,7 +33,7 @@ export async function GET(
 
     return NextResponse.json(record);
   } catch (error) {
-    logger.error('读取 case 失败', error);
+    logger.error({ error }, '读取 case 失败');
     return internalError();
   }
 }

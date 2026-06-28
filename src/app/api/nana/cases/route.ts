@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     logger.info(`case 创建成功: ${record.id}`);
     return NextResponse.json(record, { status: 201 });
   } catch (error) {
-    logger.error('创建 case 失败', error);
+    logger.error({ error }, '创建 case 失败');
     return internalError();
   }
 }

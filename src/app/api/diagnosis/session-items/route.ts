@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       itemCount: selected.length,
     }, { status: 201 });
   } catch (error) {
-    logger.error('生成题单失败', error);
+    logger.error({ error }, '生成题单失败');
     return internalError();
   }
 }

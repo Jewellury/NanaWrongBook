@@ -145,7 +145,7 @@ export async function GET(req: Request) {
       answerKey,
     });
   } catch (error) {
-    logger.error('纸质包生成失败', error);
+    logger.error({ error }, '纸质包生成失败');
     return internalError();
   }
 }

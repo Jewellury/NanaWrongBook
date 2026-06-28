@@ -112,7 +112,7 @@ export async function POST(req: Request) {
       learningFrontier: result.learningFrontier,
     }, { status: 201 });
   } catch (error) {
-    logger.error('初诊失败', error);
+    logger.error({ error }, '初诊失败');
     return internalError();
   }
 }

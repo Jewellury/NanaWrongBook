@@ -37,7 +37,7 @@ export async function GET(
 
     return NextResponse.json(record);
   } catch (error) {
-    logger.error('获取诊断会话详情失败', error);
+    logger.error({ error }, '获取诊断会话详情失败');
     return internalError();
   }
 }

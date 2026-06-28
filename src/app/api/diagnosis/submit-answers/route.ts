@@ -19,6 +19,7 @@ import {
   applyBKTToAnswers,
   propagateKSTToUnanswered,
   ExistingState,
+  NodeStateOutput,
   AnswerEntry,
 } from "@/../lib/diagnosis-orchestrator";
 
@@ -124,7 +125,7 @@ export async function POST(req: Request) {
     for (const id of bktResults.keys()) allAffectedNodeIds.add(id);
     for (const id of kstResults.keys()) allAffectedNodeIds.add(id);
 
-    const finalStates = new Map<string, { status: string; masteryProb: number }>();
+    const finalStates = new Map<string, NodeStateOutput>();
 
     for (const nodeId of allAffectedNodeIds) {
       // BKT 优先（作答节点）
@@ -178,7 +179,7 @@ export async function POST(req: Request) {
     for (const id of allAffectedNodeIds) allMainlineNodeIds.add(id);
 
     const allStates = new Map(existingStates);
-    for (const [id, s] of finalStates) allStates.set(id, s);
+    for (const [id, s] of finalStates) allStates.set(id, { ...s, lastEvidence: null });
 
     const allMainNodes = await prisma.knowledgeNode.findMany({
       where: { id: { in: Array.from(allMainlineNodeIds) } },
@@ -235,7 +236,7 @@ export async function POST(req: Request) {
       stats: { updatedNodes: upsertCount, answersRecorded: answerEntries.length },
     });
   } catch (error) {
-    logger.error('答案提交失败', error);
+    logger.error({ error }, '答案提交失败');
     return internalError();
   }
 }

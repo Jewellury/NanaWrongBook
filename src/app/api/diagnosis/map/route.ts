@@ -124,7 +124,7 @@ export async function GET(req: Request) {
       stats: { total: nodes.length, stable, gap, uncertain, untested },
     });
   } catch (error) {
-    logger.error('获取知识地图失败', error);
+    logger.error({ error }, '获取知识地图失败');
     return internalError();
   }
 }

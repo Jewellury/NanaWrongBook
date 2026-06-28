@@ -55,7 +55,7 @@ export async function POST(
 
     return NextResponse.json(record, { status: 201 });
   } catch (error) {
-    logger.error('创建探针记录失败', error);
+    logger.error({ error }, '创建探针记录失败');
     return internalError();
   }
 }
