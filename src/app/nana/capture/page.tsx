@@ -23,18 +23,16 @@
 
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Camera } from "lucide-react";
 import { QuestionImageViewer } from "@/components/nana/capture/question-image-viewer";
 import { VoiceRecorder } from "@/components/nana/capture/voice-recorder";
 import { TranscriptionPanel } from "@/components/nana/capture/transcription-panel";
 import { LightFeedback } from "@/components/nana/capture/light-feedback";
-import type { FeedbackData } from "@/components/nana/capture/light-feedback";
 import {
   MOCK_QUESTION,
   MOCK_TRANSCRIPT,
-  MOCK_FEEDBACK,
   joinTranscript,
 } from "@/components/nana/capture/mock-data";
 
@@ -62,26 +60,16 @@ export default function CapturePage() {
   const [transcriptText, setTranscriptText] = useState(
     () => joinTranscript(MOCK_TRANSCRIPT),
   );
-  const [feedbackData, setFeedbackData] = useState<FeedbackData | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const autoSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── 录音完成回调 ──────────────────────────
 
   const handleTranscriptComplete = useCallback(
     (text: string) => {
       setTranscriptText(text);
-      setFeedbackData(null); // 先清空，显示骨架
-      setIsProcessing(true);
-
-      // 模拟 AI 处理延迟
-      autoSwitchTimerRef.current = setTimeout(() => {
-        setFeedbackData(MOCK_FEEDBACK);
-        setIsProcessing(false);
-        // 自动切换到"帮你整理"tab
+      // 延迟自动切换到"帮你整理"tab（给用户看完逐字稿的时间）
+      setTimeout(() => {
         setCurrentTab("feedback");
-        autoSwitchTimerRef.current = null;
-      }, 2000);
+      }, 800);
     },
     [],
   );
@@ -98,19 +86,10 @@ export default function CapturePage() {
     // 重置采集页状态
     setCurrentTab("voice");
     setTranscriptText(joinTranscript(MOCK_TRANSCRIPT));
-    setFeedbackData(null);
-    setIsProcessing(false);
     setCaptureCount((prev) => prev + 1);
-
-    // 清除自动切换计时器
-    if (autoSwitchTimerRef.current) {
-      clearTimeout(autoSwitchTimerRef.current);
-      autoSwitchTimerRef.current = null;
-    }
   }, []);
 
-  // 当 feedback tab 已展示时，再拍一道按钮需要显示在 feedback tab 底部
-  const showRetakeButton = currentTab === "feedback" && feedbackData !== null;
+  // 当 feedback tab 展示时，再拍一道按钮显示在底部
   const canStartDiagnosis = captureCount + 1 >= 3; // +1 because we count the current one
 
   // ─── 渲染 ─────────────────────────────────
@@ -214,10 +193,7 @@ export default function CapturePage() {
 
         {currentTab === "feedback" && (
           <>
-            <LightFeedback
-              feedback={feedbackData}
-              isPreliminary
-            />
+            <LightFeedback transcript={transcriptText} />
 
             {/* 已拍计数 + 操作按钮 */}
             <div className="mt-4 space-y-3">
