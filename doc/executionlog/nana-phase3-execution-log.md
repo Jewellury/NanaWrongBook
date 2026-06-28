@@ -66,5 +66,60 @@
 - [x] `test:nana:unit` 36/36 通过
 - [x] `npm run build` exit code 0
 - [x] P4 措辞全部合规
-- [ ] 代码已提交（commit: `待填充`）
+- [x] 代码已提交（commit: `61ed30b`）
+- [ ] 可进入审计阶段
+
+---
+
+## Commit ②：批次诊断报告页
+
+**开始时间**: 2026-06-28 15:30  
+**完成时间**: 2026-06-28 16:00  
+**Commit hash**: `2c17ccb`
+
+### 执行记录
+
+#### 任务 1：ReportSummary — 报告汇总组件
+- **做了什么**: 创建 `report-summary.tsx`，三个区域（我们看了什么 / 做题时看到的信号 / 先从这里补）。导出纯函数 `buildReportData`（去重+分组+通过判定）、`generateSignalText`（频次统计→自然语言）、`findFirstStuckSuggestion`（找第一个 stuck 节点）。底部 CTA 按钮（生成纸质包 / 看看知识地图）。
+- **涉及文件**: `src/components/nana/session/report-summary.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 2：ReportKnowledgeCard — 知识点卡片
+- **做了什么**: 创建 `report-knowledge-card.tsx`，口语名称 + 判定标准 + 绿色状态标签（"这道已经过了 ✓"/"这道还卡着 ✗"）。
+- **涉及文件**: `src/components/nana/session/report-knowledge-card.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 3：报告页面
+- **做了什么**: 创建 `/nana/session/[id]/report/page.tsx`，并行拉取 `sessions/[id]` + `map` API 做节点字典。加载态/错误态/空数据态全覆盖。修复 `session.user.id` 类型守卫（可能为 null）。
+- **涉及文件**: `src/app/nana/session/[id]/report/page.tsx`
+- **结果**: ✅ 完成
+
+#### 任务 4：单元测试
+- **做了什么**: 18 个单元测试覆盖 `buildReportData`（空/单/多/未知 nodeId）、`generateSignalText`（1/2/3 知识点模板）、`findFirstStuckSuggestion`（全过/stuck 选第一个/空）。
+- **涉及文件**: `src/__tests__/unit/nana/report-summary.test.ts`
+- **结果**: ✅ 完成（51/51 全部通过）
+
+### 偏离记录
+
+| # | 计划原内容 | 实际做了什么 | 原因 | 是否影响验收标准 |
+|---|-----------|-------------|------|:--:|
+| 2 | — | 修复 `session.user.id` 类型守卫 | 若 session 为 null 时直接 return，避免 TS 编译错误 | 否 |
+
+### 上游文件修改
+
+（无）
+
+### 遇到的问题
+
+| 问题 | 解决方式 |
+|------|----------|
+| WSL shell 持续不可用 | 本地 vitest 运行后修复编译错误 |
+| Docker daemon pipe 连接失败 | 启动 Docker Desktop 后重试（用户环境限制） |
+
+### 完成状态
+
+- [x] 所有任务完成
+- [x] 51 单元测试通过
+- [x] P4 措辞全部合规
+- [x] 代码已提交（commit: `2c17ccb`）
 - [ ] 可进入审计阶段
