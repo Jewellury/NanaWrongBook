@@ -77,7 +77,8 @@
 | 🔥 | [plan/nana-phase1-execution-plan.md](plan/nana-phase1-execution-plan.md) | 第 1 阶段执行计划：case API + 首页 + 采集壳 + 轻反馈（4 commits） |
 | 🔥 | [plan/nana-phase2-execution-plan.md](plan/nana-phase2-execution-plan.md) | 第 2 阶段执行计划：知识地图（2 commits） |
 | 🔥 | [plan/nana-phase3-execution-plan.md](plan/nana-phase3-execution-plan.md) | 第 3 阶段执行计划：Session UI + 诊断报告 + 纸质包（3 commits） |
-| 🟡 | [plan/tencent-cloud-hk-deployment-plan.md](plan/tencent-cloud-hk-deployment-plan.md) | 腾讯云香港部署方案（待用户拍板） |
+| 🟡 | [plan/tencent-cloud-hk-deployment-plan.md](plan/tencent-cloud-hk-deployment-plan.md) | 腾讯云香港部署方案（旧方案——服务器现场 build，建议改为 CI 方案） |
+| 🔥 | [plan/ci-image-deployment-plan.md](plan/ci-image-deployment-plan.md) | CI 镜像部署方案（推荐——GitHub Actions + GHCR，服务器只 pull 运行） |
 | 📦 | [plan/photo-guide-plan.md](plan/photo-guide-plan.md) | 拍照指南计划 |
 
 ### doc/executionlog/ — 执行日志
