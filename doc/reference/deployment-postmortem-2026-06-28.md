@@ -135,6 +135,26 @@ ssh -R 80:localhost:3000 serveo.net
 
 ---
 
-> 记录时间：2026-06-28
-> 记录人：plan-agent（基于真实部署调试过程）
+## 2026-06-29 更新：VPN 关闭后成功
+
+关闭 VPN 后，使用以下方案成功上线：
+
+1. **本地服务**：`npm run build && npm run start -- -p 3003`（**生产模式**，dev 模式不行）
+2. **隧道**：`ssh -R 80:localhost:3003 serveo.net`
+3. **访问**：`https://<hash>.serveousercontent.com/nana` ✅ 可打开
+
+**关键发现**：
+- **dev 模式（`next dev`）** 通过 Serveo 转发返回 502 — 即使本地 200。生产模式（`next start`）正常
+- VPN 关闭是必要条件——VPN 开启时 Serveo DNS 被劫持到 `198.18.x.x`
+
+### 最终部署命令
+
+```powershell
+cd E:\nana
+taskkill /f /im node.exe
+npm run build
+npm run start -- -p 3003
+# 新开窗口：
+ssh -R 80:localhost:3003 serveo.net
+```
 > 关联文档：`doc/guide/deployment-guide.md`（原部署指南，建议后续按此复盘修订）
