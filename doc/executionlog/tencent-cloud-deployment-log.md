@@ -99,10 +99,28 @@ Argument of type 'unknown' is not assignable to parameter of type 'string | unde
 
 ---
 
-## 未开始步骤
+## 后续修复记录（2026-06-30）
 
-| Step | 依赖条件 |
-|------|---------|
-| 5 配置 Caddy + HTTPS | 域名 `nana.nanatop.xyz` 实名审核通过 + Step 4 构建成功 |
-| 6 防火墙 + 备份脚本 | 可随时开始，不依赖其他步骤 |
-| 7 全链路验证 | 依赖 Step 4-6 全部完成 |
+### 已修复的问题
+
+| # | 问题 | 修复 | 状态 |
+|---|------|------|:----:|
+| 1 | `tsconfig.json` 未排除 `prisma` — `seed_graph.ts` 参与生产构建失败 | `exclude` 追加 `"prisma"` | ✅ 已合入 `main` |
+| 2 | `src/app/layout.tsx` 依赖 `next/font/google` 拉取 Geist 字体，Docker 构建时 Google Fonts CDN 不可达 | 移除 Google Fonts，改系统字体 CSS 变量 | ✅ 已合入 `main` |
+| 3 | `main` 分支落后 `dev` — 缺少 Phase 1-3 全部代码和类型修复 | `git merge dev` 将 260 文件合入 `main` | ✅ `origin/main` 已推送 |
+| 4 | `src/app/api/diagnosis/initial/route.ts` `error` 类型 `unknown` | `String(error)` 包裹 | ✅ 已合入 `main` |
+
+### 当前阻塞
+
+**服务器上构建中**：
+- 服务器 `/opt/nana` 之前有本地修改（`docker-compose.yml`、`initial/route.ts`、`tsconfig.json`），已 `git checkout -- .` 清理
+- 正在拉取 `origin/main` 并执行 `docker compose build --no-cache --network host`
+- 等待构建完成
+
+### 未解决
+
+| 问题 | 说明 |
+|------|------|
+| Docker 构建在服务器上可能因网络原因（国内拉取 `node:22-alpine` 镜像慢）多次卡住 | 已加 `--network host` 尝试改善 |
+| 域名 `nana.nanatop.xyz` 仍实名审核中 | 影响 Caddy HTTPS 配置 |
+| 备份脚本 `backup.sh` 尚未创建到服务器上 | `docker-entrypoint.sh` 自动执行 migrate/seed |
