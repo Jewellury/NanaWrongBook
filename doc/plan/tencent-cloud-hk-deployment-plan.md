@@ -91,11 +91,11 @@ flowchart TB
 | 规格 | 2核2G |
 | 系统 | Ubuntu 22.04 LTS |
 | 磁盘 | 40GB+（SSD） |
-| 带宽 | 30Mbps（香港 Lighthouse 标配） |
-| 流量 | 1TB/月（家庭验证阶段绰绰有余） |
+| 带宽 | 以购买页当前套餐为准 |
+| 流量 | 以购买页当前套餐为准（香港 Lighthouse 通常 30Mbps/1TB，家庭验证阶段够用） |
 
 **为什么选香港不选大陆**：
-- 用户没有 ICP 备案域名，大陆服务器无法合法开通 80/443
+- 当前阶段没有 ICP 备案域名。技术上大陆服务器也可以开端口，但面向域名公开访问时通常需要备案
 - 备案周期通常 10-20 天，与验证阶段急迫性冲突
 - 香港服务器可立即使用，延迟也在可接受范围（安徽到香港约 40-60ms）
 
@@ -156,7 +156,8 @@ docker --version && docker compose version
 ### 6.3 拉取项目与配置
 
 ```bash
-# 拉取仓库
+# 拉取仓库（如仓库为私有，需先配置 GitHub Deploy Key 或 Personal Access Token）
+# 不将 Token 写入文档或命令历史
 git clone https://github.com/Jewellury/NanaWrongBook.git /opt/nana
 cd /opt/nana
 
@@ -181,16 +182,15 @@ mkdir -p data
 # 构建镜像
 docker compose build --no-cache
 
-# 应用数据库迁移
-docker compose run --rm wrong-notebook npx prisma migrate deploy
-
-# 启动服务
+# 启动服务（数据库迁移和 seed 由 docker-entrypoint.sh 自动执行）
 docker compose up -d
 
-# 验证
+# 验证：查看日志确认自动迁移和 seed 成功
 docker compose ps
-docker logs --tail 40 wrong-notebook
+docker logs --tail 80 wrong-notebook
 ```
+
+**说明**：`docker-entrypoint.sh` 已在容器启动时自动执行 `prisma migrate deploy` 和（如需要）seed。不需要手动 `docker compose run --rm ... npx prisma migrate deploy`。通过 `docker logs --tail 80 wrong-notebook` 检查日志中的 migration 输出即可确认数据库已就绪。
 
 ### 6.5 配置 Caddy 反代
 
@@ -202,7 +202,7 @@ nana.example.com {
 }
 ```
 
-修改 `docker-compose.yml`，新增 Caddy 服务：
+修改 `docker-compose.yml`，新增 Caddy 服务，并将 `wrong-notebook` 的端口从宿主映射改为仅容器内暴露：
 
 ```yaml
 services:
@@ -216,14 +216,24 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - wrong-notebook
 
   wrong-notebook:
-    # ... 现有配置不变，移除 ports 的 3002:3000，容器内 3000 仍保留
-    ports: !reset []
-    networks:
-      - default
+    # ... 现有配置保留，删除宿主机映射的 ports 行
+    # 原 ports: - "3002:3000" 删除
+    # 改为仅内部暴露：
+    expose:
+      - "3000"
+```
+
+同时需要在 `docker-compose.yml` 末尾（volumes 顶层键）新增 Caddy 的命名卷：
+
+```yaml
+volumes:
+  caddy_data:
+  caddy_config:
 ```
 
 ### 6.6 验证部署
@@ -248,8 +258,8 @@ curl https://nana.example.com/nana
 创建在服务器 `/opt/nana/.env` 中：
 
 ```bash
-# === 数据库（SQLite，文件挂载到宿主 ./data/dev.db）===
-DATABASE_URL="file:./data/dev.db"
+# === 数据库（SQLite，文件挂载到容器内 /app/data/dev.db）===
+DATABASE_URL="file:/app/data/dev.db"
 
 # === NextAuth（必须重新生成）===
 NEXTAUTH_SECRET="<运行 openssl rand -base64 32 生成>"
@@ -276,10 +286,12 @@ AUTH_TRUST_HOST=true
 
 | 路径 | 说明 |
 |------|------|
-| `/opt/nana/data/dev.db` | SQLite 主数据库文件 |
+| `/opt/nana/data/dev.db` | SQLite 主数据库文件（宿主机路径，容器内映射为 `/app/data/dev.db`） |
 | `/opt/nana/data/` | Docker volume 宿主机挂载目录 |
 
 ### 备份脚本
+
+SQLite 使用裸 `cp` 可能在写入时产生不一致备份。应使用 `sqlite3 .backup` 命令保证一致性：
 
 ```bash
 # backup.sh — 每日备份脚本
@@ -289,35 +301,46 @@ DB_PATH="/opt/nana/data/dev.db"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$BACKUP_DIR"
-cp "$DB_PATH" "$BACKUP_DIR/dev.db.$TIMESTAMP"
+
+# 使用 sqlite3 .backup 生 成一致性备份（防止写入中 cp 损坏）
+sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/dev.db.$TIMESTAMP'"
+
 echo "[$(date)] backup created: dev.db.$TIMESTAMP"
 
 # 清理超过 14 天的旧备份
 find "$BACKUP_DIR" -name "dev.db.*" -mtime +14 -delete
 ```
 
+**安装 sqlite3**（服务器上通常已预装，如没有）：
+```bash
+apt install -y sqlite3
+```
+
 ### 最小备份策略
 
 | 频次 | 操作 | 方式 |
 |------|------|------|
-| 每日 | 复制 SQLite 到 `backups/` | crontab 或 systemd timer |
+| 每日 | `sqlite3 .backup` 生成一致性备份到 `backups/` | crontab 或 systemd timer |
 | 每次发版前 | 手动运行一次备份 | 手动 `bash backup.sh` |
 | 每周 | 下载最新备份到本地电脑 | `scp` 或 rsync |
 
 ### 恢复
 
 ```bash
-# 停止服务
+# 0. 停止服务前，先备份当前数据库（铁律——回滚前必须备份）
+bash backup.sh
+
+# 1. 停止服务
 docker compose down
 
-# 备份当前（以防万一）
-cp data/dev.db data/dev.db.before-restore
-
-# 用备份文件替换
+# 2. 用指定的备份替换
 cp backups/dev.db.20260629_120000 data/dev.db
 
-# 重启
+# 3. 重启
 docker compose up -d
+
+# 4. 验证数据
+docker logs --tail 40 wrong-notebook
 ```
 
 ### 腾讯云快照
@@ -398,6 +421,7 @@ docker logs --tail 80 wrong-notebook
 - [ ] 备份脚本运行后 `backups/` 下生成文件
 - [ ] 重启服务器后容器自动启动
 - [ ] 关掉本地电脑后网站仍可访问
+- [ ] `docker exec wrong-notebook env \| grep DATABASE_URL` 确认路径为 `file:/app/data/dev.db`（或通过 `docker logs` 日志中数据库路径确认）
 
 ---
 
