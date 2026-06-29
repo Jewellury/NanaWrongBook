@@ -32,7 +32,7 @@
 |------|---------|-----------------|
 | Docker Desktop Pipe 间歇断裂 | 本地开发、构建 | **不依赖** Windows Docker Desktop 作为上线门禁 |
 | 服务器 npm install 超时 | 服务器 build | 服务器不再跑 npm install |
-| 服务器 `node:22-alpine` 拉取慢 | 服务器 build | 服务器只需拉取最终应用镜像（<200MB） |
+| 服务器 `node:22-alpine` 拉取慢 | 服务器 build | 服务器只需拉取最终应用镜像（大小取决于构建产物） |
 | `tsconfig.json` exclude 遗漏 | 服务器 build 暴露 | CI 构建失败即阻断，不部署 |
 | Google Fonts CDN 不可达 | Docker 构建 | 已修（系统字体替代），CI 重复验证 |
 | `main` 分支未同步 `dev` 修复 | 发布纪律 | CI 只在 main 推送时触发，强制定分支纪律 |
@@ -55,7 +55,7 @@
 | 构建失败影响 | 服务器上卡住，用户不知所措 | CI 日志输出，不部署 | ✅ 新 |
 | 服务器内存压力 | 高（Node 编译 + npm） | 低（仅运行容器） | ✅ 新 |
 | 回滚能力 | 无（无 tag，每次新 build） | 有（镜像 tag） | ✅ 新 |
-| 部署速度 | 2-5 分钟 build + 上传 | 10-30 秒 pull | ✅ 新 |
+| 部署速度 | 2-5 分钟 build + 上传 | 仅 pull + up（远快于 build） | ✅ 新 |
 | 依赖 Windows Docker | ✅ 不依赖 | ✅ 不依赖 | 持平 |
 | 发布纪律 | 手动合 main，无强制 | CI 只响应 main push | ✅ 新 |
 | 复杂度 | 低（仅 compose） | 中（+ CI 配置 + 密钥管理） | ⚠️ 稍高但可控 |
@@ -122,9 +122,15 @@ flowchart LR
 | 国内网络 | ⚠️ 部分时段 GitHub 可能慢 | ✅ 腾讯云内网稳定 |
 | 维护复杂度 | 低（无需额外注册） | 中（多一套凭证管理） |
 
-**首选 GHCR**，原因：
-- GitHub Actions 推送到 GHCR 是原生集成，`GITHUB_TOKEN` 自动可用
-- 服务器只需要 `docker login ghcr.io` 一次配置
+**首选 GHCR（private + 只读 PAT）**，原因：
+- GitHub Actions 推送用 `GITHUB_TOKEN`，原生集成，无需额外配置
+- 服务器拉取私有镜像需要配置一个只读 Personal Access Token：
+  - 在 GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens 创建
+  - 权限：`read:packages`（仅读取包）
+  - 有效期：可设 90 天或自定义
+  - 服务器上登录：`docker login ghcr.io -u <用户名> --password-stdin`（输入 PAT）
+  - PAT 存入服务器 `.env` 不存 git
+- 也可以将 GHCR package 设为 public（无需登录即可拉取），但首期建议 private + PAT 更安全
 - 不引入第二个云厂商的密钥管理
 
 **备选方案**：如果遇到 GHCR 拉取速度长期无法接受（从香港服务器拉取 > 3 分钟），可改为腾讯云 TCR。切换成本低——只需改 `docker-compose.yml` 的 `image` 地址和 GitHub Actions 的 push 目标。
@@ -149,30 +155,66 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run build
-      - run: npm run test:nana:unit
-      - run: npm run test:nana:integration
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: "file:./data/test/test.db"
+          NEXTAUTH_SECRET: "ci-build-secret"
+          AUTH_TRUST_HOST: "true"
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: "file:./data/test/test.db"
+          NEXTAUTH_SECRET: "ci-build-secret"
+          AUTH_TRUST_HOST: "true"
+        run: |
+          cp .env.test.example .env.test
+          docker compose -f docker-compose.test.yml up --abort-on-container-exit
+          docker compose -f docker-compose.test.yml down -v
+
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build and push Docker image
+        env:
+          SHA: ${{ github.sha }}
         run: |
-          TAG=main-$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=$(echo "$SHA" | cut -c1-7)
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          TAG="sha-${SHORT_SHA}"
           docker build -t ghcr.io/jewellury/nanawrongbook:$TAG .
+          docker tag ghcr.io/jewellury/nanawrongbook:$TAG ghcr.io/jewellury/nanawrongbook:${TIMESTAMP}
           docker tag ghcr.io/jewellury/nanawrongbook:$TAG ghcr.io/jewellury/nanawrongbook:latest
           docker push ghcr.io/jewellury/nanawrongbook:$TAG
+          docker push ghcr.io/jewellury/nanawrongbook:${TIMESTAMP}
           docker push ghcr.io/jewellury/nanawrongbook:latest
 ```
 
 **说明**：
-- `npm run build` 验证生产构建（已在 CI 容器内完成，不依赖 Google Fonts/外网——已修）
-- `test:nana:unit` + `test:nana:integration` 验证业务逻辑（不跑全量 `test:all`，避免上游测试不稳定影响阻断）
-- 每次 push main 都构建并推送带时间戳的 tag + `latest`
+- `npm run build` 验证生产构建，设置 DATABASE_URL 避免连接真实数据库
+- 测试复用 `docker-compose.test.yml`：复制 `.env.test.example` → 启动测试容器 → 自动跑 migrate/seed/test:all → `down -v` 清理。DB 护栏（guard-db）生效，不碰生产库
+- 每次 push main 都构建并推送三个 tag：`sha-<短sha>`（精确回滚点）+ 时间戳 + `latest`
 - **不上传 `dev` 分支**（强化 main 纪律）
+
+### 首期门禁后续优化方向
+
+当前复用 `docker-compose.test.yml` 跑全量测试（含上游测试和 seed），CI 总时长可能较长。后续可优化为：
+- 拆分轻量测试（nana 专用）和全量集成测试
+- 并行化 build 和 test 步骤
+- 缓存 `node_modules` 和 `.next` 加速构建
+
+但首期不走捷径绕过 DB 护栏——全量测试更安全。
 
 ### 后续可追加
 
@@ -186,12 +228,14 @@ jobs:
 
 ## 7. Compose 文件设计
 
-### 新建 `docker-compose.prod.yml`（生产用，存服务器）
+### 新建 `docker-compose.prod.yml`（入仓库，服务器从仓库拉取）
+
+此文件进入 Git 仓库，服务器 `git pull` 获取。**服务器不执行 `build` 操作**。
 
 ```yaml
 services:
   wrong-notebook:
-    image: ghcr.io/jewellury/nanawrongbook:latest
+    image: ${NANA_IMAGE:-ghcr.io/jewellury/nanawrongbook:latest}
     container_name: wrong-notebook
     restart: always
     expose:
@@ -220,6 +264,8 @@ volumes:
   caddy_data:
   caddy_config:
 ```
+
+**回滚方式**：在服务器 `.env` 中添加 `NANA_IMAGE=ghcr.io/jewellury/nanawrongbook:sha-<短sha>`，然后 `docker compose -f docker-compose.prod.yml up -d` 即可切到指定版本。不改 compose 文件，只改 `.env`。
 
 ### 现有 `docker-compose.yml`（本地开发用，保留不动）
 
@@ -253,25 +299,29 @@ services:
 
 | Tag | 用途 | 更新时机 |
 |-----|------|---------|
-| `main-YYYYMMDD-HHMMSS` | **精确版本**，每个构建唯一 | 每次 CI 构建 |
+| `sha-<短sha>` | **精确回滚点**，与 commit 一一对应 | 每次 CI 构建（主推） |
+| `main-YYYYMMDD-HHMMSS` | **时间戳版本**，便于按时间查找 | 每次 CI 构建 |
 | `latest` | **当前版本**，服务器默认拉取 | 每次 CI 构建覆盖 |
+
+**回滚时优先推荐使用 `sha-<短sha>`**——与 git commit 绑定，可精确回溯到某次代码变更。
 
 ### 回滚步骤
 
 ```bash
-# 1. 查看当前镜像 tag
+# 1. 查看当前容器使用的镜像 tag
 docker inspect wrong-notebook --format '{{.Config.Image}}'
 
-# 2. 从 GHCR 列出可用 tag（或从 CI 日志找上一个 tag）
-docker pull ghcr.io/jewellury/nanawrongbook:main-20260629-203000
+# 2. 从 GHCR 列出可用 tag
+#    或从 GitHub Actions 日志、git log 找到上一个版本的 sha
+docker pull ghcr.io/jewellury/nanawrongbook:sha-<上一个短sha>
 
 # 3. 备份当前数据库（回滚前必须做）
 bash backup.sh
 
-# 4. 修改 docker-compose.prod.yml 中的 tag 为上一个版本
-#    image: ghcr.io/jewellury/nanawrongbook:main-20260629-203000
+# 4. 在服务器 .env 中设置回滚 tag
+#    echo 'NANA_IMAGE=ghcr.io/jewellury/nanawrongbook:sha-上一个短sha' >> /opt/nana/.env
 
-# 5. 重启
+# 5. 重启（compose 从 .env 读取 NANA_IMAGE）
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -286,13 +336,14 @@ docker compose -f docker-compose.prod.yml up -d
 BACKUP_DIR="/opt/nana/backups"
 DB_PATH="/opt/nana/data/dev.db"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-mkdir -p "$BACKUP_DIR"
-if command -v sqlite3 &>/dev/null; then
-  sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/dev.db.$TIMESTAMP'"
-else
-  cp "$DB_PATH" "$BACKUP_DIR/dev.db.$TIMESTAMP"
-  echo "WARNING: sqlite3 not installed, used cp instead"
+
+if ! command -v sqlite3 &>/dev/null; then
+  echo "ERROR: sqlite3 not installed. Install it: apt install -y sqlite3"
+  exit 1
 fi
+
+mkdir -p "$BACKUP_DIR"
+sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/dev.db.$TIMESTAMP'"
 echo "[$(date)] backup: dev.db.$TIMESTAMP"
 find "$BACKUP_DIR" -name "dev.db.*" -mtime +14 -delete
 ```
@@ -323,12 +374,13 @@ find "$BACKUP_DIR" -name "dev.db.*" -mtime +14 -delete
 GitHub Actions（自动）:
   8. npm ci
   9. npx prisma generate
-  10. npm run build
-  11. npm run test:nana:unit
-  12. npm run test:nana:integration
-  13. docker build
-  14. docker push → GHCR
-  15. 以上任一失败 → 不推送，不部署，检查日志
+  10. npm run build（DATABASE_URL=file:./data/test/test.db）
+  11. cp .env.test.example .env.test
+  12. docker compose -f docker-compose.test.yml up --abort-on-container-exit
+  13. docker compose -f docker-compose.test.yml down -v
+  14. docker build
+  15. docker push → GHCR（三个 tag：sha-<短sha> + 时间戳 + latest）
+  16. 以上任一失败 → 不推送，不部署，检查日志
 
 服务器（SSH）:
   16. cd /opt/nana
@@ -376,7 +428,7 @@ GitHub Actions（自动）:
 |------|---------|---------|
 | `NEXTAUTH_SECRET` | 服务器 `/opt/nana/.env` | `openssl rand -base64 32` 生成，不入 git |
 | `GITHUB_TOKEN` | GitHub Actions 自动提供 | 仓库 Settings → Secrets → Actions |
-| GHCR 登录 | Actions 中 `${{ secrets.GITHUB_TOKEN }}` | 自动可用，无需额外配置 |
+| GHCR PAT（服务器拉取用）| 服务器 `/opt/nana/.env` 或 `docker login` 配置 | GitHub Settings → PAT → `read:packages`，90 天轮换 |
 | AI Key（未来）| 服务器 `/opt/nana/.env` | 部署后由用户手动写入 |
 
 ---
@@ -401,7 +453,7 @@ GitHub Actions（自动）:
 | 阶段 | 内容 | 前置 |
 |------|------|------|
 | **Phase 0**（本方案确认） | 拍板 GHCR / CI / compose 分拆 | — |
-| **Phase 1** | 服务器清理：删旧容器、删代码、只留 `docker-compose.prod.yml` + `Caddyfile` + `.env` + `backup.sh` | Phase 0 确认 |
+| **Phase 1** | 服务器迁移：备份旧目录 → 停止旧容器 → 拉取新 compose → 保留 `.env`/`data/`/`backups/`。确认新方案成功后再归档旧目录 | Phase 0 确认 |
 | **Phase 2** | GitHub Actions 配置：新建 `.github/workflows/build-and-push.yml` | Phase 0 确认 |
 | **Phase 3** | CI 首次运行，推送第一个镜像 | Phase 2 完成 |
 | **Phase 4** | 服务器 pull 镜像启动，HTTPS 验证 | 域名审核通过 |
@@ -417,7 +469,7 @@ GitHub Actions（自动）:
 | 2 | **镜像仓库首选 GHCR？** | GHCR / 腾讯云 TCR |
 | 3 | **CI 首期跑哪些门禁？** | 方案：`build + test:nana:unit + test:nana:integration`（全量 `test:all` 后续加） |
 | 4 | **生产 compose 是否分拆为 `docker-compose.prod.yml`？** | 是，与开发 `docker-compose.yml` 分离 |
-| 5 | **Tag 策略是否 `main-YYYYMMDD-HHMMSS` + `latest`？** | 是 / 否（说明偏好） |
+| 5 | **Tag 策略是否含 `sha-<短sha>` + `latest`？** | 是（sha 做精确回滚点）/ 仅时间戳 |
 
 ---
 
