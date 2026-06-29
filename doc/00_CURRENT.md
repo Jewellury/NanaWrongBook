@@ -88,19 +88,27 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 
 ---
 
-## 当前活跃任务：第 1 阶段开发——采集基础壳（P0）
+## 当前活跃任务：第 1 阶段开发——采集基础壳（P0）→ 已切换至部署阶段
 
-**目标**：让用户进入 `/nana`，拍一道题，口述思路，存成 case，收到即时文字回应。
-**执行计划**：`doc/plan/nana-phase1-execution-plan.md`（4 个 commit，严格顺序）
+**目标**：从本地隧道切换到 CI 镜像构建 + 腾讯云香港服务器部署。
+**执行方案**：`doc/plan/ci-image-deployment-plan.md`（CI 方案，待用户拍板后执行）
 
-| # | 内容 | 状态 |
-|---|------|:--:|
-| ① | Prisma schema + case API | ⬜ |
-| ② | 场景入口首页 + `/nana` layout | ⬜ |
-| ③ | 采集壳 UI + 组件（题图/录音/逐字稿/轻反馈） | ⬜ |
-| ④ | 单题轻反馈规则版 API | ⬜ |
+### 已完成
+- Phase 1-3 前端+后端全链路开发完成（采集壳 / 知识地图 / Session / 报告 / 纸质包）
+- 腾讯云香港服务器已购买（119.28.42.208），Docker 已安装
+- 域名 `nana.nanatop.xyz` 已购买，DNS A 记录已添加
+- `.env` 已在服务器配置（`DATABASE_URL` / `NEXTAUTH_SECRET` / `NEXTAUTH_URL` / `AUTH_TRUST_HOST`）
+- 审计全部通过
 
-详细拆分见 [active_spec.md](active_spec.md) 和 [plan/nana-phase1-execution-plan.md](plan/nana-phase1-execution-plan.md)。
+### 阻塞项
+- 旧方案（服务器现场 build）因构建失败阻塞——已废弃，改走 CI 方案
+- 域名 DNS 仍在生效等待中（最快 30 分钟，全球 24-48 小时）
+- 服务器当前有旧容器/旧代码，待 Phase 1 迁移
+
+### 下一步
+用户拍板 CI 方案后 → execute-agent 执行 Phase 1-5。
+
+详细拆分见 [active_spec.md](active_spec.md) 和 [plan/ci-image-deployment-plan.md](plan/ci-image-deployment-plan.md)。
 
 ---
 
