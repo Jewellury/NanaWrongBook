@@ -75,6 +75,9 @@
 | 🔥 | [plan/nana-master-plan.md](plan/nana-master-plan.md) | 项目总纲：完成度/四段闭环/优先级/不做什么/核心约束 |
 | 🔥 | [plan/nana-development-phases.md](plan/nana-development-phases.md) | 5 阶段开发计划 + 依赖关系 + HTML mockup 逐页审计 |
 | 🔥 | [plan/nana-phase1-execution-plan.md](plan/nana-phase1-execution-plan.md) | 第 1 阶段执行计划：case API + 首页 + 采集壳 + 轻反馈（4 commits） |
+| 🔥 | [plan/nana-phase2-execution-plan.md](plan/nana-phase2-execution-plan.md) | 第 2 阶段执行计划：知识地图（2 commits） |
+| 🔥 | [plan/nana-phase3-execution-plan.md](plan/nana-phase3-execution-plan.md) | 第 3 阶段执行计划：Session UI + 诊断报告 + 纸质包（3 commits） |
+| 🟡 | [plan/tencent-cloud-hk-deployment-plan.md](plan/tencent-cloud-hk-deployment-plan.md) | 腾讯云香港部署方案（待用户拍板） |
 | 📦 | [plan/photo-guide-plan.md](plan/photo-guide-plan.md) | 拍照指南计划 |
 
 ### doc/executionlog/ — 执行日志
@@ -85,7 +88,10 @@
 | ✅ | [executionlog/M2-attribution-flow-log.md](executionlog/M2-attribution-flow-log.md) | M2 执行日志 |
 | ✅ | [executionlog/knowledge-graph-data-layer-log.md](executionlog/knowledge-graph-data-layer-log.md) | M1 执行日志 |
 | ✅ | [executionlog/container-split-prod-test-log.md](executionlog/container-split-prod-test-log.md) | 容器分层执行日志 |
-| 📦 | [executionlog/photo-guide-log.md](executionlog/photo-guide-log.md) | 拍照指南执行日志 |
+| ✅ | [executionlog/photo-guide-log.md](executionlog/photo-guide-log.md) | 拍照指南执行日志 |
+| ✅ | [executionlog/nana-phase1-execution-log.md](executionlog/nana-phase1-execution-log.md) | 第 1 阶段执行日志 |
+| ✅ | [executionlog/nana-phase2-execution-log.md](executionlog/nana-phase2-execution-log.md) | 第 2 阶段执行日志 |
+| 🟡 | [executionlog/nana-phase3-execution-log.md](executionlog/nana-phase3-execution-log.md) | 第 3 阶段执行日志（进行中） |
 
 ### doc/auditlog/ — 审计报告
 
@@ -99,6 +105,7 @@
 | ⚠️ | [auditlog/prompt-revision-audit.md](auditlog/prompt-revision-audit.md) | 提示词修订审计 ⚠️ 有条件通过 |
 | ✅ | [auditlog/project-progress-review-2026-06-20-audit.md](auditlog/project-progress-review-2026-06-20-audit.md) | 项目进展审查报告审计 ⚠️ 有条件通过 |
 | ✅ | [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md) | 第 1 阶段执行审计 ✅ 通过 |
+| ✅ | [auditlog/nana-phase2-execution-audit.md](auditlog/nana-phase2-execution-audit.md) | 第 2 阶段执行审计 ✅ 通过 |
 | ⚠️ | [auditlog/nana-master-plan-audit.md](auditlog/nana-master-plan-audit.md) | 总纲 + 开发计划审计 ⚠️ 有条件通过（已修复） |
 | 📦 | [auditlog/photo-guide-audit.md](auditlog/photo-guide-audit.md) | 拍照指南审计 |
 
