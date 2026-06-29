@@ -411,6 +411,31 @@ GitHub Actions（自动）:
 - 80/443 防火墙已放行
 - Caddy HTTPS 证书自动申请成功
 
+### DNS 验证（不要用 agent 终端测）
+
+本机 agent/WSL 沙箱的 DNS 查询可能被网络层拦截（返回 `198.18.x.x`），**不能用作公网 DNS 判断依据**。
+
+DNS 生效判断标准（优先级从高到低）：
+
+| 验证方式 | 命令/工具 | 期望结果 |
+|---------|----------|---------|
+| **手机移动数据**（最可靠） | 手机浏览器打开 `https://nana.nanatop.xyz` | 不走你家 WiFi，避免本地 DNS 劫持 |
+| **腾讯云服务器** | `getent hosts nana.nanatop.xyz` | `119.28.42.208` |
+| 公共 DNS 网页工具 | https://dnschecker.org 查询 `nana.nanatop.xyz` | A 记录 = `119.28.42.208` |
+| 本机 `nslookup`（仅限无代理环境） | `nslookup nana.nanatop.xyz 1.1.1.1` | `119.28.42.208` |
+
+### 验收顺序
+
+```
+DNS A 记录生效（域名→119.28.42.208）
+→ 80/443 端口连通（防火墙放行）
+→ Caddy 自动申请 Let's Encrypt 证书成功
+→ https://nana.nanatop.xyz/nana 页面可访问
+→ 手机拍照/麦克风权限可触发
+```
+
+前一项不通过，后一项不用测。
+
 ### Checklist
 
 1. 手机打开 `https://nana.nanatop.xyz/nana` — 首页应加载
