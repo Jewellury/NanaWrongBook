@@ -17,7 +17,7 @@
 |------------------------|-------------------|
 | ❌ 依赖服务器 2核2G 做 Node 编译 | ✅ 本地/CI 构建，服务器只拉取运行 |
 | ❌ Docker Hub 镜像拉取慢，npm install 超时 | ✅ GitHub → GHCR 同一生态，推拉稳定 |
-| ❌ 每次部署在服务器上编译 2-5 分钟 | ✅ 服务器 pull 镜像只需 10-30 秒 |
+| ❌ 每次部署在服务器上编译 2-5 分钟 | ✅ 服务器只 pull 镜像，通常显著快于现场 build |
 | ❌ 服务器内存不足可能 OOM | ✅ 无编译内存压力 |
 | ❌ 无法回滚到旧版本（现场 build 无版本） | ✅ 镜像带 tag，回滚即切 tag |
 | ❌ 无法验证构建结果（直到服务器跑起来才报错） | ✅ CI 通过才推送，构建失败不部署 |
@@ -75,7 +75,7 @@ flowchart LR
 
     subgraph CI["GitHub Actions"]
         GHA_Install["npm ci"]
-        GHA_Test["npm run test:nana:unit"]
+        GHA_Test["docker compose -f docker-compose.test.yml up\n全量测试容器（migrate+seed+test:all）"]
         GHA_Build["npm run build"]
         GHA_DockerBuild["docker build"]
         GHA_Push["推送镜像到 GHCR"]
@@ -122,14 +122,15 @@ flowchart LR
 | 国内网络 | ⚠️ 部分时段 GitHub 可能慢 | ✅ 腾讯云内网稳定 |
 | 维护复杂度 | 低（无需额外注册） | 中（多一套凭证管理） |
 
-**首选 GHCR（private + 只读 PAT）**，原因：
+- **首选 GHCR（private + classic PAT + read:packages）**，原因：
 - GitHub Actions 推送用 `GITHUB_TOKEN`，原生集成，无需额外配置
-- 服务器拉取私有镜像需要配置一个只读 Personal Access Token：
-  - 在 GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens 创建
-  - 权限：`read:packages`（仅读取包）
+- 服务器拉取私有镜像需要配置一个 **classic PAT**：
+  - 在 GitHub Settings → Developer settings → Personal access tokens → Tokens (classic) 创建
+  - 权限：勾选 `read:packages`（仅读取包）
   - 有效期：可设 90 天或自定义
-  - 服务器上登录：`docker login ghcr.io -u <用户名> --password-stdin`（输入 PAT）
+  - 服务器上登录：`echo "<PAT>" | docker login ghcr.io -u <用户名> --password-stdin`
   - PAT 存入服务器 `.env` 不存 git
+- GitHub Packages / GHCR 当前要求 classic PAT 作为服务器拉取凭证
 - 也可以将 GHCR package 设为 public（无需登录即可拉取），但首期建议 private + PAT 更安全
 - 不引入第二个云厂商的密钥管理
 
@@ -180,8 +181,11 @@ jobs:
           AUTH_TRUST_HOST: "true"
         run: |
           cp .env.test.example .env.test
-          docker compose -f docker-compose.test.yml up --abort-on-container-exit
-          docker compose -f docker-compose.test.yml down -v
+          docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test
+
+      - name: Cleanup test containers
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -467,7 +471,7 @@ GitHub Actions（自动）:
 |---|------|------|
 | 1 | **是否切换为 CI 镜像构建方案？**（废弃原"服务器 build"方案） | 是 / 否 |
 | 2 | **镜像仓库首选 GHCR？** | GHCR / 腾讯云 TCR |
-| 3 | **CI 首期跑哪些门禁？** | 方案：`build + test:nana:unit + test:nana:integration`（全量 `test:all` 后续加） |
+| 3 | **CI 首期跑哪些门禁？** | 方案：`build + docker compose -f docker-compose.test.yml up --abort-on-container-exit`（全量测试容器） |
 | 4 | **生产 compose 是否分拆为 `docker-compose.prod.yml`？** | 是，与开发 `docker-compose.yml` 分离 |
 | 5 | **Tag 策略是否含 `sha-<短sha>` + `latest`？** | 是（sha 做精确回滚点）/ 仅时间戳 |
 
