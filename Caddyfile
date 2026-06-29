@@ -1,0 +1,3 @@
+nana.nanatop.xyz {
+    reverse_proxy wrong-notebook:3000
+}

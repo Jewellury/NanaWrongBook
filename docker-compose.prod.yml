@@ -1,0 +1,30 @@
+services:
+  wrong-notebook:
+    image: ${NANA_IMAGE:-ghcr.io/jewellury/nanawrongbook:latest}
+    container_name: wrong-notebook
+    restart: always
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - wrong-notebook
+
+volumes:
+  caddy_data:
+  caddy_config:
