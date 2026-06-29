@@ -107,6 +107,40 @@ tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mo
 - 不得将密钥写入代码文件（安全铁律 4）
 - 不得修改 `.claude/agents/` 或 `.opencode/agents/` 中的文件（这些由 sync-agents.js 同步）
 
+## 部署执行规则
+
+当执行部署/发布/上线任务时，除遵守上述门禁外，还必须遵守以下规则。
+
+### 执行前检查
+执行前必须运行以下命令并记录结果：
+- `git status` — 工作区是否干净
+- `git branch --show-current` — 当前分支
+- `git rev-parse HEAD` — 当前 commit
+- `git rev-parse origin/main` — 远程 main 最新 commit
+
+### 分支规则
+- 服务器默认部署 `main`。
+- 不得因为 `main` 构建失败就直接切 `dev`。`main` 构建失败时：
+  1. 停止部署
+  2. 记录完整错误
+  3. 回到仓库，修复 `main`，重新推送，再部署
+- 临时部署 `dev` 必须经用户明确批准并在执行日志中标注"临时例外"。
+
+### 构建失败处理
+- 服务器构建失败时，停止并记录完整错误。
+- **禁止在服务器 `/opt/nana` 中直接修改源码**。修复必须回到本地仓库完成。
+
+### 外部状态变更日志
+- 每个外部状态变更（DNS、Caddy、证书、防火墙、`.env`、数据库）都必须实时写入 `doc/executionlog/<deployment-log>.md`。
+- 失败时不得静默跳过。
+
+### 数据库备份
+- 涉及 `docker compose build/up/down`、Prisma 迁移、数据回滚前**必须先备份 SQLite**。
+- 备份失败不得继续部署。
+
+### 验证声明
+- 如果本地生产构建或 Docker 构建未验证，执行日志中必须写"未验证"，不得写"完成"或"通过"。
+
 ## Git 收口
 
 每完成一个独立任务或子任务后，执行 `git status` 判断是否提交。规则见 AGENTS.md §Git 收口闸门。
