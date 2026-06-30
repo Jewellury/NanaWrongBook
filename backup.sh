@@ -8,6 +8,11 @@ if ! command -v sqlite3 &>/dev/null; then
   exit 1
 fi
 
+if [ ! -f "$DB_PATH" ]; then
+  echo "INFO: database not found at $DB_PATH, first deployment, backup skipped."
+  exit 0
+fi
+
 mkdir -p "$BACKUP_DIR"
 sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/dev.db.$TIMESTAMP'"
 echo "[$(date)] backup: dev.db.$TIMESTAMP"
