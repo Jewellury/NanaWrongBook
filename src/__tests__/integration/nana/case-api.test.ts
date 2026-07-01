@@ -66,12 +66,16 @@ vi.mock('@/lib/prisma', () => {
 // 导入路由 handler（必须在所有 mock 之后）
 import { POST as createCase, GET as listCases } from '../../../app/api/nana/cases/route';
 import { GET as getCase } from '../../../app/api/nana/cases/[id]/route';
+import { GET as getTags, POST as postTag } from '../../../app/api/nana/cases/[id]/tags/route';
 // 导入被 mock 的 getServerSession（用于跨用户场景切换身份）
 import { getServerSession } from 'next-auth';
 
 // ---- 辅助 ----
 const TEST_STUDENT = 'test-nana-user';
 const OTHER_STUDENT = 'test-nana-other-user';
+
+// 48 节点种子里的一个真实 nodeId（tags API 用真实节点校验；在 beforeAll 里取）
+let validNodeId: string;
 
 function mockPost(path: string, body: object): Request {
   return new Request(`http://localhost${path}`, {
@@ -92,6 +96,8 @@ async function cleanupTestData() {
     select: { id: true },
   });
   for (const c of cases) {
+    // Stage 2：显式清 tag（虽有 cascade，但显式清符合铁律 6 逐表报数习惯 + 顺序稳妥）
+    await _testPrisma.caseKnowledgeTag.deleteMany({ where: { caseId: c.id } });
     await _testPrisma.artifact.deleteMany({ where: { caseId: c.id } });
   }
   await _testPrisma.case.deleteMany({
@@ -101,6 +107,10 @@ async function cleanupTestData() {
 
 beforeAll(async () => {
   await cleanupTestData();
+  // 取一个真实 KnowledgeNode id（种子 48 节点），供 tags 测试用
+  const node = await _testPrisma.knowledgeNode.findFirst({ select: { id: true } });
+  if (!node) throw new Error('测试库无 KnowledgeNode 种子数据');
+  validNodeId = node.id;
 });
 
 afterAll(async () => {
@@ -316,5 +326,170 @@ describe('Case 列表 API + 用户隔离（S1-3/S1-6）', () => {
     const listBody = await listRes.json();
     const ids = listBody.cases.map((c: { id: string }) => c.id);
     expect(ids).not.toContain(otherCaseId);
+  });
+});
+
+// ============================================================
+// S2-5：CaseKnowledgeTag API（/cases/[id]/tags）集成测试
+// 评审需求 #1（归属过滤）+ #2（source 白名单 + 不接受 body 的 source）
+// ============================================================
+
+describe('CaseKnowledgeTag API + 归属/source 校验（S2-3/S2-5）', () => {
+  let ownedCaseId: string;
+
+  // 前置：TEST_STUDENT 创建一条 case 用于后续 tags 测试
+
+  test('前置：TEST_STUDENT 创建一条 case', async () => {
+    const req = mockPost('/api/nana/cases', {
+      artifacts: [
+        { type: 'question_image', content: 'data:image/jpeg;base64,TAGTEST', seq: 0 },
+      ],
+    });
+    const res = await createCase(req);
+    expect(res.status).toBe(201);
+    ownedCaseId = (await res.json()).id;
+  });
+
+  // ---- GET /api/nana/cases/:id/tags ----
+
+  test('GET tags owner 200：空标签列表（未分类）', async () => {
+    const res = await getTags(
+      mockGet(`/api/nana/cases/${ownedCaseId}/tags`),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.tags).toEqual([]);
+  });
+
+  test('GET tags 跨用户 → 404（评审需求 #1：归属过滤，不裸查）', async () => {
+    const mockGetSession = getServerSession as unknown as ReturnType<typeof vi.fn>;
+    mockGetSession.mockResolvedValueOnce({ user: { id: OTHER_STUDENT } });
+
+    const res = await getTags(
+      mockGet(`/api/nana/cases/${ownedCaseId}/tags`),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test('GET tags 未授权 → 401', async () => {
+    const mockGetSession = getServerSession as unknown as ReturnType<typeof vi.fn>;
+    mockGetSession.mockResolvedValueOnce(null);
+
+    const res = await getTags(
+      mockGet(`/api/nana/cases/${ownedCaseId}/tags`),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(401);
+  });
+
+  // ---- POST /api/nana/cases/:id/tags ----
+
+  test('POST tags owner 201：人工挂载（source 恒 manual、confidence 1.0）', async () => {
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: validNodeId }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.caseId).toBe(ownedCaseId);
+    expect(body.nodeId).toBe(validNodeId);
+    expect(body.source).toBe('manual');
+    expect(body.confidence).toBe(1.0);
+  });
+
+  test('POST tags 缺失 nodeId → 400', async () => {
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { note: '没传 nodeId' }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test('POST tags nodeId 为空字符串 → 400', async () => {
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: '  ' }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test('POST tags 不存在的 nodeId → 400（防脏挂）', async () => {
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: 'NONEXISTENT-NODE-XYZ' }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('知识点');
+  });
+
+  test('POST tags 重复挂同节点 → 409（[caseId,nodeId,source] 唯一约束）', async () => {
+    // 已在前面挂过 validNodeId（source=manual），再挂一次应 409
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: validNodeId }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error).toContain('已挂过');
+  });
+
+  test('POST tags body 传 source="vlm" 也被忽略，落库仍 manual（评审需求 #2）', async () => {
+    // 先取一个新节点（避免和已挂的 validNodeId 冲突）
+    const nodes = await _testPrisma.knowledgeNode.findMany({ select: { id: true }, take: 2 });
+    const otherNode = nodes.find((n) => n.id !== validNodeId) ?? nodes[0];
+
+    const res = await postTag(
+      // 客户端企图伪造 source=vlm
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, {
+        nodeId: otherNode.id,
+        source: 'vlm',
+      }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    // 落库恒为 manual，source 未被客户端劫持
+    expect(body.source).toBe('manual');
+    expect(body.nodeId).toBe(otherNode.id);
+  });
+
+  test('POST tags 跨用户 → 404（评审需求 #1：归属过滤）', async () => {
+    const mockGetSession = getServerSession as unknown as ReturnType<typeof vi.fn>;
+    mockGetSession.mockResolvedValueOnce({ user: { id: OTHER_STUDENT } });
+
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: validNodeId }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test('POST tags 未授权 → 401', async () => {
+    const mockGetSession = getServerSession as unknown as ReturnType<typeof vi.fn>;
+    mockGetSession.mockResolvedValueOnce(null);
+
+    const res = await postTag(
+      mockPost(`/api/nana/cases/${ownedCaseId}/tags`, { nodeId: validNodeId }),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(401);
+  });
+
+  // ---- GET tags 反映已挂标签（回归确认）----
+
+  test('GET tags 反映已挂的 manual 标签', async () => {
+    const res = await getTags(
+      mockGet(`/api/nana/cases/${ownedCaseId}/tags`),
+      { params: Promise.resolve({ id: ownedCaseId }) },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // 至少挂过 validNodeId（manual）
+    const nodeIds = body.tags.map((t: { nodeId: string }) => t.nodeId);
+    expect(nodeIds).toContain(validNodeId);
+    expect(body.tags.every((t: { source: string }) => t.source === 'manual')).toBe(true);
   });
 });
