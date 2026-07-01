@@ -148,6 +148,7 @@
 
 | 状态 | 文件 | 一句话 |
 |:--:|------|--------|
+| 🟡 | [reference/2026-07-01_1846_workorder_capture-map-v1.md](reference/2026-07-01_1846_workorder_capture-map-v1.md) | 第一版聚焦错题采集、初步识别与知识地图挂载工单 |
 | 🟡 | [reference/get-notes-interaction-research-workorder.md](reference/get-notes-interaction-research-workorder.md) | Get Notes 交互调研工单 |
 | 🟡 | [reference/get-notes-research-workorder.md](reference/get-notes-research-workorder.md) | Get Notes 调研工单 |
 | 🟡 | [reference/frontend-architecture-workorder.md](reference/frontend-architecture-workorder.md) | 前端架构工单（在跑） |
