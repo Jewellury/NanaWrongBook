@@ -22,6 +22,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import KnowledgeMapCanvas from "@/components/nana/knowledge-map/knowledge-map-canvas";
 import KnowledgeDetailCard from "@/components/nana/knowledge-map/knowledge-detail-card";
+import { RecentCasesList } from "@/components/nana/knowledge-map/recent-cases-list";
 import type { KnowledgeNodeData, EdgeData, MainlineData } from "@/components/nana/knowledge-map/knowledge-map-canvas";
 
 interface MapNode {
@@ -140,6 +141,9 @@ export default function KnowledgeMapPage() {
           )}
         </div>
       </div>
+
+      {/* ===== 最近拍过的题（Stage 1 S1-4，独立于图谱数据，自带 loading） ===== */}
+      <RecentCasesList />
 
       {/* ===== 图例（非空态显示） ===== */}
       {!isEmpty && !loading && mapData && (
