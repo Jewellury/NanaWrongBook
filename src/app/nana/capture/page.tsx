@@ -1,40 +1,37 @@
 /**
- * 采集壳主页面（客户端组件）
+ * 采集壳主页面（客户端组件）—— Phase 1.5 真实采集最小闭环
  *
- * 布局结构（4 分区）：
- * 1. 顶栏：← 返回 / 这道题 / 重拍 📷
- * 2. 题图区域（固定 ~52% 高度，不含滚动）
- * 3. 三 tab：[讲讲思路] [我的话] [帮你整理]
- * 4. 下半屏 tab 内容区 + 底部已拍计数/操作按钮
+ * 真实行为：
+ * 1. 拍照（QuestionImageCapture：调起相机/相册 → 压缩成 ≤1MB Base64）
+ * 2. 可选录音（VoiceRecorder：getUserMedia + MediaRecorder，60s 上限，不转写）
+ * 3. 点"收好这道题" → 组装 artifacts → createCase 存库
+ * 4. 成功 → "这道题已经收好了，可以再拍一道" + 重置 + captureCount+1
+ *    失败 → "没存成功，再试一次"（保留数据可重试，铁律 6 不静默）
  *
- * Tab 切换逻辑：
- * - 默认 tab = "讲讲思路"
- * - 录音完成后自动切换到"帮你整理"tab（3 秒内）
- * - 可手动在三个 tab 间切换
+ * 状态机（§7.6）：
+ * - photoState = "empty" | "photoTaken"
+ * - saveState  = "idle" | "saving" | "saved" | "error"
+ * - 门禁：无照片禁保存
  *
- * 措辞合规（P4）：
- * - "说说看" ✓（禁用"开始录音"）
- * - "我听完了" ✓（禁用"停止"）
- * - "再拍一道" ✓（禁用"下一题"）
- * - "已拍 N 道" ✓（禁用"你还有 N 题未完成"）
- * - "拍了 N 道了，开始诊断？" ✓（禁用"够了，开始诊断"）
- * - "不是终诊 · 这只是初步线索" ✓（禁用"诊断结论""薄弱"）
+ * 措辞合规（OPS §4，E1/E2）：
+ * - 全页无"诊断/已诊断/薄弱/得分/掌握"
+ * - "帮你整理"tab 占位"先把材料收好，等多拍几道再一起看规律"，本轮不调 LightFeedback
  */
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, Camera } from "lucide-react";
-import { QuestionImageViewer } from "@/components/nana/capture/question-image-viewer";
+import { ArrowLeft } from "lucide-react";
+import { QuestionImageCapture } from "@/components/nana/capture/question-image-capture";
 import { VoiceRecorder } from "@/components/nana/capture/voice-recorder";
 import { TranscriptionPanel } from "@/components/nana/capture/transcription-panel";
-import { LightFeedback } from "@/components/nana/capture/light-feedback";
-import {
-  MOCK_QUESTION,
-  MOCK_TRANSCRIPT,
-  joinTranscript,
-} from "@/components/nana/capture/mock-data";
+import { createCase, type ArtifactInput } from "@/lib/nana/nana-api-client";
+
+// ─── 常量 ─────────────────────────────────────
+const TOTAL_PAYLOAD_LIMIT = 3 * 1024 * 1024; // 单次保存总 payload 3MB 上限（前端预检）
+const SUCCESS_MSG = "这道题已经收好了，可以再拍一道";
+const FAILURE_MSG = "没存成功，再试一次";
 
 // ─── Tab 定义 ─────────────────────────────────
 
@@ -51,49 +48,144 @@ const TABS: TabItem[] = [
   { id: "feedback", label: "帮你整理" },
 ];
 
+// ─── 工具：Blob → Base64（§7.7）────────────────
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+// ─── 音频 meta 类型 ───────────────────────────
+interface AudioMeta {
+  durationSec: number;
+  mime: string;
+  sizeBytes: number;
+}
+
 // ─── 主组件 ──────────────────────────────────
 
 export default function CapturePage() {
   // 核心状态
   const [currentTab, setCurrentTab] = useState<TabId>("voice");
   const [captureCount, setCaptureCount] = useState(0);
-  const [transcriptText, setTranscriptText] = useState(
-    () => joinTranscript(MOCK_TRANSCRIPT),
-  );
+
+  // 题图（Base64 或 null=空状态）
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+
+  // 录音
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioMeta, setAudioMeta] = useState<AudioMeta | null>(null);
+
+  // 保存状态
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const photoTaken = imageBase64 !== null;
 
   // ─── 录音完成回调 ──────────────────────────
-
-  const handleTranscriptComplete = useCallback(
-    (text: string) => {
-      setTranscriptText(text);
-      // 延迟自动切换到"帮你整理"tab（给用户看完逐字稿的时间）
-      setTimeout(() => {
-        setCurrentTab("feedback");
-      }, 800);
+  const handleAudioReady = useCallback(
+    (blob: Blob, meta: AudioMeta) => {
+      setAudioBlob(blob);
+      setAudioMeta(meta);
     },
     [],
   );
 
-  // ─── 逐字稿编辑回调 ────────────────────────
-
-  const handleTranscriptChange = useCallback((text: string) => {
-    setTranscriptText(text);
+  // ─── 题图变化回调 ──────────────────────────
+  const handleImageChange = useCallback((base64: string | null) => {
+    setImageBase64(base64);
+    // 换图后重置保存态
+    setSaveState("idle");
+    setSaveMsg(null);
   }, []);
 
-  // ─── "再拍一道" ────────────────────────────
+  // ─── 组装 artifacts（§7.7 方案 A）──────────
+  const buildArtifacts = useCallback(async (): Promise<ArtifactInput[]> => {
+    if (!imageBase64) return [];
+    const artifacts: ArtifactInput[] = [
+      { type: "question_image", content: imageBase64, seq: 0 },
+    ];
+    let seq = 1;
+    if (audioBlob) {
+      const audioBase64 = await blobToBase64(audioBlob);
+      artifacts.push({ type: "audio_note", content: audioBase64, seq });
+      seq += 1;
+      artifacts.push({
+        type: "audio_meta",
+        content: `durationSec=${audioMeta?.durationSec ?? 0};mime=${audioMeta?.mime ?? ""};sizeBytes=${audioMeta?.sizeBytes ?? 0}`,
+        seq,
+      });
+      seq += 1;
+    }
+    artifacts.push({ type: "transcript", content: "尚未转写", seq });
+    return artifacts;
+  }, [imageBase64, audioBlob, audioMeta]);
 
+  // ─── 估算 payload 体积（Base64 字符数 ≈ 字节）──
+  const estimatedPayloadBytes = useMemo(() => {
+    let total = imageBase64?.length ?? 0;
+    // 音频 base64 约 blob.size * 1.37
+    if (audioBlob) total += Math.ceil(audioBlob.size * 1.37);
+    // audio_meta + transcript 占用很小
+    total += 200;
+    return total;
+  }, [imageBase64, audioBlob]);
+
+  // ─── 保存 ─────────────────────────────────
+  const handleSave = useCallback(async () => {
+    if (!imageBase64) {
+      setSaveMsg("先拍一下这道题");
+      return;
+    }
+    // 前端 3MB 预检
+    if (estimatedPayloadBytes > TOTAL_PAYLOAD_LIMIT) {
+      setSaveState("error");
+      setSaveMsg("材料太大，请重新拍一张或录短一些");
+      return;
+    }
+
+    setSaveState("saving");
+    setSaveMsg(null);
+    try {
+      const artifacts = await buildArtifacts();
+      await createCase(artifacts);
+      // 成功：显示成功态 → 重置
+      setSaveState("saved");
+      setSaveMsg(SUCCESS_MSG);
+      setCaptureCount((prev) => prev + 1);
+      // 重置采集状态（保留 captureCount）
+      setTimeout(() => {
+        setImageBase64(null);
+        setAudioBlob(null);
+        setAudioMeta(null);
+        setSaveState("idle");
+        setSaveMsg(null);
+        setCurrentTab("voice");
+      }, 1400);
+    } catch {
+      // 失败：显式报错，保留数据可重试（铁律 6）
+      setSaveState("error");
+      setSaveMsg(FAILURE_MSG);
+    }
+  }, [imageBase64, estimatedPayloadBytes, buildArtifacts]);
+
+  // ─── 重置（"再拍一道"快捷入口，未保存时）──
   const handleRetake = useCallback(() => {
-    // 重置采集页状态
+    setImageBase64(null);
+    setAudioBlob(null);
+    setAudioMeta(null);
+    setSaveState("idle");
+    setSaveMsg(null);
     setCurrentTab("voice");
-    setTranscriptText(joinTranscript(MOCK_TRANSCRIPT));
-    setCaptureCount((prev) => prev + 1);
   }, []);
 
-  // 当 feedback tab 展示时，再拍一道按钮显示在底部
-  const canStartDiagnosis = captureCount + 1 >= 3; // +1 because we count the current one
+  const saving = saveState === "saving";
+  const saved = saveState === "saved";
 
   // ─── 渲染 ─────────────────────────────────
-
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-[#FBF7F0]">
       {/* 自定义动画 keyframes */}
@@ -136,21 +228,13 @@ export default function CapturePage() {
           这道题
         </span>
 
-        {/* 重拍按钮 */}
-        <button
-          type="button"
-          className="flex items-center gap-1 text-[13.5px] text-[#8C857B] transition-colors hover:text-[#403A33]"
-          onClick={handleRetake}
-          aria-label="重拍"
-        >
-          <Camera className="size-[16px]" strokeWidth={1.8} />
-          重拍
-        </button>
+        {/* 右侧占位（保持标题居中） */}
+        <span className="w-[18px]" />
       </div>
 
       {/* ═══ 2. 题图区域（固定 ~52% 高度） ═══ */}
       <div className="h-[52vh] min-h-[280px] shrink-0 border-b border-[#E4DACB] bg-[#EFE7DA]">
-        <QuestionImageViewer stem={MOCK_QUESTION.stem} />
+        <QuestionImageCapture value={imageBase64} onChange={handleImageChange} />
       </div>
 
       {/* ═══ 3. 三 tab ═══ */}
@@ -179,67 +263,87 @@ export default function CapturePage() {
       <div className="flex flex-1 flex-col px-[22px] pb-5 pt-[18px]">
         {/* Tab 内容 */}
         {currentTab === "voice" && (
-          <VoiceRecorder
-            onTranscriptComplete={handleTranscriptComplete}
-          />
+          <VoiceRecorder onAudioReady={handleAudioReady} />
         )}
 
         {currentTab === "transcript" && (
-          <TranscriptionPanel
-            text={transcriptText}
-            onChange={handleTranscriptChange}
-          />
+          <TranscriptionPanel text="尚未转写" onChange={() => {}} />
         )}
 
         {currentTab === "feedback" && (
-          <>
-            <LightFeedback transcript={transcriptText} />
-
-            {/* 已拍计数 + 操作按钮 */}
-            <div className="mt-4 space-y-3">
-              {/* 已拍计数 */}
-              <div className="text-center text-[13.5px] text-[#8C857B]">
-                已拍 {captureCount + 1} 道
-              </div>
-
-              {/* "再拍一道" 按钮 */}
-              <button
-                type="button"
-                onClick={handleRetake}
-                className="w-full rounded-[18px] bg-[#7FA886] px-5 py-[14px] text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform hover:scale-[1.02] active:scale-95"
-              >
-                再拍一道
-              </button>
-
-              {/* N≥3 时显示 "开始诊断" */}
-              {canStartDiagnosis && (
-                <div className="text-center">
-                  <Link
-                    href="/nana/session"
-                    className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5E8868] transition-colors hover:text-[#403A33]"
-                  >
-                    拍了 {captureCount + 1} 道了，开始诊断？
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* 非 feedback tab 的底部提示 */}
-        {currentTab !== "feedback" && (
-          <div className="mt-auto pt-4">
-            <div className="text-center text-[13.5px] text-[#8C857B]">
-              已拍 {captureCount} 道
-              {captureCount > 0 && (
-                <span className="ml-1">
-                  · 再拍 {Math.max(0, 3 - captureCount)} 道就能看看有没有规律
-                </span>
-              )}
-            </div>
+          // 本轮不调 LightFeedback（transcript 恒为"尚未转写"，调接口无意义，§7.4）
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-2">
+            <p className="text-center text-[14.5px] leading-[1.85] text-[#8C857B]">
+              先把材料收好，等多拍几道再一起看规律。
+            </p>
           </div>
         )}
+
+        {/* ─── 底部固定操作区 ─── */}
+        <div className="mt-auto space-y-3 pt-4">
+          {/* 保存状态提示 */}
+          {saveMsg && (
+            <div
+              className={`animate-fadeIn rounded-xl px-4 py-2.5 text-center text-[14px] leading-relaxed ${
+                saved
+                  ? "bg-[#EAF2EC] text-[#3F6B4C]"
+                  : saveState === "error"
+                    ? "bg-[#FBEAE6] text-[#B4553E]"
+                    : "bg-[#FAF0DC] text-[#9A7B3C]"
+              }`}
+            >
+              {saveMsg}
+            </div>
+          )}
+
+          {/* 已拍计数 */}
+          <div className="text-center text-[13.5px] text-[#8C857B]">
+            已收 {captureCount} 道
+            {captureCount >= 3 && (
+              <span className="ml-1">· 可以一起看看有没有规律了</span>
+            )}
+          </div>
+
+          {/* 主操作按钮：收好这道题（无照片禁用） */}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!photoTaken || saving || saved}
+            className={`w-full rounded-[18px] px-5 py-[14px] text-[15.5px] font-medium shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform active:scale-95 ${
+              !photoTaken
+                ? "cursor-not-allowed bg-[#C9C2B6] text-[#FFFDF9] shadow-none"
+                : saved
+                  ? "cursor-default bg-[#6BBF8A] text-[#FFFDF9]"
+                  : "bg-[#7FA886] text-[#FFFDF9] hover:scale-[1.02]"
+            }`}
+          >
+            {saving ? "正在收…" : saved ? "收好了 ✓" : photoTaken ? "收好这道题" : "先拍一下这道题"}
+          </button>
+
+          {/* 未拍照时给"再拍一道"重置入口（已有照片但想重拍时） */}
+          {photoTaken && saveState === "idle" && (
+            <button
+              type="button"
+              onClick={handleRetake}
+              className="w-full text-center text-[13.5px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
+            >
+              重新拍一张
+            </button>
+          )}
+
+          {/* 收够 3 道后，温和引导去知识地图/规律（不用"诊断"词） */}
+          {captureCount >= 3 && (
+            <div className="text-center">
+              <Link
+                href="/nana"
+                className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5E8868] transition-colors hover:text-[#403A33]"
+              >
+                回首页看看
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

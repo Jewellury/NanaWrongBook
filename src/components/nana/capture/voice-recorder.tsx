@@ -1,106 +1,183 @@
 /**
- * VoiceRecorder — 录音控件壳
+ * VoiceRecorder — 真实录音控件（Phase 1.5）
  *
  * 三态：idle → recording → completed
- * 内部定义 AsrProvider 抽象接口 + MockAsrProvider 实现。
+ *
+ * 真实行为：
+ * - getUserMedia({ audio: true }) 请求麦克风权限；拒绝时显式提示（不静默，铁律 6）
+ * - MediaRecorder 收集音频 chunk，停止时合成 Blob；mimeType 动态探测（webm→mp4）
+ * - 60 秒自动停止
+ * - 不做 ASR 转写（第 5 阶段接通）
+ *
+ * 接口缝保留：
+ * - AsrProvider 接口保留为第 5 阶段替换缝（本轮不实例化、不调用）
  *
  * Props:
- * - onTranscriptComplete?: (text: string) => void
+ * - onAudioReady?: (blob: Blob, meta: { durationSec: number; mime: string }) => void
  *
  * 措辞合规（P4）：
  * - "说说看" ✓（禁用"开始录音"）
  * - "我听完了" ✓（禁用"停止"）
- * - "想到哪说到哪，不用完整" ✓
+ * - 完成态："录音收好了，转写稍后接入" ✓
  */
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { MOCK_TRANSCRIPT } from "./mock-data";
+import { useState, useRef, useCallback } from "react";
 
-// ─── AsrProvider 抽象接口 ──────────────────────
-// 供第 5 阶段替换为真实 ASR 实现
+// ─── AsrProvider 接口（缝：第 5 阶段替换为真实 ASR，本轮不实现） ──
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface AsrProvider {
   streamTranscribe(audio: Blob, onText: (t: string) => void): Promise<void>;
   fileTranscribe(audio: Blob): Promise<string>;
-}
-
-// ─── MockAsrProvider ───────────────────────────
-// 延迟 2-3 秒后逐行返回预定义文本
-class MockAsrProvider implements AsrProvider {
-  async streamTranscribe(_audio: Blob, onText: (t: string) => void): Promise<void> {
-    for (let i = 0; i < MOCK_TRANSCRIPT.length; i++) {
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
-      onText(MOCK_TRANSCRIPT[i] ?? "");
-    }
-  }
-
-  async fileTranscribe(_audio: Blob): Promise<string> {
-    await new Promise((r) => setTimeout(r, 1500));
-    return MOCK_TRANSCRIPT.join("\n");
-  }
 }
 
 // ─── 类型 ─────────────────────────────────────
 
 type RecorderState = "idle" | "recording" | "completed";
 
-interface VoiceRecorderProps {
-  onTranscriptComplete?: (text: string) => void;
+interface AudioMeta {
+  durationSec: number;
+  mime: string;
+  sizeBytes: number;
 }
 
+interface VoiceRecorderProps {
+  onAudioReady?: (blob: Blob, meta: AudioMeta) => void;
+}
+
+// ─── 常量 ─────────────────────────────────────
+const MAX_RECORDING_SEC = 60; // 单次录音时长上限
+
 // ─── 波形柱状条 ───────────────────────────────
-// 20 条不同高度 / 延迟的 CSS 动画柱
 const WAVE_BARS = Array.from({ length: 20 }, (_, i) => ({
   key: i,
   delay: `${-(0.05 * i).toFixed(2)}s`,
-  duration: `${(0.9 + Math.random() * 0.5).toFixed(2)}s`,
+  duration: `${(0.9 + (i % 5) * 0.1).toFixed(2)}s`,
 }));
+
+// ─── 工具：探测可用的录音 mimeType ────────────────
+function pickMimeType(): string {
+  if (typeof MediaRecorder === "undefined") return "";
+  // 优先 webm，iOS Safari 较新版本可能用 mp4 容器
+  if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+  if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
+  return ""; // 用默认（浏览器自选）
+}
 
 // ─── 组件 ─────────────────────────────────────
 
-export function VoiceRecorder({ onTranscriptComplete }: VoiceRecorderProps) {
+export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
   const [state, setState] = useState<RecorderState>("idle");
-  const [displayLines, setDisplayLines] = useState<string[]>([]);
-  const [currentLine, setCurrentLine] = useState<string>("");
-  const asrRef = useRef<AsrProvider | null>(null);
+  const [permissionMsg, setPermissionMsg] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
 
-  // 初始化 MockAsrProvider
-  useEffect(() => {
-    asrRef.current = new MockAsrProvider();
-  }, []);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const mimeRef = useRef<string>("");
+  const startTsRef = useRef<number>(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleStartRecording = useCallback(() => {
-    setState("recording");
-    setDisplayLines([]);
-    setCurrentLine("");
-
-    // 模拟 ASR 流式转写
-    const asr = asrRef.current;
-    if (asr) {
-      asr
-        .streamTranscribe(new Blob(), (text) => {
-          setCurrentLine(text);
-          setDisplayLines((prev) => [...prev, text]);
-        })
-        .then(() => {
-          // 流结束后，清除当前行
-          setCurrentLine("");
-        })
-        .catch(() => {
-          // 静默处理 mock 错误
-        });
+  // ─── 清理资源 ───────────────────────────────
+  const cleanup = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
   }, []);
 
+  // ─── 开始录音 ───────────────────────────────
+  const handleStartRecording = useCallback(async () => {
+    setPermissionMsg(null);
+
+    // 浏览器兼容探测（§7.8）
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      setPermissionMsg("当前浏览器不支持录音");
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      setPermissionMsg("当前浏览器不支持录音");
+      return;
+    }
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      // 权限拒绝或不可用：显式提示（铁律 6）
+      setPermissionMsg("没拿到麦克风权限，可以在浏览器设置里打开。不录音也能保存这道题。");
+      return;
+    }
+
+    streamRef.current = stream;
+    const mime = pickMimeType();
+    mimeRef.current = mime;
+
+    const recorder = mime
+      ? new MediaRecorder(stream, { mimeType: mime })
+      : new MediaRecorder(stream);
+    mediaRecorderRef.current = recorder;
+    chunksRef.current = [];
+
+    recorder.ondataavailable = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, {
+        type: mimeRef.current || recorder.mimeType || "audio/webm",
+      });
+      const durationSec = Math.min(
+        MAX_RECORDING_SEC,
+        Math.round((Date.now() - startTsRef.current) / 1000),
+      );
+      const meta: AudioMeta = {
+        durationSec,
+        mime: mimeRef.current || recorder.mimeType || "",
+        sizeBytes: blob.size,
+      };
+      onAudioReady?.(blob, meta);
+      cleanup();
+    };
+
+    recorder.start();
+    startTsRef.current = Date.now();
+    setState("recording");
+    setElapsed(0);
+
+    // 计时器（更新 elapsed 展示）
+    timerRef.current = setInterval(() => {
+      setElapsed(Math.round((Date.now() - startTsRef.current) / 1000));
+    }, 1000);
+
+    // 60 秒自动停止
+    autoStopTimerRef.current = setTimeout(() => {
+      const r = mediaRecorderRef.current;
+      if (r && r.state !== "inactive") r.stop();
+    }, MAX_RECORDING_SEC * 1000);
+  }, [onAudioReady, cleanup]);
+
+  // ─── 停止录音 ───────────────────────────────
   const handleFinishRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
     setState("completed");
-    const fullText = displayLines.join("\n");
-    // 延迟 300ms 再触发完成回调，让组件有时间渲染 completed 态
-    setTimeout(() => {
-      onTranscriptComplete?.(fullText);
-    }, 300);
-  }, [displayLines, onTranscriptComplete]);
+  }, []);
 
   // ─── idle 态 ───────────────────────────────
   if (state === "idle") {
@@ -136,8 +213,15 @@ export function VoiceRecorder({ onTranscriptComplete }: VoiceRecorderProps) {
 
         {/* 副标题 */}
         <p className="text-[13.5px] text-[#8C857B]">
-          想到哪说到哪，不用完整。
+          想到哪说到哪，不用完整。最长录 60 秒。
         </p>
+
+        {/* 权限拒绝提示 */}
+        {permissionMsg && (
+          <p className="max-w-[280px] rounded-xl bg-[#FAF0DC] px-3 py-2 text-center text-[13px] leading-relaxed text-[#9A7B3C]">
+            {permissionMsg}
+          </p>
+        )}
       </div>
     );
   }
@@ -146,9 +230,12 @@ export function VoiceRecorder({ onTranscriptComplete }: VoiceRecorderProps) {
   if (state === "recording") {
     return (
       <div className="flex flex-1 flex-col">
-        {/* "正在听你说" + 闪烁圆点 */}
+        {/* "正在听你说" + 计时 + 闪烁圆点 */}
         <div className="flex items-center justify-center gap-2 py-2">
           <span className="text-[14px] text-[#5E8868]">正在听你说</span>
+          <span className="text-[12.5px] tabular-nums text-[#B4ADA3]">
+            {elapsed}s / {MAX_RECORDING_SEC}s
+          </span>
           <span className="flex gap-[3px]">
             {[0, 1, 2].map((i) => (
               <span
@@ -179,29 +266,6 @@ export function VoiceRecorder({ onTranscriptComplete }: VoiceRecorderProps) {
               }}
             />
           ))}
-        </div>
-
-        {/* Mock 转写文字逐行出现 */}
-        <div className="flex flex-1 flex-col justify-end gap-[2px] overflow-hidden px-2">
-          {displayLines.map((line, i) => (
-            <div
-              key={i}
-              className={`text-[14px] leading-relaxed ${
-                i === displayLines.length - 1 && !currentLine
-                  ? "animate-fadeIn text-[#403A33]"
-                  : i === displayLines.length - 1
-                    ? "animate-fadeIn text-[#403A33]"
-                    : "text-[#8C857B] opacity-55"
-              }`}
-            >
-              {line}
-            </div>
-          ))}
-          {currentLine && (
-            <div className="animate-fadeIn text-[14px] leading-relaxed text-[#403A33]">
-              {currentLine}
-            </div>
-          )}
         </div>
 
         {/* "我听完了" 按钮 */}
@@ -249,7 +313,10 @@ export function VoiceRecorder({ onTranscriptComplete }: VoiceRecorderProps) {
         <span className="font-medium">我听完了</span>
       </div>
       <p className="text-[13.5px] text-[#8C857B]">
-        正在整理你说的内容…
+        录音收好了，转写稍后接入
+      </p>
+      <p className="text-[12.5px] text-[#B4ADA3]">
+        已录音 {elapsed} 秒
       </p>
     </div>
   );
