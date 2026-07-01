@@ -1,22 +1,33 @@
 /**
- * RecentCasesList — 知识地图"最近拍过的题"列表区（Stage 1 S1-4）
+ * RecentCasesList — 知识地图"最近拍过的题"列表区
  *
- * 调 GET /api/nana/cases（S1-3）显示当前用户最近的错题。
- * - 空态："还没拍过题，去拍一道 →"（→ /nana/capture）
- * - 有题：每条 = 占位缩略 + 拍摄日期 + "未分类"chip（Stage 1 恒 untagged）
+ * Stage 1（S1-4）：横向列表 + "未分类"chip + 空态。
+ * Stage 2（S2-4）：点 case 展开详情面板 → 懒加载该 case 的知识点标签 +
+ *   人工"挂到知识点"操作（从 48 节点里选）。
  *
- * Stage 1 列表端点不返回完整 base64 题图（§12.2 体积注意），
- * 故用图标占位代替真实缩略；完整题图走 GET /cases/[id]（未来详情页）。
+ * 数据来源决策（S2-4，见执行日志）：
+ * - 列表端点不扩展返回 tags[]（避免列表爆体积 + N+1），标签走点击后懒加载 listCaseTags。
+ * - 48 节点由知识地图页面（已加载 /api/diagnosis/map）作为 props 传入，
+ *   不另起"列出全部节点"端点（避免多余 API）。
  *
- * 措辞合规（OPS §4）：无 诊断/已诊断/薄弱/得分/掌握/失败。
+ * 措辞合规（OPS §4）：
+ * - 人工挂的标签显示节点名 chip；未挂的显示"未分类"。
+ * - 不出现 诊断/已诊断/薄弱/得分/掌握/失败；Stage 2 无真 AI 分类，
+ *   不说"AI 已识别/已分类"，仅人工挂载。
  */
 
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ImageIcon, Camera } from "lucide-react";
-import { listMyCases, type CaseListItem } from "@/lib/nana/nana-api-client";
+import { ImageIcon, Camera, Tag, Plus } from "lucide-react";
+import {
+  listMyCases,
+  listCaseTags,
+  tagCaseManually,
+  type CaseListItem,
+  type CaseKnowledgeTagResponse,
+} from "@/lib/nana/nana-api-client";
 
 // ─── 日期格式化：ISO → "7月1日" ───────────────────
 function formatDate(iso: string): string {
@@ -24,14 +35,19 @@ function formatDate(iso: string): string {
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-export function RecentCasesList() {
+interface RecentCasesListProps {
+  /** 48 个知识点 {id, name}，由知识地图页面（已加载 map）传入；为空时禁用挂载操作 */
+  nodes: { id: string; name: string }[];
+}
+
+export function RecentCasesList({ nodes }: RecentCasesListProps) {
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    // loading 初值已为 true，effect 仅跑一次，无需重复 setLoading(true)
     listMyCases()
       .then((data) => {
         if (!cancelled) setCases(data.cases);
@@ -46,6 +62,13 @@ export function RecentCasesList() {
       cancelled = true;
     };
   }, []);
+
+  // 列表变化时，若选中的 case 已不在列表，清空选中
+  useEffect(() => {
+    if (selectedId && !cases.some((c) => c.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [cases, selectedId]);
 
   // ─── 加载中骨架 ───
   if (loading) {
@@ -97,35 +120,177 @@ export function RecentCasesList() {
     );
   }
 
-  // ─── 有题：横向列表 ───
+  // ─── 有题：横向列表 + 选中详情面板 ───
   return (
     <section className="px-4 pb-3">
       <h2 className="mb-2 text-sm font-semibold text-[#403A33]">
         最近拍过的题
       </h2>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {cases.map((c) => (
-          <div
-            key={c.id}
-            className="flex w-[104px] shrink-0 flex-col gap-1.5 rounded-xl border border-[#E8E0D4] bg-white p-2"
-          >
-            {/* 占位缩略（列表端点不返回完整题图，§12.2） */}
-            <div className="flex h-[60px] items-center justify-center rounded-lg bg-[#F2EDE3]">
-              {c.hasImage ? (
-                <ImageIcon className="size-6 text-[#B8AFA6]" />
-              ) : (
-                <div className="h-full w-full" />
-              )}
-            </div>
-            <span className="text-[12px] text-[#8C857B]">
-              {formatDate(c.createdAt)}
-            </span>
-            <span className="inline-block w-fit rounded-full bg-[#F2EDE3] px-2 py-0.5 text-[11px] text-[#9A8B7A]">
-              未分类
-            </span>
-          </div>
-        ))}
+        {cases.map((c) => {
+          const isSelected = selectedId === c.id;
+          return (
+            <button
+              type="button"
+              key={c.id}
+              onClick={() => setSelectedId(isSelected ? null : c.id)}
+              className={[
+                "flex w-[104px] shrink-0 flex-col gap-1.5 rounded-xl border bg-white p-2 text-left transition-colors",
+                isSelected
+                  ? "border-[#5E8868] ring-1 ring-[#5E8868]"
+                  : "border-[#E8E0D4] hover:border-[#B8AFA6]",
+              ].join(" ")}
+            >
+              {/* 占位缩略（列表端点不返回完整题图，§12.2） */}
+              <div className="flex h-[60px] items-center justify-center rounded-lg bg-[#F2EDE3]">
+                {c.hasImage ? (
+                  <ImageIcon className="size-6 text-[#B8AFA6]" />
+                ) : (
+                  <div className="h-full w-full" />
+                )}
+              </div>
+              <span className="text-[12px] text-[#8C857B]">
+                {formatDate(c.createdAt)}
+              </span>
+              <span className="inline-block w-fit rounded-full bg-[#F2EDE3] px-2 py-0.5 text-[11px] text-[#9A8B7A]">
+                未分类
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* ===== 选中 case 的详情面板（Stage 2 S2-4）===== */}
+      {selectedId && (
+        <CaseTagPanel caseId={selectedId} nodes={nodes} />
+      )}
     </section>
+  );
+}
+
+// ─── 选中 case 的标签面板（懒加载 + 人工挂载）────────────
+
+interface CaseTagPanelProps {
+  caseId: string;
+  nodes: { id: string; name: string }[];
+}
+
+function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
+  const [tags, setTags] = useState<CaseKnowledgeTagResponse[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [pickedNodeId, setPickedNodeId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  // 懒加载该 case 的标签（带归属过滤，服务端按当前用户校验）
+  useEffect(() => {
+    let cancelled = false;
+    setTags(null);
+    setLoadFailed(false);
+    setActionMsg(null);
+    listCaseTags(caseId)
+      .then((data) => {
+        if (!cancelled) setTags(data.tags);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
+
+  const nodeNameById = new Map(nodes.map((n) => [n.id, n.name]));
+
+  async function handleAttach() {
+    if (!pickedNodeId) {
+      setActionMsg("先选一个知识点");
+      return;
+    }
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      await tagCaseManually(caseId, pickedNodeId);
+      // 刷新标签
+      const data = await listCaseTags(caseId);
+      setTags(data.tags);
+      setPickedNodeId("");
+      setActionMsg("已挂上");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // 409 → 已挂过；其它 → 友好提示，不假装成功（铁律 6）
+      if (msg.includes("409")) {
+        setActionMsg("这个已经挂过了");
+      } else {
+        setActionMsg("没挂上，稍后再试");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-[#E8E0D4] bg-white p-3">
+      {/* 已挂标签 */}
+      <div className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-[#403A33]">
+        <Tag className="size-3.5 text-[#5E8868]" />
+        知识点
+      </div>
+      {tags === null && !loadFailed && (
+        <p className="text-[13px] text-[#B8AFA6]">加载中…</p>
+      )}
+      {loadFailed && (
+        <p className="text-[13px] text-[#B8AFA6]">没拉到，下拉刷新试试</p>
+      )}
+      {tags !== null && tags.length === 0 && (
+        <span className="inline-block rounded-full bg-[#F2EDE3] px-2 py-0.5 text-[11px] text-[#9A8B7A]">
+          未分类
+        </span>
+      )}
+      {tags !== null && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map((t) => (
+            <span
+              key={t.id}
+              className="inline-flex items-center gap-1 rounded-full bg-[#EAF2EC] px-2 py-0.5 text-[11px] text-[#5E8868]"
+            >
+              {nodeNameById.get(t.nodeId) ?? t.nodeId}
+              {t.source === "manual" && (
+                <span className="text-[10px] text-[#9ABFA1]">手动</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* 挂到知识点（人工，从 48 节点里选） */}
+      <div className="mt-3 flex items-center gap-2">
+        <select
+          value={pickedNodeId}
+          onChange={(e) => setPickedNodeId(e.target.value)}
+          disabled={busy || nodes.length === 0}
+          className="min-w-0 flex-1 rounded-lg border border-[#E8E0D4] bg-[#FBF7F0] px-2 py-1.5 text-[13px] text-[#403A33] focus:border-[#5E8868] focus:outline-none disabled:opacity-50"
+        >
+          <option value="">{nodes.length === 0 ? "知识点加载中…" : "选一个知识点"}</option>
+          {nodes.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={handleAttach}
+          disabled={busy || nodes.length === 0 || pickedNodeId === ""}
+          className="inline-flex items-center gap-1 rounded-lg bg-[#5E8868] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#4F7858] disabled:opacity-50"
+        >
+          <Plus className="size-3.5" />
+          挂上
+        </button>
+      </div>
+      {actionMsg && (
+        <p className="mt-2 text-[12px] text-[#8C857B]">{actionMsg}</p>
+      )}
+    </div>
   );
 }

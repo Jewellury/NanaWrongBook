@@ -75,6 +75,46 @@ export async function listMyCases(): Promise<{ cases: CaseListItem[]; total: num
   return res.json();
 }
 
+// ─── Case 知识点标签（Stage 2 S2-3）─────────────────────
+
+export interface CaseKnowledgeTagResponse {
+  id: string;
+  caseId: string;
+  nodeId: string;
+  source: string;           // "manual" | "vlm" | "asr" | "rule" | "pending"
+  confidence: number;
+  note: string | null;
+  createdAt: string;
+}
+
+/**
+ * 读取指定 case 的知识点标签（带归属过滤，服务端按当前用户校验）
+ * GET /api/nana/cases/:id/tags
+ */
+export async function listCaseTags(caseId: string): Promise<{ tags: CaseKnowledgeTagResponse[] }> {
+  const res = await fetch(`${NANA_BASE}/cases/${caseId}/tags`);
+  if (!res.ok) throw new Error(`listCaseTags 失败: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * 人工把 case 挂到一个知识点（source 恒 "manual"）
+ * POST /api/nana/cases/:id/tags  body: { nodeId, note? }
+ */
+export async function tagCaseManually(
+  caseId: string,
+  nodeId: string,
+  note?: string,
+): Promise<CaseKnowledgeTagResponse> {
+  const res = await fetch(`${NANA_BASE}/cases/${caseId}/tags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodeId, note }),
+  });
+  if (!res.ok) throw new Error(`tagCaseManually 失败: ${res.status}`);
+  return res.json();
+}
+
 /**
  * 获取知识地图数据
  * GET /api/diagnosis/map?studentId=xxx[&mainlineId=xxx]

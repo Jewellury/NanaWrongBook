@@ -142,8 +142,12 @@ export default function KnowledgeMapPage() {
         </div>
       </div>
 
-      {/* ===== 最近拍过的题（Stage 1 S1-4，独立于图谱数据，自带 loading） ===== */}
-      <RecentCasesList />
+      {/* ===== 最近拍过的题（Stage 1 S1-4 列表 / Stage 2 S2-4 标签+挂载） ===== */}
+      <RecentCasesList
+        nodes={
+          mapData?.nodes.map((n) => ({ id: n.nodeId, name: n.name })) ?? []
+        }
+      />
 
       {/* ===== 图例（非空态显示） ===== */}
       {!isEmpty && !loading && mapData && (
