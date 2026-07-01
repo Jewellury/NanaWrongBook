@@ -301,6 +301,7 @@ model Case {
   studentId String     // → 上游 User.id（不改其表，与 mistakeId 同款处理）
   createdAt DateTime   @default(now())
   artifacts Artifact[]
+  knowledgeTags CaseKnowledgeTag[]   // ← Stage 2 新增：Case↔知识点挂载
 }
 
 model Artifact {
@@ -313,4 +314,24 @@ model Artifact {
   createdAt DateTime @default(now())
 
   @@index([caseId])
+}
+
+// ============================================================
+// 第 2 阶段：Case↔知识点挂载（个性化数学诊断辅导系统 · 增量）
+// 全部新增表，不改 wrong-notebook 已有模型，符合铁律 3
+// ============================================================
+
+model CaseKnowledgeTag {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  nodeId     String   // → KnowledgeNode.id（松挂接，无 FK，与 MistakeNode/ErrorRecord 同款，守铁律 3）
+  source     String   // "manual" | "vlm" | "asr" | "rule" | "pending"
+  confidence Float    @default(0.0)  // 0-1；manual=1.0，vlm/规则给概率
+  note       String?  // 可选，如 "VLM 候选：一次函数图像"
+  createdAt  DateTime @default(now())
+
+  @@unique([caseId, nodeId, source])  // 同 case 同节点同来源不重复
+  @@index([caseId])
+  @@index([nodeId])
 }
