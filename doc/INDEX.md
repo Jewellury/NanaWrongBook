@@ -124,6 +124,7 @@
 | ✅ | [reference/BOOTSTRAP_new_project_handbook.md](reference/BOOTSTRAP_new_project_handbook.md) | 新项目引导手册 |
 | ✅ | [reference/codex_long_term_memory.md](reference/codex_long_term_memory.md) | Codex 长期记忆入口 |
 | ✅ | [reference/codex_memory_decisions/](reference/codex_memory_decisions/) | Codex 记忆决策记录目录 |
+| ✅ | [reference/codex_memory_decisions/2026-07-01_ci-image-deployment-and-real-capture-gates.md](reference/codex_memory_decisions/2026-07-01_ci-image-deployment-and-real-capture-gates.md) | Codex 记忆决策：CI 镜像部署 + Phase 1.5 真实采集门禁 |
 | ✅ | [reference/installed-skills-catalog.md](reference/installed-skills-catalog.md) | 已安装 Skill 清单（2026-06-19） |
 | ✅ | [reference/fof-semantic-mvp-dual-runtime-audit-notes.md](reference/fof-semantic-mvp-dual-runtime-audit-notes.md) | fof-semantic 双运行时审计笔记 |
 | ✅ | [reference/docker-troubleshooting-guide.md](reference/docker-troubleshooting-guide.md) | Docker Desktop 故障排查指南（Fast Startup + 修复流程 + CI 策略更新） |
@@ -244,5 +245,5 @@
 
 ---
 
-> 最后更新：2026-06-30 | 维护者：人类 + Claude + 三代理
-> 本次更新：部署指南 + CI 镜像部署执行日志
+> 最后更新：2026-07-01 | 维护者：人类 + Claude + Codex + 三代理
+> 本次更新：Codex 记忆决策（CI 镜像部署 + Phase 1.5 真实采集门禁）

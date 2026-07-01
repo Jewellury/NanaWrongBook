@@ -41,7 +41,25 @@
 - `CLAUDE.md` 和 `OPENCODE.md` 只做各自 runtime 的路由与补充说明，不承担跨 runtime 的统一注册职责。
 - 双运行时 bootstrap 与验证细节，长期参考放在 `doc/reference/new-project-dual-runtime-bootstrap-guide.md` 和对应决策档中。
 
+### 部署与测试门禁
+- Nana 的稳定部署路线已从“服务器现场 build / 本地 Docker 验证”转为“GitHub Actions 构建测试镜像 + 生产镜像，推送 GHCR，腾讯云服务器只 pull/up 运行”。
+- Windows 本地 Docker Desktop 不稳定，不能再作为上线硬门禁；本地优先跑 `npm.cmd run build`，测试容器门禁交给 GitHub Actions。
+- GitHub Actions 中的 `docker-compose.test.yml` 测试容器仍是硬门禁；CI 测试失败不得合入 `main` 或部署到腾讯云。
+- 禁止用生产容器或生产 SQLite 跑测试；测试只能在隔离 test.db 的测试容器里跑。
+- 服务器默认只部署 `main`，镜像来自 GHCR；服务器不现场热修源码、不现场构建镜像。
+- 部署/回滚/迁移前先备份生产 SQLite；备份失败不得继续。
+- 本地 Codex/agent 环境可能把 DNS 劫持到 `198.18.x.x`，不能用该环境的 DNS 结果判断公网部署状态；以手机移动数据、腾讯云服务器、DNSPod/权威 DNS 为准。
+
+### Phase 1.5 真实采集壳
+- `/nana/capture` 的首期真实闭环边界是：真拍照、可选真录音、不做 ASR/VLM/诊断，只把 `case = 题图 + 原音 + 转写占位 + AI 提要占位` 存入现有 Case/Artifact API。
+- Phase 1.5 暂用 Base64 内联 SQLite 保存题图/录音，属于已登记设计债；当 case 数超过 100 或 `dev.db` 超过 50 MB 时优先迁移对象存储。
+- 采集壳前台措辞不得暗示“诊断已完成”；保存后只说“收好了”，诊断闭环留给后续采集到诊断重设计。
+- 录音组件涉及 MediaRecorder 时必须处理 unmount cleanup：录音中切 tab/换图/保存/离页不能让旧 recorder 后台回写到新题图。
+- 若本地 Docker 不可用，Phase 1.5 这类前端状态修复可先用 `npm.cmd run build` 做本地验证，但最终仍需 GitHub Actions 测试容器绿灯后才能部署。
+
 ## 待持续观察
 - 项目 AI 是否稳定执行“task 结束后先做 git 收口”的流程。
 - 扫描类脚本是否已经统一成批次隔离或合并去重，避免覆盖写。
 - 如果后续再次出现“只总结不收口”的情况，需要继续强化收尾闸门提示。
+- Phase 1.5 真实采集上线后，手机真机需验收：拍照、录音权限、保存 case、Artifact 入库、无 mock 题残留、无“诊断完成”暗示。
+- 后续应补 MediaRecorder/jsdom 单测，至少覆盖“录音中 unmount 不回写父组件并清理 stream/timer”。
