@@ -88,27 +88,33 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 
 ---
 
-## 当前活跃任务：第 1 阶段开发——采集基础壳（P0）→ 已切换至部署阶段
+## 当前活跃任务：CI 镜像部署——已完成 ✅
 
-**目标**：从本地隧道切换到 CI 镜像构建 + 腾讯云香港服务器部署。
-**执行方案**：`doc/plan/ci-image-deployment-plan.md`（CI 方案，待用户拍板后执行）
+**目标**：从本地隧道切换到 CI 镜像构建 + 腾讯云香港服务器部署。**已全部完成**。
+**执行方案**：`doc/plan/ci-image-deployment-plan.md`
+**部署指南**：`doc/guide/deployment-guide.md`
+**执行日志**：`doc/executionlog/tencent-cloud-deployment-log.md`
 
-### 已完成
-- Phase 1-3 前端+后端全链路开发完成（采集壳 / 知识地图 / Session / 报告 / 纸质包）
-- 腾讯云香港服务器已购买（119.28.42.208），Docker 已安装
-- 域名 `nana.nanatop.xyz` 已购买，DNS A 记录已添加
-- `.env` 已在服务器配置（`DATABASE_URL` / `NEXTAUTH_SECRET` / `NEXTAUTH_URL` / `AUTH_TRUST_HOST`）
-- 审计全部通过
+### 已上线
+| 组件 | 状态 | 详情 |
+|------|:----:|------|
+| 服务器 119.28.42.208 | ✅ 运行中 | Ubuntu 22.04, Docker 29.6.1 |
+| wrong-notebook 容器 | ✅ 运行中 | `ghcr.io/jewellury/nanawrongbook:latest` |
+| caddy 容器 | ✅ 运行中 | HTTPS 证书已签发 |
+| 域名 nana.nanatop.xyz | ✅ 可用 | DNS A 记录 → 119.28.42.208 |
+| GitHub Actions CI | ✅ 通过 | push main → build + test + push GHCR |
+| 镜像仓库 GHCR | ✅ 有镜像 | `sha-<短sha>` + 时间戳 + `latest` |
+| 自动备份 crontab | ✅ 已安装 | 每日 2:00, 保留 14 天 |
 
-### 阻塞项
-- 旧方案（服务器现场 build）因构建失败阻塞——已废弃，改走 CI 方案
-- 域名 DNS 仍在生效等待中（最快 30 分钟，全球 24-48 小时）
-- 服务器当前有旧容器/旧代码，待 Phase 1 迁移
+### 修复记录
+| 问题 | 修复 |
+|------|------|
+| `bcryptjs` standalone 缺失 | `next.config.ts` 加 `outputFileTracingIncludes` |
+| `outputFileTracingIncludes` 类型错 | Next.js 16 已移出 experimental，放顶层 |
+| 腾讯云防火墙缺 443 入站 | 手机移动数据访问恢复正常 |
 
 ### 下一步
-用户拍板 CI 方案后 → execute-agent 执行 Phase 1-5。
-
-详细拆分见 [active_spec.md](active_spec.md) 和 [plan/ci-image-deployment-plan.md](plan/ci-image-deployment-plan.md)。
+进入正常开发迭代：修改代码 → push dev → 合 main → CI 自动构建 → 服务器 pull 更新。
 
 ---
 
@@ -151,12 +157,14 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 
 ## 下一步
 
-**当前执行**：第 1 阶段开发——采集基础壳，按 `nana-phase1-execution-plan.md` 4 个 commit 推进。
+**当前状态**：CI 镜像部署已完成。恢复正常开发迭代。
 
-**并行保持**：真题转写复核（D 线）与第 1 阶段不互斥，可继续推进。
+**核心流程**：修改代码 → push dev → 合 main → CI 自动构建 → 服务器 `git pull && docker compose pull && up -d`
+
+**并行保持**：真题转写复核（D 线）可继续推进。
 - 2024/2025/2026 三年 draft 已产出，待核对数字/符号/公式后入库
 
-**后续阶段候选**（第 1 阶段完成后）：
+**后续阶段候选**：
 - 第 2 阶段：知识地图（P1）
 - 第 3 阶段：批次诊断报告 + Session UI（P1）
 - 第 4 阶段：视频推荐 + 复诊验证（P2）
@@ -169,6 +177,7 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 - **先读**：本文件 → [DECISIONS.md](DECISIONS.md)（末尾开放项速查）→ [active_spec.md](active_spec.md)
 - **必读权威参考**：[reference/TECH_PLAN_v2.md](reference/TECH_PLAN_v2.md) + [reference/OPS_handbook.md](reference/OPS_handbook.md)
 - **运行规则**：见 CLAUDE.md（安全铁律 + 三代理框架 + Git 规范）
+- **部署指南**：`doc/guide/deployment-guide.md`（发布流程/回滚/备份/故障排查）
 - **测试**：`npm run test:all`（需 Docker 测试容器），110/110 退出码 0
 
 ---

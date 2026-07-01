@@ -226,6 +226,7 @@ Claude Code 加载路径：`.claude/agents/`。OpenCode 加载路径：`.opencod
 | `CLAUDE.md` | Claude 运行时操作说明 | Claude 工具链变更时更新 |
 | `OPENCODE.md` | OpenCode 运行时操作说明 | OpenCode 适配时更新 |
 | `doc/INDEX.md` | 文档索引看板（找文件、看状态） | 新增/移动文件时更新 |
+| `doc/guide/deployment-guide.md` | 完整部署指南（CI 镜像路线、发布流程、回滚、备份、故障排查） | 部署流程变更时更新 |
 | `doc/00_CURRENT.md` | 当前项目整体状态（冷启动第一站） | 状态变化时更新 |
 | `doc/DECISIONS.md` | 技术决策台账（为什么选 A 不选 B） | 新决策产生时追加 |
 | `doc/spec/` | 技术规格 | 长期保留 |

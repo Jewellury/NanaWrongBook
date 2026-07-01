@@ -93,6 +93,7 @@
 | ✅ | [executionlog/nana-phase1-execution-log.md](executionlog/nana-phase1-execution-log.md) | 第 1 阶段执行日志 |
 | ✅ | [executionlog/nana-phase2-execution-log.md](executionlog/nana-phase2-execution-log.md) | 第 2 阶段执行日志 |
 | 🟡 | [executionlog/nana-phase3-execution-log.md](executionlog/nana-phase3-execution-log.md) | 第 3 阶段执行日志（进行中） |
+| ✅ | [executionlog/tencent-cloud-deployment-log.md](executionlog/tencent-cloud-deployment-log.md) | 腾讯云部署执行日志（CI 镜像路线 + bcryptjs 修复） |
 
 ### doc/auditlog/ — 审计报告
 
@@ -224,6 +225,7 @@
 |:--:|------|--------|
 | ✅ | [guide/photo-guide-niece.md](guide/photo-guide-niece.md) | 拍照指南——外甥女版 |
 | ✅ | [guide/photo-guide-uncle.md](guide/photo-guide-uncle.md) | 拍照指南——舅舅版 |
+| ✅ | [guide/deployment-guide.md](guide/deployment-guide.md) | 部署指南——CI 镜像路线、发布流程、回滚、备份、故障排查 |
 
 ---
 
@@ -242,5 +244,5 @@
 
 ---
 
-> 最后更新：2026-06-27 | 维护者：人类 + Claude + 三代理
-> 本次更新：总纲 + 5 阶段计划 + 第 1 阶段执行计划 + 审计报告 + 全景架构图 + 闭环重设计
+> 最后更新：2026-06-30 | 维护者：人类 + Claude + 三代理
+> 本次更新：部署指南 + CI 镜像部署执行日志
