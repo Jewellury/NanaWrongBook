@@ -126,6 +126,7 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 |---|--------|------|:--:|
 | 1 | slipFlag 持久化历史 | 当前仅单 boolean，复诊"连续两次"判定需 slipCount 字段 | ⬜ |
 | 2 | `/initial` 一步式废弃 | 与 submit-answers 两条初诊路径分叉，建议稳定后废弃 | ⬜ |
+| 3 | 二进制 artifact 以 Base64 内联 SQLite（Phase 1.5 引入） | `question_image`/`audio_note` 字节以 Base64 存进 `Artifact.content`（String），~33% 体积开销，case 多了拖慢 SQLite 查询/备份。**迁移阈值**：case > 100 条或 `dev.db` > 50 MB（先到先触发）；**迁移方向**：对象存储 + URL 存 content + 独立清理策略 | ⬜ |
 
 ---
 
