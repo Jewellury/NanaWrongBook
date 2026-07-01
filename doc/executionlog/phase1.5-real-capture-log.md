@@ -83,6 +83,15 @@
 - 涉及文件: `src/components/nana/capture/voice-recorder.tsx`、`src/components/nana/capture/question-image-capture.tsx`、`src/app/nana/capture/page.tsx`
 - 结果: ✅ 完成（`npm run build` 通过，Compiled successfully in 16.8s，退出码 0）
 
+### 任务 J：审计 P2 收口 + 触发 CI 门禁（2026-07-01）
+- 做了什么: 按审计报告问题清单 P2×3 收口本日志：
+  - "代码已提交"勾选项由"待执行"改为已提交的 5 个 commit（ea38002, a767df8, e8e8dcf, 748bc0d, 153bd17）
+  - "完成状态"由迁门禁前的旧措辞（`test:all` BLOCKED）按 execute-agent.md 新模板二选一分支重述（本地 Docker 不可用→记录 + CI 兜底；GitHub Actions 测试容器通过后才允许部署）
+  - "可进入审计阶段"改为反映现实：审计已完成（有条件通过），CI 门禁待跑
+  - 本条任务记录即审计 P2 第 2/3 项的修复载体
+- 涉及文件: `doc/executionlog/phase1.5-real-capture-log.md`（仅本文件）
+- 结果: ✅ 完成（纯文档收口，无代码改动）
+
 ## 偏离记录（如有）
 > 记录所有在执行中对计划做的微调。审计代理会逐条复核这些微调是否真属微调。
 
@@ -113,8 +122,12 @@
 
 ## 完成状态
 - [x] 所有代码任务完成（A–E + G1–G3 + F1）
-- [ ] 代码已提交（commit: 见下方 git 收口，待执行）
-- [ ] `test:all` 通过 —— ⚠️ **BLOCKED**：Docker Desktop 守护进程未运行，测试容器无法启动。需用户启动 Docker 后重跑
-- [ ] 确认测试在安全路径运行 —— 同上 BLOCKED
-- [x] F2 真机/部署验收 —— 延后至用户（需真机 + 服务器）
-- [ ] 可进入审计阶段 —— 待测试容器验证通过后
+- [x] 代码已提交（ea38002, a767df8, e8e8dcf, 748bc0d, 153bd17）
+- [x] 本地 `npm.cmd run build` 通过（3 次：14.5s / 16.4s / 16.8s，退出码 0）
+- [x] 本地相关窄范围测试已运行，或明确说明未运行原因——改动文件 ESLint exit 0、改动测试文件 tsc 零报错；集成测试 `case-api.test.ts` 因本地 Docker 不可用**未跑**
+- [ ] 测试容器门禁通过（二选一）：
+  - 本地 Docker 可用时：N/A（Docker Desktop 守护进程未运行）
+  - 本地 Docker 不可用时：**本地 Docker Desktop 不可用，测试容器本地未跑；测试容器门禁交由 GitHub Actions 执行**
+- [ ] GitHub Actions 测试容器通过后，才允许部署——⏳ 待 CI 跑（dev 合 main 后触发 `build-and-push` workflow）
+- [ ] 确认测试在安全路径运行：CI 使用 test.db（`DATABASE_URL: file:./data/test/test.db`）；`./data/dev.db` 未被触碰（待 CI 跑后确认）
+- [x] 审计已完成——报告 `doc/auditlog/phase1.5-real-capture-and-test-gate-audit.md`：Batch 1 ✅ 通过、Batch 2 ⚠️ 有条件通过（无 P0；P1 = CI 测试容器须跑绿；P2×3 = 本日志文档已在本轮收口）。放行权交 CI 绿灯 + 用户真机确认
