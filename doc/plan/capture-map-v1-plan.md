@@ -23,20 +23,19 @@
 
 ---
 
-## ⚠️ 待用户确认的决策点（请先看这里）
+## ⚠️ 决策点状态（评审 2026-07-01 拍板）
 
-本计划有 6 个决策点。**最关键的是 DP1（数据库新增表 + migration 内容）——按铁律 1 + 工单 #4，必须你明确看过 migration 内容并同意后，execute-agent 才能做 Stage 2。**
+| # | 决策 | 裁定 |
+|---|------|------|
+| **DP1** | Case↔知识点连接方式 | ✅ **同意新建 `CaseKnowledgeTag` 表**（追加挂接，不改上游，符合铁律 3）。**进 Stage 2 前必须让 execute-agent 先 `--create-only` 生成 migration SQL，用户看过再允许执行**。 |
+| **DP2** | VLM 进 v1 | ✅ 评审已裁定（v1 必需） |
+| **DP4** | ASR 进 v1 | ✅ 评审已裁定（v1 必需） |
+| **DP5** | ASR 文件式 vs 流式 | ✅ **文件式**（先把录音文件转文字跑通，流式以后再做。孩子补充思路不是实时对话，文件式够用） |
+| **DP6** | VLM 提示词边界 | ✅ **只做轻分类**（识别题目大意、候选知识点、置信度、简短理由。不生成深度归因） |
+| **DP7** *(新)* | **异步 AI 触发架构** | ✅ **显式 `/process` 端点 + 前端轮询**（详见 §7.4）。**否决"API route 返回后继续跑"**——生产/serverless 不稳。 |
+| DP3 | Playwright e2e | 复用已装（非阻塞） |
 
-| # | 决策 | 选项 | plan-agent 推荐 | 是否阻塞 |
-|---|------|------|----------------|------:|
-| **DP1** | 一道错题（Case）怎么挂到知识点（KnowledgeNode）上？ | **A. 新建 `CaseKnowledgeTag` 连接表**（caseId + nodeId + source + confidence）／B. 复用 MasteryBridge/SessionItem（否决，批次测评语义）／C. Case 上加 JSON 字段（否决，查询不便）／D. 复用既有 `MistakeNode`（先例，但缺 source/confidence，且改它属改 M1 表，见 §7.3） | **A**（追加挂接、不改上游、可扩展；评审已原则同意） | **是**（Stage 2 前须**单独确认 migration 内容**：建表 SQL + Case 反向字段） |
-| **DP2** | ~~分期 vs 一次性接 VLM~~ → **已由评审裁定**：Stage 3 接通真实 ASR+VLM 是 v1 必需 | 评审确认："真实 AI 接入是第一版闭环必需项，不要标成 stretch" | **遵循评审**（Stage 3 = v1 闭环必需，含 ASR + VLM 两条管线） | —（已定） |
-| **DP3** | 前端手机端自动化测试用什么？ | 复用已装的 Playwright（仓库已有 `e2e/` + `@playwright/test`）写 nana 手机视口 e2e ／ 推迟 | **复用 Playwright** | 否 |
-| **DP4** | ~~ASR 这版做吗~~ → **已由评审裁定为"做"** | 评审确认："ASR 是第一版错题采集闭环的一部分，不能从第一版目标里移除" | **遵循评审**（Stage 3 接通真实 ASR，从 `vlm-transcribe.ts` 抽 `asr-transcribe.ts`） | —（已定） |
-| **DP5** *(新)* | ASR 用文件式还是流式？ | **A. 文件式**（录完→整段上传→异步转写，`vlm-transcribe.ts` 已证明）／B. 流式（边录边转，`/api/nana/asr/stream`，架构工单提过但是未来增强） | **A 文件式**（v1 最简、已验证；流式是后续增强） | 否（选 B 才需额外确认） |
-| **DP6** *(新)* | VLM 提示词做到哪一步？ | **A. 只做轻分类**（"这题大致属于哪几个知识点"，对照 48 节点名）／B. 题面转写+分类一体（一个 prompt 既转写题面又分类） | **A 轻分类 only**（守 M3_content_prompts"转写与分类分离"纪律；题面转写是另一个独立关切，不混进分类 prompt） | 否 |
-
-> **Stage 1 不依赖任何决策点**，你确认本计划后即可让 execute-agent 开做 Stage 1。DP1 在进入 Stage 2 前再就 **migration 内容**单独确认。
+> **Stage 1 不依赖任何决策点**，可立即开做。DP1 在进入 Stage 2 前就 migration SQL 单独确认。
 
 ---
 
@@ -153,24 +152,37 @@
 
 ### 🔵 Stage 3：真实 ASR + VLM 初步分类（**v1 闭环必需项，非 stretch**）
 
-**接通两条并行的真实 AI 管线，都从 `scripts/vlm-transcribe.ts` 抽薄封装，都异步触发、都诚实处理失败。Stage 1+2+3 全完成 = v1 闭环。**
+**接通两条并行的真实 AI 管线，都从 `scripts/vlm-transcribe.ts` 抽薄封装。异步架构 = 显式 `/process` 端点（评审 DP7），不用"API route 返回后继续跑"。Stage 1+2+3 全完成 = v1 闭环。**
+
+#### 3.0 异步架构（评审 DP7 · 关键）
+
+> ⚠️ **否决"POST /cases 返回 201 后在 route handler 里继续跑 AI"**——Next.js API route 在生产容器/serverless 下，响应返回后 handler 可能被终止，fire-and-forget 不可靠。
+>
+> **v1 采用评审建议的显式两步式**：
+> 1. `POST /api/nana/cases` 只负责保存题图/录音/artifacts，返回 caseId（Phase 1.5 已就绪，**不动**）
+> 2. 前端保存成功后，**显式调用 `POST /api/nana/cases/:id/process`**
+> 3. `/process` 端点同步执行 ASR + VLM（两条独立 try/catch），更新 transcript artifact + 写 CaseKnowledgeTag，返回处理结果
+> 4. 前端显示"识别中…"，调用 `/process` 后**同请求等待结果**（v1 最简：同步等；若超时阈值如 60s 未完成，返回 `status: "processing"` 让前端轮询 `GET /api/nana/cases/:id` 看状态）
+>
+> **为什么 v1 用同步+轮询 fallback，不上队列/WebSocket**：v1 量级小（单用户错题采集），AI 调用 ~10-30s，同步等 + 超时轮询够用；队列（Redis/BullMQ）/WebSocket 是后续高并发增强，不进 v1。
 
 #### 3a. ASR 管线（录音 → 文字）
 
 - [ ] **S3a-1 ASR 薄封装 lib**：新增 `src/lib/nana/asr-transcribe.ts`，输入 audio_note 的 Base64（webm/mp4）+ mime → 调火山方舟豆包 `doubao-seed-2-0-lite-260215`（复用 `LITE_ENDPOINT_ID`/`VOLCENGINE_API_KEY`，OpenAI 兼容接口）→ 输出 `{ transcript, confidence?, rawResponse? }`。失败 throw（由调用方 catch + 显式日志，不静默，铁律 6）。契约见 §12.11。（涉及: 新增 `src/lib/nana/asr-transcribe.ts`）
-- [ ] **S3a-2 异步触发 + transcript 回写**：Case 创建后，若该 case 含 `audio_note` artifact，异步触发 ASR（不阻塞 201 响应；fire-and-forget + try/catch）。成功后**更新已存在的 transcript artifact 的 content**（替换 Phase 1.5 写入的"尚未转写"）。失败显式记日志、UI 显示"转写没接上，原音为准"。（涉及: `cases/route.ts` POST 末尾追加触发；transcript 更新路径见 §12.10）
+- [ ] **S3a-2 transcript 回写**：`/process` 端点内，若 case 含 `audio_note`，调 `asrTranscribe` → 成功后**更新已存在 transcript artifact 的 content**（替换"尚未转写"）。失败显式记日志 + 返回 `asrStatus: "failed"`，UI 显示"转写没接上，原音为准"。（涉及: transcript 更新路径见 §12.10）
 - [ ] **S3a-3 "我的话" UI 升级**：采集页/题详情的"我的话"区域——transcript 已更新则显示真实转写文本 + 标注"转写仅供参考，原音为准" + 提供原音回放按钮（守 P1：图/音为真相源）。（涉及: `capture/page.tsx` 及/或 case 详情）
 
 #### 3b. VLM 分类管线（题图 → 候选知识点）
 
-- [ ] **S3b-1 VLM 分类 lib**：新增 `src/lib/nana/vlm-classify.ts`，输入 question_image Base64 → 调火山方舟豆包 `doubao-seed-2-0-pro-260215`（复用 `PRO_ENDPOINT_ID`/`VOLCENGINE_API_KEY`）→ 输出 `{ candidateNodeIds, confidence, rawHint }`。**新提示词**：单题、**只做"大致属于哪几个知识点"的轻分类**（对照 48 节点名），不做整卷转写、不做题面转写（守 DP6 + M3 转写分类分离纪律）。（涉及: 新增 `src/lib/nana/vlm-classify.ts`）
-- [ ] **S3b-2 异步触发 + 挂标签**：Case 创建后，若该 case 含 `question_image` artifact，异步触发 VLM 分类（不阻塞 201）。成功回写 `CaseKnowledgeTag(source="vlm")`；confidence 低（如 <0.5）不自动挂、留 pending；失败显式记日志、**不假装成功**（铁律 6）。（涉及: `cases/route.ts` POST 末尾追加触发；`case-classify.ts` 接真 VLM 分支）
-- [ ] **S3b-3 措辞升级**：采集页保存后从"识别稍后接入"升级为"已收好 · 正在看看这题大致属于哪"（异步未完成）/ "可能属于：XXX"（已完成）。**confidence 低时仍说"不太确定，先放未分类"**，不硬塞。（涉及: `capture/page.tsx`）
+- [ ] **S3b-1 VLM 分类 lib**：新增 `src/lib/nana/vlm-classify.ts`，输入 question_image Base64 → 调火山方舟豆包 `doubao-seed-2-0-pro-260215`（复用 `PRO_ENDPOINT_ID`/`VOLCENGINE_API_KEY`）→ 输出 `{ candidateNodeIds, confidence, rawHint }`。**新提示词**：单题、**只做"大致属于哪几个知识点"的轻分类（DP6）**——识别题目大意、候选知识点、置信度、简短理由；**不做整卷转写、不做题面转写、不生成深度归因**（守 M3 转写分类分离纪律）。（涉及: 新增 `src/lib/nana/vlm-classify.ts`）
+- [ ] **S3b-2 挂标签**：`/process` 端点内，若 case 含 `question_image`，调 `vlmClassify` → 成功回写 `CaseKnowledgeTag(source="vlm")`；confidence 低（如 <0.5）不自动挂、留 pending；失败显式记日志 + 返回 `vlmStatus: "failed"`、**不假装成功**（铁律 6）。（涉及: `case-classify.ts` 接真 VLM 分支）
+- [ ] **S3b-3 措辞升级**：采集页保存后从"识别稍后接入"升级为"已收好 · 正在看看这题大致属于哪"（process 进行中）/ "可能属于：XXX"（已完成）。**confidence 低时仍说"不太确定，先放未分类"**，不硬塞。（涉及: `capture/page.tsx`）
 
-#### 3c. Stage 3 共同测试
+#### 3c. `/process` 端点 + 前端轮询（DP7 落地）
 
-- [ ] **S3c-1 测试先行**：`asr-transcribe.test.ts` + `vlm-classify.test.ts`（mock fetch，验证请求体/响应解析/失败处理）；端到端集成（mock ASR/VLM 返回 → transcript artifact 更新 + CaseKnowledgeTag 落库）。**ASR/VLM mock 测试属 v1 必需，非 stretch**。
-- [ ] **S3c-2 两条管线独立性**：验证 ASR 失败不影响 VLM 分类、反之亦然（各自独立 try/catch）。
+- [ ] **S3c-1 `POST /api/nana/cases/[id]/process`**：新建端点。鉴权 + 归属校验（沿用 G1）。同步调 ASR + VLM（两条独立 try/catch，一条失败不影响另一条）。响应 `{ asrStatus, vlmStatus, transcript?, tags? }`。带超时保护（如 60s）——超时返回 `status: "processing"` 让前端轮询。（涉及: 新增 `src/app/api/nana/cases/[id]/process/route.ts`）
+- [ ] **S3c-2 前端编排**：采集页保存成功（201）→ 显示"识别中…"→ 显式调 `POST /cases/:id/process` → 收到结果更新 UI。超时则轮询 `GET /cases/:id`（看 transcript/tags 是否已落库）。（涉及: `capture/page.tsx`、`nana-api-client.ts` 加 `processCase`/`getCaseStatus`）
+- [ ] **S3c-3 测试先行**：`asr-transcribe.test.ts` + `vlm-classify.test.ts`（mock fetch，验证请求体/响应解析/失败处理）；`/process` 端点集成测试（mock ASR/VLM 返回 → transcript artifact 更新 + CaseKnowledgeTag 落库 + 两条管线独立性）。**ASR/VLM mock 测试属 v1 必需，非 stretch**。
 
 ### 🟣 Stage 4：测试数据清理脚本 + 自动化测试加固（独立，可提前到最前）
 
@@ -212,12 +224,14 @@
 |------|------|------|
 | `src/lib/nana/asr-transcribe.ts` | 新增 | ASR 薄封装（audio Base64 → 文字，调 doubao-seed-2-0-lite） |
 | `src/lib/nana/vlm-classify.ts` | 新增 | 单题 VLM 轻分类封装（调 doubao-seed-2-0-pro） |
-| `src/lib/nana/case-classify.ts` | 修改 | 接真 VLM 分支 + ASR 触发编排 |
-| `src/app/api/nana/cases/route.ts` | 修改 | POST 后异步触发 ASR + VLM 两条管线 |
+| `src/lib/nana/case-classify.ts` | 修改 | 接真 VLM 分支 + ASR 编排（被 /process 调用） |
+| `src/app/api/nana/cases/[id]/process/route.ts` | 新增 | **/process 端点（DP7）：同步跑 ASR+VLM，超时返回 processing 让前端轮询** |
 | `src/app/api/nana/cases/[id]/artifacts/[seq]/route.ts` 或内联更新 | 新增/修改 | transcript artifact content 回写路径（见 §12.10） |
-| `src/app/nana/capture/page.tsx` | 修改 | "我的话"显示真实转写 + 仅供参考；措辞升级（正在看/可能属于） |
+| `src/lib/nana/nana-api-client.ts` | 修改 | 加 `processCase(id)` / `getCaseStatus(id)` |
+| `src/app/nana/capture/page.tsx` | 修改 | 保存后显式调 /process + "识别中…" + 轮询；"我的话"显示真实转写 + 仅供参考 |
 | `src/__tests__/unit/nana/asr-transcribe.test.ts` | 新增 | mock ASR 测试 |
 | `src/__tests__/unit/nana/vlm-classify.test.ts` | 新增 | mock VLM 测试 |
+| `src/__tests__/integration/nana/process-api.test.ts` | 新增 | /process 端点集成测试（双管线独立 + 超时 fallback） |
 
 ### Stage 4
 | 文件 | 操作 | 说明 |
@@ -231,37 +245,39 @@
 ## 6. 数据流设计（工单要求 #3）
 
 ```
-[拍题保存]
-   │  POST /api/nana/cases  { artifacts: [question_image, audio_note?, audio_meta?, transcript] }
-   │  （transcript artifact 在 Phase 1.5 已创建，content="尚未转写"）
-   ▼  返回 201（不等 AI，铁律：慢外部调用不阻塞响应）
-Case ──< Artifact（题图/原音/meta/逐字稿占位）           ← Phase 1.5 已就绪
-   │
-   ├──[Stage 3a · ASR 管线] 若有 audio_note
-   │      audio_note Base64 → asr-transcribe.ts（doubao-seed-2-0-lite）
-   │      → transcript 文本 → 更新已有 transcript artifact 的 content（替换"尚未转写"）
-   │      失败：显式日志 + UI"转写没接上，原音为准"（不假装）
-   │
-   └──[Stage 3b · VLM 分类管线] 若有 question_image
-          question_image Base64 → vlm-classify.ts（doubao-seed-2-0-pro，轻分类提示词）
-          → candidateNodeIds → CaseKnowledgeTag(source="vlm", confidence)
-          confidence 低 → 留 pending 不自动挂；失败：显式日志 + 不写假标签
-   │
-   ▼
+[Stage 3 · DP7 两步式异步架构]
+①  POST /api/nana/cases  { artifacts: [question_image, audio_note?, audio_meta?, transcript] }
+    （transcript artifact 在 Phase 1.5 已创建，content="尚未转写"）
+    → 返回 201 + caseId（只保存，不跑 AI）
+
+②  前端保存成功 → 显式调 POST /api/nana/cases/:id/process
+    │
+    ├─[ASR 管线] 若有 audio_note
+    │    audio_note Base64 → asr-transcribe.ts（doubao-seed-2-0-lite）
+    │    → transcript 文本 → 更新 transcript artifact content（替换"尚未转写"）
+    │    失败：asrStatus="failed" + UI"转写没接上，原音为准"（不假装）
+    │
+    └─[VLM 管线] 若有 question_image
+         question_image Base64 → vlm-classify.ts（doubao-seed-2-0-pro，轻分类提示词）
+         → candidateNodeIds → CaseKnowledgeTag(source="vlm", confidence)
+         confidence 低 → 留 pending 不自动挂；失败：vlmStatus="failed" + 不写假标签
+    │
+    两条独立 try/catch；超 60s → 返回 status="processing" 让前端轮询 GET /cases/:id
+    ▼
 CaseKnowledgeTag（caseId ↔ nodeId, source=manual|vlm|asr|rule|pending, confidence）  ← Stage 2 建表
-   │ 人工挂载(Stage 2) 或 VLM 自动挂(Stage 3b)
-   ▼
+    │ 人工挂载(Stage 2) 或 VLM 自动挂(Stage 3b)
+    ▼
 KnowledgeNode（已有 48 节点：M1-11 函数概念 / BG001… ）   ← M1 已就绪
-   │
-   ▼
+    │
+    ▼
 知识地图 UI
-   ├─ 上层：48 节点图谱（已有）+ Stage 2 起节点上叠加"挂了几道题"
-   └─ 下层：最近拍过的题列表（Stage 1 新增）
-            每条 = 题图缩略 + 日期 + 标签（Stage 1 全"未分类" → Stage 2 起有节点名 → Stage 3 起 VLM 自动挂）
-            + "我的话"（Stage 1-2 占位 → Stage 3 真实转写 + 仅供参考 + 原音回放）
+    ├─ 上层：48 节点图谱（已有）+ Stage 2 起节点上叠加"挂了几道题"
+    └─ 下层：最近拍过的题列表（Stage 1 新增）
+             每条 = 题图缩略 + 日期 + 标签（Stage 1 全"未分类" → Stage 2 起有节点名 → Stage 3 起 VLM 自动挂）
+             + "我的话"（Stage 1-2 占位 → Stage 3 真实转写 + 仅供参考 + 原音回放）
 ```
 
-**关键衔接点**：当前 Case 与 KnowledgeNode 之间**完全断开**。Stage 2 的 `CaseKnowledgeTag` 是唯一的桥。Stage 3 的两条 AI 管线（ASR / VLM）**互相独立**——各自 try/catch，一条失败不影响另一条。Stage 1 先不建桥也不接 AI，靠"未分类题列表 + 识别稍后接入"做过渡（动线修正）。
+**关键衔接点**：当前 Case 与 KnowledgeNode 之间**完全断开**。Stage 2 的 `CaseKnowledgeTag` 是唯一的桥。Stage 3 的两条 AI 管线（ASR / VLM）**互相独立**——各自 try/catch，一条失败不影响另一条；都由显式 `/process` 端点触发（DP7），**不在 POST /cases 里 fire-and-forget**。Stage 1 先不建桥也不接 AI，靠"未分类题列表 + 识别稍后接入"做过渡（动线修正）。
 
 ---
 
