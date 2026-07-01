@@ -5,7 +5,7 @@
  * 1. 拍照（QuestionImageCapture：调起相机/相册 → 压缩成 ≤1MB Base64）
  * 2. 可选录音（VoiceRecorder：getUserMedia + MediaRecorder，60s 上限，不转写）
  * 3. 点"收好这道题" → 组装 artifacts → createCase 存库
- * 4. 成功 → "这道题已经收好了，可以再拍一道" + 重置 + captureCount+1
+ * 4. 成功 → "已收好 · 识别稍后接入" + 两个去向（去知识地图 / 再拍一道）（S1-2）
  *    失败 → "没存成功，再试一次"（保留数据可重试，铁律 6 不静默）
  *
  * 状态机（§7.6）：
@@ -20,7 +20,7 @@
 
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { QuestionImageCapture } from "@/components/nana/capture/question-image-capture";
@@ -30,7 +30,8 @@ import { createCase, type ArtifactInput } from "@/lib/nana/nana-api-client";
 
 // ─── 常量 ─────────────────────────────────────
 const TOTAL_PAYLOAD_LIMIT = 3 * 1024 * 1024; // 单次保存总 payload 3MB 上限（前端预检）
-const SUCCESS_MSG = "这道题已经收好了，可以再拍一道";
+// Stage 1 诚实措辞（OPS §4）：无真识别，说"识别稍后接入"，不说"正在识别/已诊断"
+const SUCCESS_MSG = "已收好 · 识别稍后接入";
 const FAILURE_MSG = "没存成功，再试一次";
 
 // ─── Tab 定义 ─────────────────────────────────
@@ -87,8 +88,8 @@ export default function CapturePage() {
   // 保存状态
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  // 保存成功延迟重置的 timeout 句柄（修复评审 P2：换图时清掉，避免新图被旧 timeout 清空）
-  const savedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Stage 1：保存成功后改为停留态（显示"去知识地图"+"再拍一道"两个去向），
+  // 不再自动 1.4s 重置——用户需要时间点去向按钮（S1-2）
 
   const photoTaken = imageBase64 !== null;
 
@@ -123,11 +124,6 @@ export default function CapturePage() {
     setSaveMsg(null);
     // 换图清掉旧录音，避免"新题图 + 旧录音"错配（修复 P1-b）
     resetAudioAndRecorder();
-    // 修复评审 P2：保存成功延迟期间换图，清掉旧 timeout，避免新图被旧 timeout 清空
-    if (savedResetTimerRef.current) {
-      clearTimeout(savedResetTimerRef.current);
-      savedResetTimerRef.current = null;
-    }
   }, [resetAudioAndRecorder]);
 
   // ─── 组装 artifacts（§7.7 方案 A）──────────
@@ -185,35 +181,17 @@ export default function CapturePage() {
     try {
       const artifacts = await buildArtifacts();
       await createCase(artifacts);
-      // 成功：显示成功态 → 重置
+      // 成功：停留到用户选去向（S1-2：去知识地图 / 再拍一道）
+      // 不再自动 1.4s 重置——显示去向按钮等用户点击
       setSaveState("saved");
       setSaveMsg(SUCCESS_MSG);
       setCaptureCount((prev) => prev + 1);
-      // 重置采集状态（保留 captureCount）
-      savedResetTimerRef.current = setTimeout(() => {
-        setImageBase64(null);
-        resetAudioAndRecorder(); // 清 audio + 重置录音组件（修复 P1-a）
-        setSaveState("idle");
-        setSaveMsg(null);
-        setCurrentTab("voice");
-        savedResetTimerRef.current = null;
-      }, 1400);
     } catch {
       // 失败：显式报错，保留数据可重试（铁律 6）
       setSaveState("error");
       setSaveMsg(FAILURE_MSG);
     }
-  }, [imageBase64, isRecording, estimatedPayloadBytes, buildArtifacts, resetAudioAndRecorder]);
-
-  // ─── 组件卸载时清掉 pending 重置 timeout（防内存泄漏）──
-  useEffect(() => {
-    return () => {
-      if (savedResetTimerRef.current) {
-        clearTimeout(savedResetTimerRef.current);
-        savedResetTimerRef.current = null;
-      }
-    };
-  }, []);
+  }, [imageBase64, isRecording, estimatedPayloadBytes, buildArtifacts]);
 
   // ─── 切 tab（录音中禁止切走，修复评审 P1）──
   const handleTabChange = useCallback((tab: TabId) => {
@@ -230,6 +208,15 @@ export default function CapturePage() {
     setSaveMsg(null);
     setCurrentTab("voice");
   }, [isRecording, resetAudioAndRecorder]);
+
+  // ─── 保存成功后"再拍一道"：重置采集状态（原 1.4s 自动重置改为手动，S1-2）──
+  const handleTakeAnother = useCallback(() => {
+    setImageBase64(null);
+    resetAudioAndRecorder();
+    setSaveState("idle");
+    setSaveMsg(null);
+    setCurrentTab("voice");
+  }, [resetAudioAndRecorder]);
 
   const saving = saveState === "saving";
   const saved = saveState === "saved";
@@ -365,44 +352,64 @@ export default function CapturePage() {
             )}
           </div>
 
-          {/* 主操作按钮：收好这道题（无照片禁用） */}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!photoTaken || saving || saved}
-            className={`w-full rounded-[18px] px-5 py-[14px] text-[15.5px] font-medium shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform active:scale-95 ${
-              !photoTaken
-                ? "cursor-not-allowed bg-[#C9C2B6] text-[#FFFDF9] shadow-none"
-                : saved
-                  ? "cursor-default bg-[#6BBF8A] text-[#FFFDF9]"
-                  : "bg-[#7FA886] text-[#FFFDF9] hover:scale-[1.02]"
-            }`}
-          >
-            {saving ? "正在收…" : saved ? "收好了 ✓" : photoTaken ? "收好这道题" : "先拍一下这道题"}
-          </button>
-
-          {/* 未拍照时给"再拍一道"重置入口（已有照片但想重拍时） */}
-          {photoTaken && saveState === "idle" && (
-            <button
-              type="button"
-              onClick={handleRetake}
-              className="w-full text-center text-[13.5px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
-            >
-              重新拍一张
-            </button>
-          )}
-
-          {/* 收够 3 道后，温和引导去知识地图/规律（不用"诊断"词） */}
-          {captureCount >= 3 && (
-            <div className="text-center">
+          {/* 主操作区 */}
+          {saved ? (
+            // ─── 保存成功：显示两个去向（S1-2：去知识地图 / 再拍一道）──
+            <>
               <Link
-                href="/nana"
-                className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5E8868] transition-colors hover:text-[#403A33]"
+                href="/nana/knowledge-map"
+                className="block w-full rounded-[18px] bg-[#5E8868] px-5 py-[14px] text-center text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform hover:scale-[1.02] active:scale-95"
               >
-                回首页看看
-                <span aria-hidden="true">→</span>
+                去知识地图看看
               </Link>
-            </div>
+              <button
+                type="button"
+                onClick={handleTakeAnother}
+                className="w-full text-center text-[14px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
+              >
+                再拍一道
+              </button>
+            </>
+          ) : (
+            // ─── 保存前：收好这道题（无照片禁用）──
+            <>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={!photoTaken || saving}
+                className={`w-full rounded-[18px] px-5 py-[14px] text-[15.5px] font-medium shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform active:scale-95 ${
+                  !photoTaken
+                    ? "cursor-not-allowed bg-[#C9C2B6] text-[#FFFDF9] shadow-none"
+                    : "bg-[#7FA886] text-[#FFFDF9] hover:scale-[1.02]"
+                }`}
+              >
+                {saving ? "正在收…" : photoTaken ? "收好这道题" : "先拍一下这道题"}
+              </button>
+
+              {/* 有照片但想重拍时 */}
+              {photoTaken && saveState === "idle" && (
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="w-full text-center text-[13.5px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
+                >
+                  重新拍一张
+                </button>
+              )}
+
+              {/* 收够 3 道后，温和引导回首页看看 */}
+              {captureCount >= 3 && (
+                <div className="text-center">
+                  <Link
+                    href="/nana"
+                    className="inline-flex items-center gap-2 text-[14px] font-medium text-[#5E8868] transition-colors hover:text-[#403A33]"
+                  >
+                    回首页看看
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
