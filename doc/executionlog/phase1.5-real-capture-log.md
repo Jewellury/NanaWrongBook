@@ -83,14 +83,15 @@
 - 涉及文件: `src/components/nana/capture/voice-recorder.tsx`、`src/components/nana/capture/question-image-capture.tsx`、`src/app/nana/capture/page.tsx`
 - 结果: ✅ 完成（`npm run build` 通过，Compiled successfully in 16.8s，退出码 0）
 
-### 任务 J：审计 P2 收口 + 触发 CI 门禁（2026-07-01）
-- 做了什么: 按审计报告问题清单 P2×3 收口本日志：
+### 任务 J：审计 P2 收口 + 合并 main 触发 CI 门禁（2026-07-01）
+- 做了什么: 按审计报告问题清单 P2×3 收口本日志；合并 dev→main 并推送触发 CI：
   - "代码已提交"勾选项由"待执行"改为已提交的 5 个 commit（ea38002, a767df8, e8e8dcf, 748bc0d, 153bd17）
   - "完成状态"由迁门禁前的旧措辞（`test:all` BLOCKED）按 execute-agent.md 新模板二选一分支重述（本地 Docker 不可用→记录 + CI 兜底；GitHub Actions 测试容器通过后才允许部署）
   - "可进入审计阶段"改为反映现实：审计已完成（有条件通过），CI 门禁待跑
-  - 本条任务记录即审计 P2 第 2/3 项的修复载体
-- 涉及文件: `doc/executionlog/phase1.5-real-capture-log.md`（仅本文件）
-- 结果: ✅ 完成（纯文档收口，无代码改动）
+  - doc-fix 提交 `83a22a6`；`git checkout main && git merge dev`（fast-forward，无冲突）→ `git push origin main`（触发 CI）+ `git push origin dev`
+  - **CI 门禁结果**：`Build and Push (CI Image Deploy)` run 28497742175 → ✅ **success (3m48s)**，含 `docker-compose.test.yml` 集成测试通过 + 构建镜像推 GHCR（tag `sha-83a22a6` + 时间戳 + `latest`）。审计 P1（CI 测试容器须跑绿）**已满足**
+- 涉及文件: `doc/executionlog/phase1.5-real-capture-log.md`（仅本文件；本轮纯文档 + git 操作，无源码改动）
+- 结果: ✅ 完成。注：另一条 `CI`（ci.yml）run 28497742183 失败——属**既存**问题（ci.yml 的 unit-test 步骤未设 `DATABASE_URL`，`guard-db.ts` 因 `DATABASE_URL="(空)"` 拦截），自 2026-06-08 起每次推 main 都失败，**非本轮引入、非部署门禁**（部署门禁是 build-and-push.yml 的测试容器，已绿）。`gh api` 步骤级日志因 api.github.com 瞬时 EOF 未能拉取，但 run/job 级 `completed success` + `✓` 已确认（铁律 6：此限制已明示）
 
 ## 偏离记录（如有）
 > 记录所有在执行中对计划做的微调。审计代理会逐条复核这些微调是否真属微调。
@@ -128,6 +129,6 @@
 - [ ] 测试容器门禁通过（二选一）：
   - 本地 Docker 可用时：N/A（Docker Desktop 守护进程未运行）
   - 本地 Docker 不可用时：**本地 Docker Desktop 不可用，测试容器本地未跑；测试容器门禁交由 GitHub Actions 执行**
-- [ ] GitHub Actions 测试容器通过后，才允许部署——⏳ 待 CI 跑（dev 合 main 后触发 `build-and-push` workflow）
-- [ ] 确认测试在安全路径运行：CI 使用 test.db（`DATABASE_URL: file:./data/test/test.db`）；`./data/dev.db` 未被触碰（待 CI 跑后确认）
+- [x] GitHub Actions 测试容器通过后，才允许部署——✅ **已绿**：run 28497742175 "Build and Push (CI Image Deploy)" success (3m48s)，`docker-compose.test.yml` 退出码 0；GHCR 镜像已推（`sha-83a22a6` + `latest`）
+- [x] 确认测试在安全路径运行：CI 用 `DATABASE_URL: file:./data/test/test.db`（build-and-push.yml）；`guard-db.ts` 护栏仍在；`./data/dev.db` 未被触碰
 - [x] 审计已完成——报告 `doc/auditlog/phase1.5-real-capture-and-test-gate-audit.md`：Batch 1 ✅ 通过、Batch 2 ⚠️ 有条件通过（无 P0；P1 = CI 测试容器须跑绿；P2×3 = 本日志文档已在本轮收口）。放行权交 CI 绿灯 + 用户真机确认
