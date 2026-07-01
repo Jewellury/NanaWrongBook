@@ -60,6 +60,15 @@
 - 涉及文件: `doc/00_CURRENT.md`、`doc/active_spec.md`
 - 结果: ✅ 完成（两处均已追加）
 
+### 任务 H：评审 AI 复核 4 项缺陷修复（2026-07-01）
+- 做了什么: 修复评审 AI 指出的 4 个状态/UI 缺陷：
+  - **P1-a 保存后录音组件不重置**：page.tsx 新增 `recorderKey` state，`<VoiceRecorder key={recorderKey}>`；换图/保存成功/重拍时 `recorderKey+1` 强制 remount，确保内部 state 回 idle
+  - **P1-b 换图后旧录音跟新图保存**：`handleImageChange` 换图时同步调 `resetAudioAndRecorder()` 清 audioBlob/audioMeta + 重置录音组件，避免"新题图+旧录音"错配
+  - **P2-a 60s 自动停不进 completed**：`setState("completed")` 从 `handleFinishRecording` 移进 `recorder.onstop` 统一路径，手动停/自动停都走 onstop 切 UI
+  - **P2-b "我的话"tab 文案误导**：`TranscriptionPanel` 新增 `editable` prop（默认 false）；本轮渲染只读占位"录音已经收好 / 转写稍后接入"，去掉 contentEditable；未来第 5 阶段接 ASR 传 `editable` 即恢复编辑
+- 涉及文件: `src/app/nana/capture/page.tsx`、`src/components/nana/capture/voice-recorder.tsx`、`src/components/nana/capture/transcription-panel.tsx`
+- 结果: ✅ 完成（`npm run build` 通过，Compiled successfully in 16.4s，56/56 静态页，退出码 0）
+
 ## 偏离记录（如有）
 > 记录所有在执行中对计划做的微调。审计代理会逐条复核这些微调是否真属微调。
 
@@ -68,6 +77,10 @@
 | 1 | §3 `question-image-viewer.tsx` = 修改/拆分 | 拆出 `question-image-capture.tsx` 后，原 viewer 无任何引用，直接删除（dead code） | 拆分后 viewer 已被完全取代，保留会留下 mock 风格死代码 | 否 |
 | 2 | §C voice-recorder 保留三态 UI + 现有措辞 | completed 态文案由"正在整理你说的内容…"改为计划 §C3 指定的"录音收好了，转写稍后接入" | 计划 §C3 明确要求该文案（此处不算偏离，仅备注） | 否 |
 | 3 | §B1 建议新增 `question-image-capture.tsx` 或就地改 viewer | 选择新增独立组件 | 计划允许二选一，独立组件职责更清晰 | 否 |
+| 4 | 计划未提 recorderKey 机制 | page.tsx 加 `recorderKey` 强制 VoiceRecorder remount（保存/换图/重拍时 +1） | 评审 AI P1-a：保存后录音组件内部 state 不重置，下一题卡在"录音收好了"。属状态一致性 bug 修复，不改变验收标准 | 否 |
+| 5 | §D handleImageChange 只更新图片 | handleImageChange 同步清 audio + 重置录音组件 | 评审 AI P1-b：先录音后换图会"新题图+旧录音"错配。属数据一致性 bug 修复 | 否 |
+| 6 | §C2 停止录音路径 | setState("completed") 从 handleFinishRecording 移进 recorder.onstop 统一路径 | 评审 AI P2-a：60s 自动停不走 handleFinishRecording，UI 不进 completed。属状态机分支补全 | 否 |
+| 7 | §3 transcription-panel = 修改（小），组件通用不重写 | 新增 `editable` prop（默认 false），本轮只读占位；未来接 ASR 传 true 恢复编辑 | 评审 AI P2-b：本轮无 ASR，contentEditable+"轻点改"文案误导。组件仍通用（保留可编辑分支） | 否 |
 
 ## 上游文件修改（如有）
 | 文件 | 改了什么 | 原因 |

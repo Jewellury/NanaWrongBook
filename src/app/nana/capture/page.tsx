@@ -78,6 +78,9 @@ export default function CapturePage() {
   // 录音
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioMeta, setAudioMeta] = useState<AudioMeta | null>(null);
+  // recorderKey：换图/保存成功/重拍时 +1 强制 VoiceRecorder remount，
+  // 确保内部 state（idle/recording/completed）跟着重置（修复 P1-a）
+  const [recorderKey, setRecorderKey] = useState(0);
 
   // 保存状态
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -94,13 +97,23 @@ export default function CapturePage() {
     [],
   );
 
+  // ─── 重置录音 + 录音组件（换图/保存成功/重拍时调用）──
+  // 清掉 audioBlob/audioMeta 并强制 VoiceRecorder remount 回 idle（修复 P1-a/P1-b）
+  const resetAudioAndRecorder = useCallback(() => {
+    setAudioBlob(null);
+    setAudioMeta(null);
+    setRecorderKey((k) => k + 1);
+  }, []);
+
   // ─── 题图变化回调 ──────────────────────────
   const handleImageChange = useCallback((base64: string | null) => {
     setImageBase64(base64);
     // 换图后重置保存态
     setSaveState("idle");
     setSaveMsg(null);
-  }, []);
+    // 换图清掉旧录音，避免"新题图 + 旧录音"错配（修复 P1-b）
+    resetAudioAndRecorder();
+  }, [resetAudioAndRecorder]);
 
   // ─── 组装 artifacts（§7.7 方案 A）──────────
   const buildArtifacts = useCallback(async (): Promise<ArtifactInput[]> => {
@@ -159,8 +172,7 @@ export default function CapturePage() {
       // 重置采集状态（保留 captureCount）
       setTimeout(() => {
         setImageBase64(null);
-        setAudioBlob(null);
-        setAudioMeta(null);
+        resetAudioAndRecorder(); // 清 audio + 重置录音组件（修复 P1-a）
         setSaveState("idle");
         setSaveMsg(null);
         setCurrentTab("voice");
@@ -170,17 +182,16 @@ export default function CapturePage() {
       setSaveState("error");
       setSaveMsg(FAILURE_MSG);
     }
-  }, [imageBase64, estimatedPayloadBytes, buildArtifacts]);
+  }, [imageBase64, estimatedPayloadBytes, buildArtifacts, resetAudioAndRecorder]);
 
   // ─── 重置（"再拍一道"快捷入口，未保存时）──
   const handleRetake = useCallback(() => {
     setImageBase64(null);
-    setAudioBlob(null);
-    setAudioMeta(null);
+    resetAudioAndRecorder(); // 清 audio + 重置录音组件（修复 P1-a）
     setSaveState("idle");
     setSaveMsg(null);
     setCurrentTab("voice");
-  }, []);
+  }, [resetAudioAndRecorder]);
 
   const saving = saveState === "saving";
   const saved = saveState === "saved";
@@ -263,7 +274,7 @@ export default function CapturePage() {
       <div className="flex flex-1 flex-col px-[22px] pb-5 pt-[18px]">
         {/* Tab 内容 */}
         {currentTab === "voice" && (
-          <VoiceRecorder onAudioReady={handleAudioReady} />
+          <VoiceRecorder key={recorderKey} onAudioReady={handleAudioReady} />
         )}
 
         {currentTab === "transcript" && (

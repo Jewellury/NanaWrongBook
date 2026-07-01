@@ -151,6 +151,8 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
       };
       onAudioReady?.(blob, meta);
       cleanup();
+      // 统一在 onstop 切 completed：手动停 / 60s 自动停都走这里（修复 P2-a）
+      setState("completed");
     };
 
     recorder.start();
@@ -174,9 +176,12 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
   const handleFinishRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
+      // stop() 会触发 onstop，由 onstop 统一切 completed（含 60s 自动停同路径）
       recorder.stop();
+    } else {
+      // 兜底（理论上不会走到，recording 态下 recorder 必然存在）
+      setState("completed");
     }
-    setState("completed");
   }, []);
 
   // ─── idle 态 ───────────────────────────────
