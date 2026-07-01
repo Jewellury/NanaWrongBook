@@ -125,7 +125,7 @@
 | ✅ | [reference/codex_memory_decisions/](reference/codex_memory_decisions/) | Codex 记忆决策记录目录 |
 | ✅ | [reference/installed-skills-catalog.md](reference/installed-skills-catalog.md) | 已安装 Skill 清单（2026-06-19） |
 | ✅ | [reference/fof-semantic-mvp-dual-runtime-audit-notes.md](reference/fof-semantic-mvp-dual-runtime-audit-notes.md) | fof-semantic 双运行时审计笔记 |
-| ✅ | [reference/docker-troubleshooting-guide.md](reference/docker-troubleshooting-guide.md) | Docker Desktop 故障排查指南（Fast Startup + 修复流程） |
+| ✅ | [reference/docker-troubleshooting-guide.md](reference/docker-troubleshooting-guide.md) | Docker Desktop 故障排查指南（Fast Startup + 修复流程 + CI 策略更新） |
 
 ### 治理方案
 

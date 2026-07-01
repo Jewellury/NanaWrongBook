@@ -90,8 +90,13 @@ permission:
 ## 完成状态
 - [ ] 所有任务完成
 - [ ] 代码已提交（commit: <hash>）
-- [ ] `test:all` 通过（`docker compose -f docker-compose.test.yml up --abort-on-container-exit` 退出码 0）
-- [ ] 确认测试在安全路径运行（`./data/test/test.db` 被更新，`./data/dev.db` 未被触碰）
+- [ ] 本地 `npm.cmd run build` 通过
+- [ ] 本地相关窄范围测试已运行，或明确说明未运行原因
+- [ ] 测试容器门禁通过（二选一）：
+  - 本地 Docker 可用时：本地运行 `docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test` 退出码 0
+  - 本地 Docker 不可用时：执行日志写明"本地 Docker Desktop 不可用，测试容器本地未跑；测试容器门禁交由 GitHub Actions 执行"
+- [ ] GitHub Actions 测试容器通过后，才允许部署
+- [ ] 确认测试在安全路径运行：CI 或本地测试容器使用 test.db（`./data/test/test.db` 被更新），`./data/dev.db` 未被触碰
 - [ ] 可进入审计阶段
 ```
 
@@ -104,7 +109,10 @@ permission:
 4. 遇到问题先自己排查，排查不出停下来问用户
 5. **测试必须走测试容器**：`docker exec wrong-notebook npx vitest` 是禁止的——
    测试只能在 `docker compose -f docker-compose.test.yml up` 中运行。
-   测试容器有 bug 就修测试容器，不能退而用 prod 容器
+   测试容器有 bug 就修测试容器，不能退而用 prod 容器。
+   **本地 Docker 不可用时**：不要无限排障。记录原因（如"Starting Engine 卡死"），
+   停止本地 Docker 排障，把测试容器门禁交给 GitHub Actions 执行。
+   但门禁交给 CI ≠ 允许用生产容器，`docker exec` 进 prod 容器跑测试始终禁止。
 6. **新增 `test:*` 脚本时，同步更新 `test:all`**：`package.json` 的 `test:all` 是 compose 命令的唯一入口
 7. 全部完成后报告"执行完成，可进入 audit-agent"
 

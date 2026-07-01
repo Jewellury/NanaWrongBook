@@ -5,6 +5,20 @@
 
 ---
 
+## 当前策略更新（CI 镜像部署后）
+
+项目已切换到 CI 镜像部署路线（本地推代码 → GitHub Actions 构建并跑测试容器 → 推 GHCR → 服务器 pull 运行）。策略变化：
+
+- **Docker Desktop 仍可用于本地测试容器，但不再是部署上线的硬前置条件。**
+- 如果卡在 "Starting Engine"：可以按下方方案排查，但**不要让本地 Docker 长时间阻塞业务开发**。
+- 若本地 `npm.cmd run build` 已通过，可将测试容器门禁交由 GitHub Actions 执行——CI 用同样的 `docker-compose.test.yml`、同样的 test.db 隔离、同样的护栏，且每次推 main 都自动跑。
+- **GitHub Actions 测试容器通过前，不得部署到服务器。**
+- **禁止用生产容器替代测试容器**：即便本地 Docker 起不来，也绝不可退守 `docker exec wrong-notebook npx vitest` 或对生产库跑测试。
+
+下方排查方案仍有效，作为"本地能修就修、修不好就交 CI"的参考。
+
+---
+
 ## 根因
 
 `com.docker.service`（Docker 后台服务）处于 **Stopped** 状态，或 WSL 2 的 `docker-desktop` 发行版损坏/丢失。

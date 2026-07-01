@@ -79,7 +79,8 @@
 ### 计划必需字段
 - **部署目标分支**：只能以 `main` 为目标。如须部署 `dev`，必须在计划中写明理由并等待用户明确确认
 - **构建验证命令**：列出验证本地生产构建的具体命令（如 `npm.cmd run build`）
-- **Docker 验证命令**：列出 `docker compose build --no-cache`，如不可用写"未验证"
+- **本地 Docker 是否必需**：默认结论——本地 Docker **不**作为部署前置；如某轮计划因特殊原因要求本地 Docker 必跑，必须在计划中写明理由并等待用户确认
+- **CI 测试容器门禁**：必须写明 GitHub Actions 中跑 `docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test` + `down -v`，且 CI 失败即停止部署
 - **生产环境变量清单**：所需 `.env` 变量的完整列表
 - **数据备份方案**：SQLite 备份脚本路径和执行方式
 - **回滚方案**：如果部署失败如何回滚到上一个可用版本

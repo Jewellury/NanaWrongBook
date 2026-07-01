@@ -148,12 +148,24 @@ Claude Code 加载路径：`.claude/agents/`。OpenCode 加载路径：`.opencod
 - `dev` 是开发分支，不作为长期服务器部署分支。
 - 临时部署 `dev` 必须经用户明确确认，并在执行日志中标注"临时例外"。
 
+### 测试与部署门禁（CI 镜像路线）
+当前部署路线：本地推代码 → GitHub Actions 构建 + 跑测试容器 + 打镜像 → 推 GHCR → 服务器 pull 运行。在此路线下：
+- **本地 Docker Desktop 不再作为上线前置门禁**。Windows 本地 Docker 不稳定，不因本地 Docker 不可用而阻塞 commit/push。
+- **本地开发阶段必须优先保证**：`npm.cmd run build` 通过；相关窄范围测试可跑则跑（能跑是加分项，不能跑不挡路）；`git status` 干净。
+- **测试容器门禁保留，但强制执行位置改为 GitHub Actions**。CI 中必须运行：
+  - `docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test`
+  - `docker compose -f docker-compose.test.yml down -v`
+- **GitHub Actions 测试容器失败 → 不得部署到腾讯云**。
+- 本地 Docker 不可用时，执行日志必须写明："本地 Docker Desktop 不可用，测试容器本地未跑；测试容器门禁交由 GitHub Actions 执行"。
+- **禁止用生产容器或生产数据库跑测试**（`docker exec wrong-notebook npx vitest` 一律禁止）。测试只能在 test.db 的测试容器中跑。
+
 ### dev 合入 main 前必须完成发布候选验证
 至少包括：
 - `git status` 干净
 - 本地生产构建通过：`npm.cmd run build` 或对应平台命令
-- Docker 构建通过：`docker compose build --no-cache`
-- 如 Docker 不可用，必须明确记录"Docker 构建未验证"，不得宣称可部署
+- GitHub Actions 测试容器门禁通过（CI 中 `docker-compose.test.yml` 退出码 0）
+- 部署镜像来自 GitHub Actions 成功构建，不来自本地 Docker
+- 如本地 Docker 可用，本地测试容器通过是加分项；如不可用，执行日志写明"本地未跑，门禁交由 CI"
 
 ### 服务器构建失败后不得现场热修
 - 只能记录错误、停止部署。

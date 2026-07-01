@@ -79,7 +79,9 @@ tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mo
 ### 部署审计（如本轮涉及部署/发布/上线）
 - [ ] 服务器部署分支是 `main`，或 `dev` 部署有用户明确批准记录
 - [ ] 本地生产构建已通过
-- [ ] Docker 构建已通过，或明确记录"未验证"
+- [ ] 部署镜像来自 GitHub Actions 成功构建，不来自本地 Docker
+- [ ] GitHub Actions 测试容器门禁通过（CI 未通过时未部署）
+- [ ] 本地 Docker 可用时本地测试容器通过是加分项；不可用时执行日志已记录
 - [ ] 服务器 commit 与 `origin/main` 一致
 - [ ] 部署前已备份 SQLite
 - [ ] `.env` 未进入 git
@@ -92,8 +94,12 @@ tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mo
 - [ ] `node scripts/check-agent-sync.js` 通过（exit 0）
 
 ### 测试
-- [ ] 如存在相关自动化测试：已运行且全部通过（有测试就必须跑、必须过）
-- [ ] 确认测试在安全路径运行：执行日志中最后一次成功测试经 docker-compose.test.yml 跑，写入 ./data/test/test.db，./data/dev.db 未被触碰
+- [ ] 本地 `npm.cmd run build` 通过
+- [ ] 本地 Docker 可用时：本地测试容器已通过（`docker-compose.test.yml` 退出码 0）
+- [ ] 本地 Docker 不可用时：执行日志已明确记录原因，且 GitHub Actions 测试容器通过
+- [ ] GitHub Actions 日志显示 `docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test` 退出码 0
+- [ ] 测试使用 test.db（`./data/test/test.db`），未触碰生产 `./data/dev.db`
+- [ ] 没有退回生产容器跑测试（无 `docker exec wrong-notebook npx vitest` 等记录）
 - [ ] DB 护栏断言（src/__tests__/setup/guard-db.ts）存在且生效
 - [ ] 如不存在相关测试：已列出建议的手动验证步骤（见"用户验证指南"）
 
