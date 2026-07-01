@@ -69,6 +69,20 @@
 - 涉及文件: `src/app/nana/capture/page.tsx`、`src/components/nana/capture/voice-recorder.tsx`、`src/components/nana/capture/transcription-panel.tsx`
 - 结果: ✅ 完成（`npm run build` 通过，Compiled successfully in 16.4s，56/56 静态页，退出码 0）
 
+### 任务 I：评审 AI 第二轮复核——录音资源泄漏 + 保存竞态（2026-07-01）
+- 做了什么: 修复评审 AI 第二轮指出的 1 个 P1 + 1 个 P2：
+  - **P1（hard stop）录音中切 tab/换图/保存致 recorder 后台泄漏**：
+    - VoiceRecorder 加 `useEffect` unmount cleanup：卸载时若 recorder 在跑则 stop + 清 stream/timer + 置 `abortedRef=true`；onstop 检查 abortedRef 决定是否回写父组件（abort 时丢弃音频，避免"下一题图+上一段录音"错配）
+    - VoiceRecorder 新增 `onRecordingStateChange` 回调，通知父组件是否在录音
+    - page.tsx 接 `isRecording` state：录音中 tab 按钮 disabled（除 voice）、QuestionImageCapture disabled、handleSave/handleRetake 早返回 + 提示"先把话说完，再收这道题"
+    - 回调改用 ref（onAudioReadyRef/onRecordingStateChangeRef），避免 useEffect cleanup 依赖闭包过期
+  - **P2 保存成功延迟期间换图被旧 timeout 清空**：
+    - 保存成功的 `setTimeout` 改用 `savedResetTimerRef` 句柄记录；`handleImageChange` 时 `clearTimeout` 旧 timer
+    - QuestionImageCapture 新增 `disabled` prop，saving/saved/录音中禁止换图
+    - page.tsx 加 unmount useEffect 清 pending timeout，防内存泄漏
+- 涉及文件: `src/components/nana/capture/voice-recorder.tsx`、`src/components/nana/capture/question-image-capture.tsx`、`src/app/nana/capture/page.tsx`
+- 结果: ✅ 完成（`npm run build` 通过，Compiled successfully in 16.8s，退出码 0）
+
 ## 偏离记录（如有）
 > 记录所有在执行中对计划做的微调。审计代理会逐条复核这些微调是否真属微调。
 
@@ -81,6 +95,10 @@
 | 5 | §D handleImageChange 只更新图片 | handleImageChange 同步清 audio + 重置录音组件 | 评审 AI P1-b：先录音后换图会"新题图+旧录音"错配。属数据一致性 bug 修复 | 否 |
 | 6 | §C2 停止录音路径 | setState("completed") 从 handleFinishRecording 移进 recorder.onstop 统一路径 | 评审 AI P2-a：60s 自动停不走 handleFinishRecording，UI 不进 completed。属状态机分支补全 | 否 |
 | 7 | §3 transcription-panel = 修改（小），组件通用不重写 | 新增 `editable` prop（默认 false），本轮只读占位；未来接 ASR 传 true 恢复编辑 | 评审 AI P2-b：本轮无 ASR，contentEditable+"轻点改"文案误导。组件仍通用（保留可编辑分支） | 否 |
+| 8 | 计划未提 VoiceRecorder unmount cleanup | 加 useEffect unmount cleanup + abortedRef 标志 | 评审 AI 第二轮 P1（hard stop）：录音中切 tab/换图/保存会卸载组件，但旧 recorder 后台继续，60s 后 onstop 回写已重置的父组件 state，造成"下一题图+上一段录音"错配 + 麦克风资源泄漏。属资源/数据安全 bug 修复，不改变验收标准 | 否 |
+| 9 | 计划未提 onRecordingStateChange 回调 | VoiceRecorder 新增 onRecordingStateChange，父组件据此在录音中禁 tab/换图/保存 | 同上 P1 配套：单纯 cleanup 是被动兜底，加父组件主动禁用 UI 是主动防护，双重保险防泄漏 | 否 |
+| 10 | 计划未提 savedResetTimerRef | 保存成功 setTimeout 改用 ref 记录句柄，换图时 clearTimeout | 评审 AI 第二轮 P2：保存成功 1400ms 延迟期间用户重拍，新图会被旧 timeout 清空。属竞态修复 | 否 |
+| 11 | §3 question-image-capture = 已有组件 | 新增 `disabled` prop | 同 P2 配套：saving/saved/录音中禁止换图的 UI 防护 | 否 |
 
 ## 上游文件修改（如有）
 | 文件 | 改了什么 | 原因 |

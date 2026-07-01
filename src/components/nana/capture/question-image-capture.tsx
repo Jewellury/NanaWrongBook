@@ -23,12 +23,16 @@ import { processImageFile } from "@/lib/image-utils";
 interface QuestionImageCaptureProps {
   value: string | null;
   onChange: (base64: string | null) => void;
+  // 修复评审 P2：保存成功延迟期间 + 录音中，禁止换图
+  disabled?: boolean;
 }
 
-export function QuestionImageCapture({ value, onChange }: QuestionImageCaptureProps) {
+export function QuestionImageCapture({ value, onChange, disabled = false }: QuestionImageCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // disabled 时禁止打开文件选择器
+  const interactiveDisabled = disabled || busy;
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,8 +71,8 @@ export function QuestionImageCapture({ value, onChange }: QuestionImageCapturePr
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#D9C9AC] bg-[#FFFDF8]/60 transition-colors hover:border-[#B4905A] hover:bg-[#FFFDF8]"
+          disabled={interactiveDisabled}
+          className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#D9C9AC] bg-[#FFFDF8]/60 transition-colors hover:border-[#B4905A] hover:bg-[#FFFDF8] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="先拍一下这道题"
         >
           <span className="flex size-[52px] items-center justify-center rounded-full bg-[#EFE7DA]">
@@ -113,8 +117,8 @@ export function QuestionImageCapture({ value, onChange }: QuestionImageCapturePr
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={busy}
-        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1.5 text-[12.5px] font-medium text-[#5E8868] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-transform hover:scale-105 active:scale-95"
+        disabled={interactiveDisabled}
+        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1.5 text-[12.5px] font-medium text-[#5E8868] shadow-[0_4px_12px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
         aria-label="重拍一张"
       >
         <RefreshCw className="size-[14px]" strokeWidth={2} />

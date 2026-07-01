@@ -23,7 +23,7 @@
 
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 // ─── AsrProvider 接口（缝：第 5 阶段替换为真实 ASR，本轮不实现） ──
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -44,6 +44,9 @@ interface AudioMeta {
 
 interface VoiceRecorderProps {
   onAudioReady?: (blob: Blob, meta: AudioMeta) => void;
+  // 录音状态变化通知父组件（修复评审 P1：录音中切 tab/换图/保存会泄漏 recorder）
+  // 父组件据此在 recording 中禁用 tab 切换/换图/保存
+  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
 // ─── 常量 ─────────────────────────────────────
@@ -67,7 +70,7 @@ function pickMimeType(): string {
 
 // ─── 组件 ─────────────────────────────────────
 
-export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
+export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRecorderProps) {
   const [state, setState] = useState<RecorderState>("idle");
   const [permissionMsg, setPermissionMsg] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -79,8 +82,23 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
   const startTsRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // abort 标志：unmount 期间触发的 onstop 不应回写父组件（修复评审 P1）
+  const abortedRef = useRef<boolean>(false);
+  // 回调用 ref，避免 useEffect cleanup 依赖闭包过期（修复评审 P1）
+  const onAudioReadyRef = useRef(onAudioReady);
+  const onRecordingStateChangeRef = useRef(onRecordingStateChange);
+  useEffect(() => {
+    onAudioReadyRef.current = onAudioReady;
+    onRecordingStateChangeRef.current = onRecordingStateChange;
+  }, [onAudioReady, onRecordingStateChange]);
 
-  // ─── 清理资源 ───────────────────────────────
+  // ─── 统一的 state setter（同步通知父组件录音状态）──
+  const setStateAndNotify = useCallback((next: RecorderState) => {
+    setState(next);
+    onRecordingStateChangeRef.current?.(next === "recording");
+  }, []);
+
+  // ─── 清理资源（timer/stream，不动 recorder）──
   const cleanup = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -95,6 +113,20 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
       streamRef.current = null;
     }
   }, []);
+
+  // ─── 卸载时清理（修复评审 P1：录音中切 tab/换图/保存导致后台 recorder 泄漏）──
+  // unmount 时若 recorder 还在跑：停止 recorder + 清 stream/timer + 标记 abort
+  // （abort 后 onstop 不再回写父组件，避免"下一题图 + 上一段录音"错配）
+  useEffect(() => {
+    return () => {
+      abortedRef.current = true;
+      const r = mediaRecorderRef.current;
+      if (r && r.state !== "inactive") {
+        try { r.stop(); } catch { /* 已 inactive，忽略 */ }
+      }
+      cleanup();
+    };
+  }, [cleanup]);
 
   // ─── 开始录音 ───────────────────────────────
   const handleStartRecording = useCallback(async () => {
@@ -137,6 +169,11 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
     };
 
     recorder.onstop = () => {
+      // unmount abort 路径：丢弃这段音频，不回写父组件（修复评审 P1）
+      if (abortedRef.current) {
+        cleanup();
+        return;
+      }
       const blob = new Blob(chunksRef.current, {
         type: mimeRef.current || recorder.mimeType || "audio/webm",
       });
@@ -149,15 +186,15 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
         mime: mimeRef.current || recorder.mimeType || "",
         sizeBytes: blob.size,
       };
-      onAudioReady?.(blob, meta);
+      onAudioReadyRef.current?.(blob, meta);
       cleanup();
       // 统一在 onstop 切 completed：手动停 / 60s 自动停都走这里（修复 P2-a）
-      setState("completed");
+      setStateAndNotify("completed");
     };
 
     recorder.start();
     startTsRef.current = Date.now();
-    setState("recording");
+    setStateAndNotify("recording");
     setElapsed(0);
 
     // 计时器（更新 elapsed 展示）
@@ -170,7 +207,7 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
       const r = mediaRecorderRef.current;
       if (r && r.state !== "inactive") r.stop();
     }, MAX_RECORDING_SEC * 1000);
-  }, [onAudioReady, cleanup]);
+  }, [setStateAndNotify, cleanup]);
 
   // ─── 停止录音 ───────────────────────────────
   const handleFinishRecording = useCallback(() => {
@@ -180,9 +217,9 @@ export function VoiceRecorder({ onAudioReady }: VoiceRecorderProps) {
       recorder.stop();
     } else {
       // 兜底（理论上不会走到，recording 态下 recorder 必然存在）
-      setState("completed");
+      setStateAndNotify("completed");
     }
-  }, []);
+  }, [setStateAndNotify]);
 
   // ─── idle 态 ───────────────────────────────
   if (state === "idle") {

@@ -20,7 +20,7 @@
 
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { QuestionImageCapture } from "@/components/nana/capture/question-image-capture";
@@ -81,10 +81,14 @@ export default function CapturePage() {
   // recorderKey：换图/保存成功/重拍时 +1 强制 VoiceRecorder remount，
   // 确保内部 state（idle/recording/completed）跟着重置（修复 P1-a）
   const [recorderKey, setRecorderKey] = useState(0);
+  // 是否正在录音（修复评审 P1：录音中禁止 tab 切换/换图/保存，避免 recorder 泄漏 + 数据错配）
+  const [isRecording, setIsRecording] = useState(false);
 
   // 保存状态
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  // 保存成功延迟重置的 timeout 句柄（修复评审 P2：换图时清掉，避免新图被旧 timeout 清空）
+  const savedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photoTaken = imageBase64 !== null;
 
@@ -97,11 +101,17 @@ export default function CapturePage() {
     [],
   );
 
+  // ─── 录音状态变化回调（通知父组件是否在录音）──
+  const handleRecordingStateChange = useCallback((recording: boolean) => {
+    setIsRecording(recording);
+  }, []);
+
   // ─── 重置录音 + 录音组件（换图/保存成功/重拍时调用）──
   // 清掉 audioBlob/audioMeta 并强制 VoiceRecorder remount 回 idle（修复 P1-a/P1-b）
   const resetAudioAndRecorder = useCallback(() => {
     setAudioBlob(null);
     setAudioMeta(null);
+    setIsRecording(false);
     setRecorderKey((k) => k + 1);
   }, []);
 
@@ -113,6 +123,11 @@ export default function CapturePage() {
     setSaveMsg(null);
     // 换图清掉旧录音，避免"新题图 + 旧录音"错配（修复 P1-b）
     resetAudioAndRecorder();
+    // 修复评审 P2：保存成功延迟期间换图，清掉旧 timeout，避免新图被旧 timeout 清空
+    if (savedResetTimerRef.current) {
+      clearTimeout(savedResetTimerRef.current);
+      savedResetTimerRef.current = null;
+    }
   }, [resetAudioAndRecorder]);
 
   // ─── 组装 artifacts（§7.7 方案 A）──────────
@@ -153,6 +168,11 @@ export default function CapturePage() {
       setSaveMsg("先拍一下这道题");
       return;
     }
+    // 录音中禁保存（修复评审 P1：避免保存触发 remount 时 recorder 泄漏）
+    if (isRecording) {
+      setSaveMsg("先把话说完，再收这道题");
+      return;
+    }
     // 前端 3MB 预检
     if (estimatedPayloadBytes > TOTAL_PAYLOAD_LIMIT) {
       setSaveState("error");
@@ -170,28 +190,46 @@ export default function CapturePage() {
       setSaveMsg(SUCCESS_MSG);
       setCaptureCount((prev) => prev + 1);
       // 重置采集状态（保留 captureCount）
-      setTimeout(() => {
+      savedResetTimerRef.current = setTimeout(() => {
         setImageBase64(null);
         resetAudioAndRecorder(); // 清 audio + 重置录音组件（修复 P1-a）
         setSaveState("idle");
         setSaveMsg(null);
         setCurrentTab("voice");
+        savedResetTimerRef.current = null;
       }, 1400);
     } catch {
       // 失败：显式报错，保留数据可重试（铁律 6）
       setSaveState("error");
       setSaveMsg(FAILURE_MSG);
     }
-  }, [imageBase64, estimatedPayloadBytes, buildArtifacts, resetAudioAndRecorder]);
+  }, [imageBase64, isRecording, estimatedPayloadBytes, buildArtifacts, resetAudioAndRecorder]);
+
+  // ─── 组件卸载时清掉 pending 重置 timeout（防内存泄漏）──
+  useEffect(() => {
+    return () => {
+      if (savedResetTimerRef.current) {
+        clearTimeout(savedResetTimerRef.current);
+        savedResetTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // ─── 切 tab（录音中禁止切走，修复评审 P1）──
+  const handleTabChange = useCallback((tab: TabId) => {
+    if (isRecording) return;
+    setCurrentTab(tab);
+  }, [isRecording]);
 
   // ─── 重置（"再拍一道"快捷入口，未保存时）──
   const handleRetake = useCallback(() => {
+    if (isRecording) return; // 录音中禁重拍（修复评审 P1）
     setImageBase64(null);
     resetAudioAndRecorder(); // 清 audio + 重置录音组件（修复 P1-a）
     setSaveState("idle");
     setSaveMsg(null);
     setCurrentTab("voice");
-  }, [resetAudioAndRecorder]);
+  }, [isRecording, resetAudioAndRecorder]);
 
   const saving = saveState === "saving";
   const saved = saveState === "saved";
@@ -245,7 +283,12 @@ export default function CapturePage() {
 
       {/* ═══ 2. 题图区域（固定 ~52% 高度） ═══ */}
       <div className="h-[52vh] min-h-[280px] shrink-0 border-b border-[#E4DACB] bg-[#EFE7DA]">
-        <QuestionImageCapture value={imageBase64} onChange={handleImageChange} />
+        <QuestionImageCapture
+          value={imageBase64}
+          onChange={handleImageChange}
+          // 修复评审 P2：保存成功延迟期间 + 录音中，禁止换图（避免新图被旧 timeout 清空 / recorder 泄漏）
+          disabled={saving || saveState === "saved" || isRecording}
+        />
       </div>
 
       {/* ═══ 3. 三 tab ═══ */}
@@ -254,11 +297,14 @@ export default function CapturePage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setCurrentTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
+            disabled={isRecording && tab.id !== "voice"}
             className={`relative flex-1 pb-[11px] pt-[13px] text-center text-[14.5px] transition-colors ${
-              currentTab === tab.id
-                ? "font-semibold text-[#5E8868]"
-                : "text-[#B4ADA3] hover:text-[#8C857B]"
+              isRecording && tab.id !== "voice"
+                ? "cursor-not-allowed text-[#D8D2C8]"
+                : currentTab === tab.id
+                  ? "font-semibold text-[#5E8868]"
+                  : "text-[#B4ADA3] hover:text-[#8C857B]"
             }`}
           >
             {tab.label}
@@ -274,7 +320,11 @@ export default function CapturePage() {
       <div className="flex flex-1 flex-col px-[22px] pb-5 pt-[18px]">
         {/* Tab 内容 */}
         {currentTab === "voice" && (
-          <VoiceRecorder key={recorderKey} onAudioReady={handleAudioReady} />
+          <VoiceRecorder
+            key={recorderKey}
+            onAudioReady={handleAudioReady}
+            onRecordingStateChange={handleRecordingStateChange}
+          />
         )}
 
         {currentTab === "transcript" && (
