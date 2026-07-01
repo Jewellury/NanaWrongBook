@@ -64,7 +64,7 @@ vi.mock('@/lib/prisma', () => {
 });
 
 // 导入路由 handler（必须在所有 mock 之后）
-import { POST as createCase } from '../../../app/api/nana/cases/route';
+import { POST as createCase, GET as listCases } from '../../../app/api/nana/cases/route';
 import { GET as getCase } from '../../../app/api/nana/cases/[id]/route';
 // 导入被 mock 的 getServerSession（用于跨用户场景切换身份）
 import { getServerSession } from 'next-auth';
@@ -261,5 +261,60 @@ describe('Case API（集成测试 · mock session）', () => {
     expect(res.status).toBe(404);
 
     // 恢复默认 session（mockResolvedValueOnce 已用完，回退到默认 mockResolvedValue）
+  });
+});
+
+// ============================================================
+// S1-6：列表端点 + 用户隔离测试
+// ============================================================
+
+describe('Case 列表 API + 用户隔离（S1-3/S1-6）', () => {
+  test('GET /api/nana/cases 返回当前用户的 case 列表（含必要字段）', async () => {
+    // 先创建一条，确保列表非空
+    const createReq = mockPost('/api/nana/cases', {
+      artifacts: [
+        { type: 'question_image', content: 'data:image/jpeg;base64,LIST1', seq: 0 },
+        { type: 'transcript', content: '尚未转写', seq: 1 },
+      ],
+    });
+    await createCase(createReq);
+
+    const res = await listCases();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.cases)).toBe(true);
+    expect(body.cases.length).toBeGreaterThan(0);
+    expect(body.total).toBe(body.cases.length);
+
+    // 每条都带必要字段，且 Stage 1 恒定值正确
+    const first = body.cases[0];
+    expect(first.id).toBeDefined();
+    expect(typeof first.createdAt).toBe('string');
+    expect(typeof first.hasImage).toBe('boolean');
+    expect(first.hasImage).toBe(true); // 刚创建的含 question_image
+    expect(first.tagStatus).toBe('untagged');
+    expect(first.tagCount).toBe(0);
+    expect(first.transcriptReady).toBe(false);
+  });
+
+  test('GET /api/nana/cases 不包含其他用户的 case（用户隔离，沿用 G1 思路）', async () => {
+    // 切到 OTHER_STUDENT 创建一条
+    const mockGetSession = getServerSession as unknown as ReturnType<typeof vi.fn>;
+    mockGetSession.mockResolvedValueOnce({ user: { id: OTHER_STUDENT } });
+    const createReq = mockPost('/api/nana/cases', {
+      artifacts: [
+        { type: 'question_image', content: 'data:image/jpeg;base64,ISOLATION', seq: 0 },
+      ],
+    });
+    const createRes = await createCase(createReq);
+    expect(createRes.status).toBe(201);
+    const otherCaseId = (await createRes.json()).id;
+
+    // 回到默认 TEST_STUDENT 查列表（mockResolvedValueOnce 已用完，回退到默认）
+    const listRes = await listCases();
+    expect(listRes.status).toBe(200);
+    const listBody = await listRes.json();
+    const ids = listBody.cases.map((c: { id: string }) => c.id);
+    expect(ids).not.toContain(otherCaseId);
   });
 });

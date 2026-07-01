@@ -307,8 +307,8 @@ model Artifact {
   id       String @id @default(cuid())
   caseId   String
   case     Case   @relation(fields: [caseId], references: [id])
-  type     String // "image" | "audio" | "transcript" | "aiSummary"
-  content  String // URL（image/audio）或纯文本（transcript/aiSummary）
+  type     String // "question_image" | "audio_note" | "audio_meta" | "transcript"（Phase 1.5 实际白名单；旧注释 image/audio/transcript/aiSummary 已过时）
+  content  String // Base64（question_image/audio_note）或纯文本（audio_meta/transcript）
   seq      Int    @default(0) // 同类型多 artifact 的顺序
   createdAt DateTime @default(now())
 

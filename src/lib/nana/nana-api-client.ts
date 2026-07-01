@@ -51,6 +51,30 @@ export async function getCase(id: string): Promise<CaseResponse> {
   return res.json();
 }
 
+// ─── 我的错题列表（Stage 1 S1-3）─────────────────────────
+
+export interface CaseListItem {
+  id: string;
+  createdAt: string;
+  hasImage: boolean;
+  hasAudio: boolean;
+  tagCount: number;          // Stage 1 恒 0
+  tagStatus: 'untagged' | 'tagged' | 'pending';  // Stage 1 恒 untagged
+  transcriptReady: boolean;  // Stage 1 恒 false
+}
+
+/**
+ * 列出当前登录用户最近的错题
+ * GET /api/nana/cases（带 session 归属过滤）
+ *
+ * 注意：列表不返回完整 base64 题图，仅 hasImage 标志。
+ */
+export async function listMyCases(): Promise<{ cases: CaseListItem[]; total: number }> {
+  const res = await fetch(`${NANA_BASE}/cases`);
+  if (!res.ok) throw new Error(`listMyCases 失败: ${res.status}`);
+  return res.json();
+}
+
 /**
  * 获取知识地图数据
  * GET /api/diagnosis/map?studentId=xxx[&mainlineId=xxx]
