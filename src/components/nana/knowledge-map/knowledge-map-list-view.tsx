@@ -32,6 +32,7 @@ interface Props {
   nodes: KnowledgeNodeData[];
   frontier: string[];
   onNodeClick: (nodeId: string) => void;
+  nextLabel?: "下一个" | "可以先看";
 }
 
 /**
@@ -90,6 +91,7 @@ export default function KnowledgeMapListView({
   nodes,
   frontier,
   onNodeClick,
+  nextLabel = "下一个",
 }: Props) {
   const [untestedExpanded, setUntestedExpanded] = useState(false);
 
@@ -99,11 +101,12 @@ export default function KnowledgeMapListView({
     <div className="flex-1 px-4 pb-6">
       {SECTIONS.map((section) => {
         const groupNodes = groups[section.key];
-        // 空组隐藏（未探索通常总有节点，但若空也隐藏）
         if (groupNodes.length === 0) return null;
 
         const isUntested = section.key === "untested";
         const isExpanded = !isUntested || untestedExpanded;
+        const title =
+          section.key === "next" ? nextLabel : section.title;
 
         return (
           <section key={section.key} className="mb-5">
@@ -114,7 +117,7 @@ export default function KnowledgeMapListView({
                 style={{ backgroundColor: section.color }}
               />
               <h2 className="text-sm font-semibold text-[#403A33]">
-                {section.title}
+                {title}
                 <span className="ml-1.5 text-xs font-normal text-[#8C857B]">
                   {groupNodes.length} 个
                 </span>
@@ -185,7 +188,7 @@ export default function KnowledgeMapListView({
                             color: section.color,
                           }}
                         >
-                          {section.title}
+                          {title}
                         </span>
 
                         {/* 收过题计数角标（lit/next 组 additive） */}

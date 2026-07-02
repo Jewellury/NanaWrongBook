@@ -49,10 +49,10 @@ export function RecapBar({
               还没做小检查，做完就能点亮它们 ✦
             </p>
             <Link
-              href="/nana/knowledge-map"
+              href="/nana/session"
               className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#D97706] transition-colors hover:text-[#B45309]"
             >
-              看看我的知识地图
+              去做小检查，点亮它们
               <span aria-hidden="true">→</span>
             </Link>
           </div>
@@ -79,10 +79,10 @@ export function RecapBar({
             你的地图上已经有 {totalLitCount} 个光点了
           </p>
           <Link
-            href="/nana/knowledge-map"
+            href="/nana/session"
             className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#D97706] transition-colors hover:text-[#B45309]"
           >
-            看看我的知识地图
+            去做小检查，点亮它们
             <span aria-hidden="true">→</span>
           </Link>
         </div>

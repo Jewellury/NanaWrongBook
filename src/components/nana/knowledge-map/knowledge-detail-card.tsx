@@ -13,7 +13,7 @@
 
 "use client";
 
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 
 interface DetailNode {
   nodeId: string;
@@ -30,19 +30,26 @@ interface DetailNode {
 interface Props {
   node: DetailNode;
   onClose: () => void;
+  nextLabel?: "下一个" | "可以先看";
+  caseEvidenceCount?: number;
 }
 
-export default function KnowledgeDetailCard({ node, onClose }: Props) {
+export default function KnowledgeDetailCard({
+  node,
+  onClose,
+  nextLabel = "下一个",
+  caseEvidenceCount = 0,
+}: Props) {
   const isStable = node.status === "stable";
   const isFrontier = node.isFrontier;
   const isUnexplored = !isStable && !isFrontier;
 
-  // 格式化确认日期
+  // 格式化日期："X 月 X 日"
   let formattedDate: string | null = null;
   if (node.lastEvidence) {
     try {
       const date = parseISO(node.lastEvidence);
-      formattedDate = format(date, "yyyy-MM-dd");
+      formattedDate = `${date.getMonth() + 1}月${date.getDate()}日`;
     } catch {
       formattedDate = node.lastEvidence;
     }
@@ -90,7 +97,7 @@ export default function KnowledgeDetailCard({ node, onClose }: Props) {
         {/* 前沿提示 */}
         {isFrontier && (
           <p className="mt-2 text-sm font-medium text-[#5E86A8]">
-            下一个要攻克的知识点
+            {nextLabel}：{node.name}
           </p>
         )}
 
@@ -128,17 +135,16 @@ export default function KnowledgeDetailCard({ node, onClose }: Props) {
         {/* 最近确认日期 */}
         {formattedDate && (
           <p className="mt-3 text-sm font-medium text-[#E5B570]">
-            ✦ 最近一次确认是在 {formattedDate}
+            ✦ 你是在 {formattedDate} 点亮的
           </p>
         )}
 
-        {/* 关闭按钮 */}
-        <button
-          onClick={onClose}
-          className="mt-4 w-full rounded-full bg-[#F3EDE3] py-2.5 text-sm font-medium text-[#8C857B] hover:bg-[#E8E0D4] transition-colors"
-        >
-          关闭
-        </button>
+        {/* 收过题计数 */}
+        {caseEvidenceCount > 0 && (
+          <p className="mt-1 text-xs text-[#B8AFA6]">
+            （收过 {caseEvidenceCount} 道错题）
+          </p>
+        )}
       </div>
     </div>
   );

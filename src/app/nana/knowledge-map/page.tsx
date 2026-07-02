@@ -19,7 +19,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ListFilter } from "lucide-react";
 import KnowledgeMapCanvas from "@/components/nana/knowledge-map/knowledge-map-canvas";
 import KnowledgeMapListView from "@/components/nana/knowledge-map/knowledge-map-list-view";
 import KnowledgeDetailCard from "@/components/nana/knowledge-map/knowledge-detail-card";
@@ -60,8 +60,10 @@ export default function KnowledgeMapPage() {
   const [mapData, setMapData] = useState<MapResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  // 视图模式：列表(手机默认，可读) | 图谱(SVG 全景)。默认 list (DP1)
-  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
+  // 视图模式：图谱(手机默认) | 列表(无障碍备选)。默认 graph (DP2)
+  const [viewMode, setViewMode] = useState<"list" | "graph">("graph");
+  // 浮层抽屉：RecentCasesList 不再常驻上方，改为浮层入口
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // 空状态判定：少于 2 个节点有状态记录，且没有任何 collected（收过题）节点
   // → 放宽：只挂过题、没测过的孩子也能看到画布 + 琥珀环（修断点 2）
@@ -72,6 +74,10 @@ export default function KnowledgeMapPage() {
     ? mapData.nodes.filter((n) => (n.caseEvidenceCount ?? 0) > 0).length
     : 0;
   const isEmpty = !loading && mapData && litNodeCount < 2 && collectedNodeCount === 0;
+
+  // "可以先看" / "下一个" 动态措辞（DP3）—— 零数据态语义修正
+  const nextLabel: "可以先看" | "下一个" =
+    mapData && mapData.stats.stable === 0 ? "可以先看" : "下一个";
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -127,12 +133,13 @@ export default function KnowledgeMapPage() {
         teachingNotes: selectedNode.teachingNotes ?? null,
         lastEvidence: selectedNode.lastEvidence ?? null,
         isFrontier: mapData?.learningFrontier.includes(selectedNode.nodeId) ?? false,
+        caseEvidenceCount: selectedNode.caseEvidenceCount ?? 0,
       }
     : null;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-[#FBF7F0]">
-      {/* ===== 顶栏 ===== */}
+    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-[#FBF7F0]">
+      {/* ===== 顶栏（紧凑 ~50px）===== */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-2">
         <Link
           href="/nana"
@@ -151,35 +158,6 @@ export default function KnowledgeMapPage() {
         </div>
       </div>
 
-      {/* ===== 最近拍过的题（Stage 1 S1-4 列表 / Stage 2 S2-4 标签+挂载） ===== */}
-      <RecentCasesList
-        nodes={
-          mapData?.nodes.map((n) => ({ id: n.nodeId, name: n.name })) ?? []
-        }
-      />
-
-      {/* ===== 图例（非空态显示） ===== */}
-      {!isEmpty && !loading && mapData && (
-        <div className="flex justify-center gap-5 px-4 py-2 text-xs text-[#8C857B]">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#6BBF8A] shadow-[0_0_0_3px_rgba(107,191,138,0.2)]" />
-            已点亮
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-full bg-[#F2F8FC] border-2 border-dashed border-[#93B8D6]" />
-            下一个
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#D9D1C3]" />
-            未探索
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#E8A33D]/30 ring-2 ring-[#E8A33D]" />
-            收过题
-          </span>
-        </div>
-      )}
-
       {/* ===== 加载中骨架 ===== */}
       {loading && (
         <div className="flex-1 flex items-center justify-center">
@@ -193,7 +171,6 @@ export default function KnowledgeMapPage() {
       {/* ===== 空状态 ===== */}
       {isEmpty && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          {/* 全灰底图示意 —— 一排灰色圆点 */}
           <div className="flex gap-4 mb-8 opacity-40">
             <div className="flex flex-col items-center gap-2">
               {[1, 2, 3].map(i => (
@@ -211,7 +188,6 @@ export default function KnowledgeMapPage() {
               ))}
             </div>
           </div>
-          {/* 第一个已点亮节点（绿色发光） */}
           {mapData && mapData.stats.stable === 1 && (
             <div className="mb-4">
               <div className="w-5 h-5 rounded-full bg-[#6BBF8A] shadow-[0_0_0_4px_rgba(107,191,138,0.2),0_0_12px_rgba(107,191,138,0.4)] mx-auto" />
@@ -226,63 +202,112 @@ export default function KnowledgeMapPage() {
         </div>
       )}
 
-      {/* ===== 视图切换 segmented control + 画布区（非空态、非加载时显示）===== */}
+      {/* ===== 图例 + 视图切换（非空态、非加载时显示）===== */}
       {!loading && mapData && !isEmpty && (
         <>
-          {/* segmented control: 列表 | 图谱 (DP3) */}
-          <div className="flex justify-center px-4 py-2">
-            <div className="inline-flex rounded-full bg-[#EFE8DD] p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={
-                  viewMode === "list"
-                    ? "rounded-full bg-white px-4 py-1 font-medium text-[#403A33]"
-                    : "px-4 py-1 text-[#8C857B]"
-                }
-              >
-                列表
-              </button>
+          {/* 图例 + toggle 并排 */}
+          <div className="flex items-center justify-between px-4 py-1.5">
+            {/* 图例（紧凑单行） */}
+            <div className="flex gap-3 text-[11px] text-[#8C857B]">
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#6BBF8A] shadow-[0_0_0_3px_rgba(107,191,138,0.2)]" />
+                已点亮
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#F2F8FC] border-2 border-dashed border-[#93B8D6]" />
+                {nextLabel}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#D9D1C3]" />
+                未探索
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#E8A33D]/30 ring-2 ring-[#E8A33D]" />
+                收过题
+              </span>
+            </div>
+
+            {/* segmented control: 图谱 | 列表 (DP2) */}
+            <div className="inline-flex rounded-full bg-[#EFE8DD] p-1 text-[11px] shrink-0 ml-2">
               <button
                 type="button"
                 onClick={() => setViewMode("graph")}
                 className={
                   viewMode === "graph"
-                    ? "rounded-full bg-white px-4 py-1 font-medium text-[#403A33]"
-                    : "px-4 py-1 text-[#8C857B]"
+                    ? "rounded-full bg-white px-3 py-1 font-medium text-[#403A33]"
+                    : "px-3 py-1 text-[#8C857B]"
                 }
               >
                 图谱
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={
+                  viewMode === "list"
+                    ? "rounded-full bg-white px-3 py-1 font-medium text-[#403A33]"
+                    : "px-3 py-1 text-[#8C857B]"
+                }
+              >
+                列表
+              </button>
             </div>
           </div>
 
-          {/* 画布区：list → KnowledgeMapListView; graph → KnowledgeMapCanvas */}
-          {viewMode === "list" ? (
-            <KnowledgeMapListView
-              nodes={mapData.nodes as KnowledgeNodeData[]}
-              frontier={mapData.learningFrontier}
-              onNodeClick={handleNodeClick}
-            />
-          ) : (
-            <div className="flex-1 overflow-auto px-2 pb-6">
+          {/* ===== 主内容区 flex-1（图谱或列表独占）===== */}
+          <div className="relative flex-1">
+            {viewMode === "list" ? (
+              <KnowledgeMapListView
+                nodes={mapData.nodes as KnowledgeNodeData[]}
+                frontier={mapData.learningFrontier}
+                onNodeClick={handleNodeClick}
+                nextLabel={nextLabel}
+              />
+            ) : (
               <KnowledgeMapCanvas
+                variant="mobile"
                 nodes={mapData.nodes as KnowledgeNodeData[]}
                 edges={mapData.edges}
                 mainlines={mapData.mainlines}
                 frontier={mapData.learningFrontier}
                 onNodeClick={handleNodeClick}
+                nextLabel={nextLabel}
               />
-            </div>
-          )}
+            )}
+
+            {/* ===== 浮层入口按钮（图谱模式下显示，左下角）===== */}
+            {viewMode === "graph" && (
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="absolute bottom-3 left-3 z-30 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 text-[12px] font-medium text-[#403A33] shadow-[0_4px_16px_rgba(90,80,66,0.18)] border border-[#E8E0D4] backdrop-blur-sm transition-colors hover:bg-white"
+              >
+                <ListFilter className="size-3.5 text-[#5E8868]" />
+                最近拍过
+              </button>
+            )}
+          </div>
         </>
       )}
 
-      {/* ===== 节点详情卡 ===== */}
+      {/* ===== 节点详情卡（overlay，不挤压画布）===== */}
       {selectedDetail && (
         <KnowledgeDetailCard
           node={selectedDetail}
           onClose={() => setSelectedNodeId(null)}
+          nextLabel={nextLabel}
+          caseEvidenceCount={selectedDetail.caseEvidenceCount ?? 0}
+        />
+      )}
+
+      {/* ===== RecentCasesList 浮层抽屉（bottom sheet）===== */}
+      {!loading && mapData && (
+        <RecentCasesList
+          nodes={
+            mapData.nodes.map((n) => ({ id: n.nodeId, name: n.name })) ?? []
+          }
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
         />
       )}
     </div>

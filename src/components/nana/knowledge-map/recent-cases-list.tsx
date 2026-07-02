@@ -20,7 +20,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ImageIcon, Camera, Tag, Plus } from "lucide-react";
+import { ImageIcon, Camera, Tag, Plus, X } from "lucide-react";
 import {
   listMyCases,
   listCaseTags,
@@ -62,9 +62,62 @@ export function __clearCaseDetailCacheForTests(): void {
 interface RecentCasesListProps {
   /** 48 个知识点 {id, name}，由知识地图页面（已加载 map）传入；为空时禁用挂载操作 */
   nodes: { id: string; name: string }[];
+  /** 浮层抽屉是否打开（可选，不传则按原有常驻模式渲染） */
+  open?: boolean;
+  /** 关闭浮层回调 */
+  onClose?: () => void;
 }
 
-export function RecentCasesList({ nodes }: RecentCasesListProps) {
+export function RecentCasesList({ nodes, open, onClose }: RecentCasesListProps) {
+  const isDrawer = open !== undefined && onClose !== undefined;
+
+  const content = <RecentCasesListInner nodes={nodes} />;
+
+  // 非抽屉模式：直接渲染（向后兼容，但当前页面不再使用此路径）
+  if (!isDrawer) {
+    return (
+      <section className="px-4 pb-3">
+        {content}
+      </section>
+    );
+  }
+
+  // 抽屉未打开：不渲染任何内容（入口按钮由 page.tsx 渲染）
+  if (!open) return null;
+
+  // 抽屉模式：bottom sheet with backdrop
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* 半透明遮罩 */}
+      <div
+        className="absolute inset-0 bg-black/20"
+        onClick={onClose}
+        aria-label="关闭最近拍过的题"
+      />
+      {/* 底部抽屉 */}
+      <div className="relative w-full max-w-md max-h-[80vh] overflow-y-auto rounded-t-2xl bg-[#FFFDF9] shadow-[0_-8px_40px_rgba(90,80,66,0.22)] border-t border-[#EFE8DD] animate-slide-up">
+        {/* 顶部 bar */}
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-[#FFFDF9] px-4 pt-3 pb-2 border-b border-[#F2EDE3]">
+          <h2 className="text-sm font-semibold text-[#403A33]">最近拍过的题</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center justify-center size-7 rounded-full text-[#8C857B] hover:bg-[#F2EDE3] transition-colors"
+            aria-label="关闭"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="px-4 pb-6 pt-3">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Inner content — 原有列表逻辑完全不变 */
+function RecentCasesListInner({ nodes }: { nodes: { id: string; name: string }[] }) {
   const [cases, setCases] = useState<CaseListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -374,3 +427,5 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
     </div>
   );
 }
+
+// end of module

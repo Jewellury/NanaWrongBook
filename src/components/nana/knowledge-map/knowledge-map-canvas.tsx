@@ -21,6 +21,13 @@ import {
   COL_TOTAL,
   START_Y,
 } from "./knowledge-map-layout";
+import {
+  MOBILE_W,
+  MOBILE_H,
+  getMobileCoord,
+  CLUSTER_LABELS,
+  CLUSTER_DECORATIONS,
+} from "./mobile-layout-coords";
 
 // ── 类型 ──
 export interface KnowledgeNodeData {
@@ -57,6 +64,8 @@ interface Props {
   mainlines: MainlineData[];
   frontier: string[];
   onNodeClick: (nodeId: string) => void;
+  variant?: "desktop" | "mobile";
+  nextLabel?: "下一个" | "可以先看";
 }
 
 // ── 渲染常量 ──
@@ -77,6 +86,8 @@ export default function KnowledgeMapCanvas({
   mainlines,
   frontier,
   onNodeClick,
+  variant = "mobile",
+  nextLabel = "下一个",
 }: Props) {
   const frontierSet = useMemo(() => new Set(frontier), [frontier]);
 
@@ -94,20 +105,41 @@ export default function KnowledgeMapCanvas({
     400
   );
 
-  // 节点位置 lookup
+  // 节点位置 lookup（按模式切换）
   const pos = useCallback(
-    (nodeId: string) => positions.get(nodeId),
-    [positions]
+    (nodeId: string) => {
+      if (variant === "mobile") return getMobileCoord(nodeId);
+      return positions.get(nodeId);
+    },
+    [positions, variant]
   );
 
   // ── 边渲染 ──
   const renderedEdges = useMemo(() => {
     return edges.map((edge) => {
-      const src = positions.get(edge.sourceId);
-      const tgt = positions.get(edge.targetId);
-      if (!src || !tgt) return null;
+      const srcPos = pos(edge.sourceId);
+      const tgtPos = pos(edge.targetId);
+      if (!srcPos || !tgtPos) return null;
 
-      // 判定颜色
+      // mobile 模式：只画两端都在 MOBILE_COORDS 里的边（河道区），过滤边缘簇噪声
+      if (variant === "mobile") {
+        if (
+          !getMobileCoord(edge.sourceId) ||
+          MOBILE_W / 2 === getMobileCoord(edge.sourceId).x
+        ) {
+          // fallback → skip
+        }
+        // 两端都必须是显式坐标（非 fallback）
+        const srcC = getMobileCoord(edge.sourceId);
+        const tgtC = getMobileCoord(edge.targetId);
+        const isSrcFallback = srcC.x === MOBILE_W / 2 && srcC.y === MOBILE_H / 2;
+        const isTgtFallback = tgtC.x === MOBILE_W / 2 && tgtC.y === MOBILE_H / 2;
+        if (isSrcFallback || isTgtFallback) return null;
+      }
+
+      const src = { x: srcPos.x, y: srcPos.y };
+      const tgt = { x: tgtPos.x, y: tgtPos.y };
+
       const srcNode = nodes.find((n) => n.nodeId === edge.sourceId);
       const tgtNode = nodes.find((n) => n.nodeId === edge.targetId);
       const srcStable = srcNode?.status === "stable";
@@ -119,21 +151,17 @@ export default function KnowledgeMapCanvas({
       let strokeDasharray: string | undefined;
 
       if (tgtIsFrontier) {
-        // 前沿节点的入边 → 蓝色虚线
         strokeColor = "#9FC3DE";
         strokeWidth = 2.2;
         strokeDasharray = "5 4";
       } else if (srcStable && tgtStable) {
-        // 两端 stable → 绿色
         strokeColor = "#9CCBA6";
         strokeWidth = 2.4;
       } else {
-        // 其他 → 灰色
         strokeColor = "#E7DFD0";
         strokeWidth = 1.4;
       }
 
-      // 贝塞尔曲线路径
       const midY = (src.y + tgt.y) / 2;
       const d = `M ${src.x} ${src.y} C ${src.x} ${midY}, ${tgt.x} ${midY}, ${tgt.x} ${tgt.y}`;
 
@@ -149,22 +177,70 @@ export default function KnowledgeMapCanvas({
         />
       );
     });
-  }, [edges, positions, nodes, frontierSet]);
+  }, [edges, pos, nodes, frontierSet, variant]);
+
+  // ── 灰底图渲染（mobile 模式：所有 48 节点灰色底图 + 边缘簇装饰）──
+  const renderedBaseMap = useMemo(() => {
+    if (variant !== "mobile") return null;
+
+    return (
+      <>
+        {/* 所有 48 节点灰色底图圆 + 名 */}
+        <g fill="#D9D1C3">
+          {nodes.map((node) => {
+            const c = getMobileCoord(node.nodeId);
+            return (
+              <circle key={`base-${node.nodeId}`} cx={c.x} cy={c.y} r={6} />
+            );
+          })}
+        </g>
+        <g fontSize={10} fill="#BDB3A3" textAnchor="middle">
+          {nodes.map((node) => {
+            const c = getMobileCoord(node.nodeId);
+            return (
+              <text
+                key={`base-t-${node.nodeId}`}
+                x={c.x}
+                y={c.y + 16}
+              >
+                {node.name}
+              </text>
+            );
+          })}
+        </g>
+
+        {/* 边缘簇装饰灰点（无对应 DB 节点） */}
+        <g fill="#D9D1C3">
+          {CLUSTER_DECORATIONS.map((d, i) => (
+            <circle key={`dec-${i}`} cx={d.x} cy={d.y} r={d.r} />
+          ))}
+        </g>
+
+        {/* 边缘簇标签 */}
+        <g fontSize={10} fill="#BDB3A3" textAnchor="middle">
+          {CLUSTER_LABELS.map((cl) => (
+            <text key={`cl-${cl.name}`} x={cl.x} y={cl.y}>
+              {cl.name}
+            </text>
+          ))}
+        </g>
+      </>
+    );
+  }, [variant, nodes]);
 
   // ── 节点渲染 ──
   const renderedNodes = useMemo(() => {
     return nodes.map((node) => {
-      const p = positions.get(node.nodeId);
+      const p = pos(node.nodeId);
       if (!p) return null;
 
       const isStable = node.status === "stable";
       const isFrontier = frontierSet.has(node.nodeId);
-      const isSelected = false; // 选中态由外层处理
+      const isSelected = false;
 
       const { x, y } = p;
 
       if (isStable) {
-        // 已点亮节点：外层光晕 + 实心圆 + 白色高光 + 名称
         return (
           <g
             key={`node-${node.nodeId}`}
@@ -172,7 +248,6 @@ export default function KnowledgeMapCanvas({
             onClick={() => onNodeClick(node.nodeId)}
             style={{ cursor: "pointer" }}
           >
-            {/* collected 琥珀外环（additive：绿芯 + 琥珀环 = 已点亮又收过题） */}
             {node.caseEvidenceCount > 0 && (
               <circle
                 cx={x}
@@ -183,7 +258,6 @@ export default function KnowledgeMapCanvas({
                 strokeWidth={2}
               />
             )}
-            {/* 外层半透明光晕 */}
             <circle
               cx={x}
               cy={y}
@@ -192,9 +266,7 @@ export default function KnowledgeMapCanvas({
               opacity={0.18}
               filter="url(#node-glow)"
             />
-            {/* 实心圆 */}
             <circle cx={x} cy={y} r={NODE_R} fill="#6BBF8A" />
-            {/* 白色高光 */}
             <circle
               cx={x}
               cy={y}
@@ -204,7 +276,6 @@ export default function KnowledgeMapCanvas({
               strokeOpacity={0.55}
               strokeWidth={1.7}
             />
-            {/* 节点名称 */}
             <text
               x={x}
               y={y + TEXT_Y_OFFSET}
@@ -220,7 +291,6 @@ export default function KnowledgeMapCanvas({
       }
 
       if (isFrontier) {
-        // 前沿节点：蓝色虚线框 + "下一个"标签 + 名称
         return (
           <g
             key={`node-${node.nodeId}`}
@@ -228,7 +298,6 @@ export default function KnowledgeMapCanvas({
             onClick={() => onNodeClick(node.nodeId)}
             style={{ cursor: "pointer" }}
           >
-            {/* collected 琥珀外环（additive：下一个 + 琥珀环 = 下一个且收过题） */}
             {node.caseEvidenceCount > 0 && (
               <circle
                 cx={x}
@@ -239,7 +308,6 @@ export default function KnowledgeMapCanvas({
                 strokeWidth={2}
               />
             )}
-            {/* "下一个" 标签 */}
             <text
               x={x}
               y={y + LABEL_Y_OFFSET}
@@ -248,9 +316,8 @@ export default function KnowledgeMapCanvas({
               fill="#5E86A8"
               fontWeight={600}
             >
-              下一个
+              {nextLabel}
             </text>
-            {/* 虚线圆 */}
             <circle
               cx={x}
               cy={y}
@@ -260,7 +327,6 @@ export default function KnowledgeMapCanvas({
               strokeWidth={2.5}
               strokeDasharray="4 3"
             />
-            {/* 节点名称 */}
             <text
               x={x}
               y={y + TEXT_Y_OFFSET + 4}
@@ -275,14 +341,12 @@ export default function KnowledgeMapCanvas({
         );
       }
 
-      // 未探索节点：灰色实心圆 + 灰色名称
       return (
         <g
           key={`node-${node.nodeId}`}
           onClick={() => onNodeClick(node.nodeId)}
           style={{ cursor: "pointer" }}
         >
-          {/* collected 琥珀外环（additive：灰芯 + 琥珀环 = 收过题但还没测 —— 断点 2 核心反馈） */}
           {node.caseEvidenceCount > 0 && (
             <circle
               cx={x}
@@ -306,17 +370,17 @@ export default function KnowledgeMapCanvas({
         </g>
       );
     });
-  }, [nodes, positions, frontierSet, onNodeClick]);
+  }, [nodes, pos, frontierSet, onNodeClick, nextLabel]);
 
-  // ── 主线名称（列底部） ──
+  // ── 主线名称（desktop 模式用）──
   const renderedMainlineLabels = useMemo(() => {
-    const labels: React.ReactNode[] = [];
+    if (variant === "mobile") return null;
 
+    const labels: React.ReactNode[] = [];
     for (const [colIdxStr, name] of columnMainlines.entries()) {
       const colIdx = Number(colIdxStr);
       const colCenterX = colIdx * COL_TOTAL + COL_WIDTH / 2;
       const colBottom = columnHeights[colIdx] ?? START_Y;
-
       labels.push(
         <text
           key={`ml-label-${colIdx}`}
@@ -331,16 +395,19 @@ export default function KnowledgeMapCanvas({
         </text>
       );
     }
-
     return labels;
-  }, [columnMainlines, columnHeights]);
+  }, [variant, columnMainlines, columnHeights]);
+
+  // viewBox 尺寸：mobile 固定 368×700，desktop 动态算
+  const w = variant === "mobile" ? MOBILE_W : svgWidth;
+  const h = variant === "mobile" ? MOBILE_H : svgHeight;
 
   return (
     <svg
-      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+      viewBox={`0 0 ${w} ${h}`}
       className="w-full h-full"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ minHeight: "400px" }}
+      style={{ minHeight: variant === "mobile" ? "600px" : "400px" }}
     >
       <defs>
         <filter
@@ -354,10 +421,13 @@ export default function KnowledgeMapCanvas({
         </filter>
       </defs>
 
+      {/* 灰底图（mobile 模式底层） */}
+      {renderedBaseMap}
+
       {/* 边 */}
       {renderedEdges}
 
-      {/* 节点 */}
+      {/* 节点（覆盖在底图上） */}
       {renderedNodes}
 
       {/* 主线名称 */}
