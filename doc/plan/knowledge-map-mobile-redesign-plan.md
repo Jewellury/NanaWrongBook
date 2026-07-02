@@ -1,9 +1,9 @@
 # 知识地图 · 移动端重设计（对齐设计稿）· 开发计划
 
 > 关联规格: `doc/research/前端设计/04-knowledge-map.html`（设计稿权威）、`doc/plan/knowledge-map-mobile-dualmode-plan.md`（上一轮，本轮修正其方向）
-> 计划日期: 2026-07-02
-> 预计影响: `src/components/nana/knowledge-map/`（新增 1 配置 + 改 3 组件）、`src/app/nana/knowledge-map/page.tsx`、`src/components/nana/shared/recap-bar.tsx`
-> 性质：**纯前端布局 + 措辞重构**。无 schema 变更、无 API 变更、无数据迁移。
+> 计划日期: 2026-07-02（**修订 v2：纳入 DP5 页面布局重构**）
+> 预计影响: `src/components/nana/knowledge-map/`（新增 1 配置 + 改 4 组件含浮层化）、`src/app/nana/knowledge-map/page.tsx`（**重写布局**）、`src/components/nana/shared/recap-bar.tsx`
+> 性质：**纯前端布局 + 措辞重构 + 浮层交互**。无 schema 变更、无 API 变更、无数据迁移。
 
 ---
 
@@ -47,6 +47,18 @@
 
 ## 4. 任务分解
 
+> **任务 H（DP5）是本轮最关键的结构性改动**——当前页面 `RecentCasesList` 常驻图谱上方占掉半屏，与设计稿"整屏地图"预期严重不符。H 必须先于其他任务落地（否则图谱再好看也只有半屏空间）。
+
+- [ ] **任务 H：页面布局重构——地图优先、整屏画布（DP5 · 评审追加 · 最关键）**
+  - 涉及文件：`src/app/nana/knowledge-map/page.tsx`（**重写布局结构**）、`src/components/nana/knowledge-map/recent-cases-list.tsx`（**改为浮层入口**）
+  - 当前问题：`page.tsx:155` 的 `<RecentCasesList>` 常驻图谱**上方**，列表本身 ~100px + 点开 CaseTagPanel 后展开到 ~400px，把图谱挤到下半屏甚至折叠。与设计稿 `04-knowledge-map.html` 的整屏图谱（canvas 占 684px / 798px 屏高 = 86%）完全不符。
+  - 改动：
+    1. **图谱区域独占主屏**：`flex-1` 给图谱画布，顶栏（返回 + 标题 + 光点数）保持精简（~50px），图例可叠在图谱底部或合并进图谱区。图谱在 375px 手机上应有 ≥ 600px 可用高度。
+    2. **RecentCasesList 不再常驻上方**：改成**浮层入口**——图谱角落放一个小入口（如左下角"最近拍过"圆形按钮 / 底部 pill"收过 N 道"），点击后以**底部抽屉（bottom sheet）**或**全屏浮层**展开列表 + CaseTagPanel。关闭回到图谱。
+    3. **CaseTagPanel（含题图预览）只能从浮层打开**，不挤压地图画布。题图懒加载逻辑（Stage 2.5 hotfix）不变。
+    4. **节点详情卡（KnowledgeDetailCard）继续用底部卡片**，以 overlay 浮在图谱上方（设计稿的 `kcard` 就是 absolute 定位底部），不挤压画布。点遮罩关闭。
+  - 验收硬标准：**375px 视口下图谱可见高度 ≥ 600px**（当前被压缩到 < 300px）
+
 - [ ] **任务 A：手机专用图谱布局配置（Challenge A）**
   - 涉及文件：`src/components/nana/knowledge-map/mobile-layout-coords.ts`（**新增**）
   - 内容：定义 48 节点的手工 `{x, y}` 坐标，画布尺寸常量 `MOBILE_W=368` / `MOBILE_H≈700`。坐标按设计稿"河道+边缘簇"哲学排布（见 §8.1 区域分配）
@@ -76,11 +88,11 @@
 
 - [ ] **任务 F：列表/图谱模式定位（Goal 6）**
   - 涉及文件：`src/app/nana/knowledge-map/page.tsx`（**修改**）
-  - 内容：`viewMode` 默认从 `"list"` 改为 `"graph"`；segmented control 保留（图谱 \| 列表），列表降级为无障碍/屏幕阅读器备选。列表组件本身不动
+  - 内容：`viewMode` 默认从 `"list"` 改为 `"graph"`；segmented control 保留（图谱 \| 列表），列表降级为无障碍/屏幕阅读器备选。列表组件本身不动。**注意：任务 H 的布局重构后，toggle 也在图谱主屏内（如顶栏角落），不额外占高**
 
 - [ ] **任务 G：375px 视口验证 + build（Goal 7）**
   - 涉及文件：无（浏览器 DevTools 验证）
-  - 内容：375px 下截图，量节点名真实像素 ≥ 9.5px；灰底图名可读；四色语义在；"可以先看"在零数据态出现；`npm.cmd run build` 退出码 0
+  - 内容：375px 下截图，量节点名真实像素 ≥ 9.5px；灰底图名可读；四色语义在；"可以先看"在零数据态出现；**图谱可见高度 ≥ 600px（DP5 验收）**；`npm.cmd run build` 退出码 0
 
 ---
 
@@ -92,7 +104,8 @@
 | `src/components/nana/knowledge-map/knowledge-map-canvas.tsx` | 修改 | 加 `variant` prop，mobile 分支用固定坐标 + viewBox + 动态 nextLabel |
 | `src/components/nana/knowledge-map/knowledge-map-list-view.tsx` | 修改 | "下一个"组标题接收动态 `nextLabel` prop |
 | `src/components/nana/knowledge-map/knowledge-detail-card.tsx` | 修改 | 去关闭按钮 + 动态 nextLabel + 日期措辞 |
-| `src/app/nana/knowledge-map/page.tsx` | 修改 | viewMode 默认 graph；算 nextLabel 下传；legend 用动态标签 |
+| `src/app/nana/knowledge-map/page.tsx` | **重写布局** | **DP5：图谱独占主屏(flex-1)；RecentCasesList 改浮层入口；viewMode 默认 graph；nextLabel 下传；legend 动态标签** |
+| `src/components/nana/knowledge-map/recent-cases-list.tsx` | 修改 | **DP5：不再常驻上方；改为浮层/抽屉形态（接收 open/onClose 控制）；内部 CaseTagPanel 逻辑不变** |
 | `src/components/nana/shared/recap-bar.tsx` | 修改 | href 改 `/nana/session`，文案改"去做小检查" |
 | `src/components/nana/knowledge-map/knowledge-map-layout.ts` | **不动** | desktop 分支仍用，保留 |
 | `src/app/api/diagnosis/map/route.ts` | **不动** | 零 API 变更 |
@@ -104,11 +117,14 @@
 
 > 测试策略：纯展示层 + 配置数据，无状态机/图遍历逻辑。靠人工 375px 视口验收 + build。坐标配置可加一个"全部 48 节点都有坐标、无遗漏"的完整性校验（可选单测）。
 
+- [ ] **图谱独占主屏（DP5 核心验收）**：375px 视口下图谱可见高度 ≥ 600px；RecentCasesList 不常驻上方，改成浮层入口（角落小按钮或 pill），点击才展开
 - [ ] **375px 图谱节点名 1:1 可读**：DevTools 量像素，绿/蓝节点名 ≥ 9.5px 真实像素（非 CSS 声明值）
 - [ ] **灰底图 48 节点名可见**：未探索节点灰名 10px `#BDB3A3`，淡淡但肉眼可读
 - [ ] **四色语义保留**：绿 `#6BBF8A`（点亮）/ 蓝 `#93B8D6`（下一个或可以先看）/ 琥珀 `#E8A33D`（收过题外环）/ 灰 `#D9D1C3`（底图）
 - [ ] **"可以先看"在零数据态生效**：无 stable 节点时，canvas 蓝标签、list 组标题、detail card 提示、legend 四处都显示"可以先看"；有 stable 后恢复"下一个"
 - [ ] **琥珀环 additive 正确**：收过题的节点无论绿芯/蓝圈/灰芯都套琥珀外环（1:1 下清晰）
+- [ ] **题图预览只在浮层里**：点错题打开浮层才拉题图，不挤压地图画布（Stage 2.5 hotfix 的懒加载 + 缓存逻辑不变）
+- [ ] **节点详情底部卡片不挤压画布**：KnowledgeDetailCard 以 overlay 浮在图谱上方（absolute 底部），点遮罩关闭
 - [ ] **首页无重复入口**：RecapBar 跳 `/nana/session`，ActionCard 是唯一 `/nana/knowledge-map` 入口
 - [ ] **图谱是手机默认**：进 `/nana/knowledge-map` 默认看到图谱（不是列表）
 - [ ] **列表 toggle 仍可用**：切到列表，四组分组 + 点亮详情卡行为不变
@@ -284,6 +300,19 @@ const { width, height } = variant === "mobile"
 - **选项 A**：完整重写匹配 kcard
 - **选项 B**：保持现状
 - **推荐**：**轻量 restyle**（介于 A/B 之间）。当前卡片结构已 90% 对齐设计稿，只需删关闭按钮 + 日期措辞微调 + 接动态 nextLabel。不值得重写。
+
+### DP5（评审追加）：移动端知识地图页面布局 — 地图优先整屏 vs 当前结构？
+- **选项 A**：**地图优先、整屏画布**。RecentCasesList 改浮层入口（角落小按钮 / 底部 pill），点击以底部抽屉展开。图谱独占主屏（flex-1），375px 下可见高度 ≥ 600px。CaseTagPanel（含题图预览）只在浮层里。KnowledgeDetailCard 以 overlay 浮在图谱底部。
+- **选项 B**：保持当前结构（RecentCasesList 常驻上方）
+- **推荐 A**（评审已拍板）：当前 `page.tsx:155` 的 RecentCasesList 常驻上方占掉半屏，与设计稿整屏图谱严重不符。这是"图谱不可用"的**结构性根因**（比字号更根本——字号修好了也只有半屏空间）。DP5 是本轮最关键改动，任务 H 必须先于其他任务落地。
+- **具体要求**（评审 7 条）：
+  1. 手机进入 `/nana/knowledge-map` 第一视觉是图谱本身（接近设计稿整屏体验）
+  2. RecentCasesList 保留但不常驻上方
+  3. 题图预览只在点开某题后以底部抽屉/浮层展示
+  4. 节点详情继续用底部卡片（overlay），不挤压画布
+  5. 图谱模式是主体验，列表是 toggle 备选
+  6. 375px 验收时地图有完整可用区域（≥600px 高），不能只剩半屏
+  7. 不改 schema/API，只调整前端布局和交互
 
 ---
 
