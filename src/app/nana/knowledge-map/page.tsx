@@ -255,7 +255,7 @@ export default function KnowledgeMapPage() {
           </div>
 
           {/* ===== 主内容区 flex-1（图谱或列表独占）===== */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 px-0">
             {viewMode === "list" ? (
               <KnowledgeMapListView
                 nodes={mapData.nodes as KnowledgeNodeData[]}
