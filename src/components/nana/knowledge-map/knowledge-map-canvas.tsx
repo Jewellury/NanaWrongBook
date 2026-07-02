@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, memo } from "react";
 import {
   computeLayout,
   COL_WIDTH,
@@ -80,7 +80,7 @@ const LABEL_Y_OFFSET = -14; // "下一个" 标签在 circle 上方
 const COLLECTED_AMBER = "#E8A33D";
 
 // ── 组件 ──
-export default function KnowledgeMapCanvas({
+const KnowledgeMapCanvas = memo(function KnowledgeMapCanvas({
   nodes,
   edges,
   mainlines,
@@ -412,4 +412,6 @@ export default function KnowledgeMapCanvas({
       {renderedMainlineLabels}
     </svg>
   );
-}
+});
+
+export default KnowledgeMapCanvas;

@@ -9,7 +9,11 @@
  * - iconBgClass: 图标背景色 Tailwind class（如 "bg-green-100"）
  * - iconColorClass: 图标颜色 Tailwind class（如 "text-green-600"）
  */
-import Link from "next/link";
+
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 
 interface ActionCardProps {
@@ -29,14 +33,32 @@ export function ActionCard({
   iconBgClass = "bg-green-100",
   iconColorClass = "text-green-600",
 }: ActionCardProps) {
+  const router = useRouter();
+  const [pressed, setPressed] = useState(false);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      if (pressed) return;
+      setPressed(true);
+      router.push(href);
+    },
+    [href, pressed, router],
+  );
+
   return (
-    <Link
+    <a
       href={href}
-      className="block rounded-2xl border border-[#E8E0D4] bg-white p-5 shadow-sm transition-shadow hover:shadow-md active:scale-[0.98]"
+      onClick={handleClick}
+      className={
+        pressed
+          ? "block rounded-2xl border border-[#B4905A] bg-[#F5EFE6] p-5 opacity-90 scale-[0.97] transition-all duration-150"
+          : "block rounded-2xl border border-[#E8E0D4] bg-white p-5 shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+      }
     >
       <div className="flex items-start gap-4">
         <div
-          className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${iconBgClass}`}
+          className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${pressed ? "opacity-80" : ""} ${iconBgClass}`}
         >
           <Icon className={`size-6 ${iconColorClass}`} />
         </div>
@@ -47,6 +69,6 @@ export function ActionCard({
           </p>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

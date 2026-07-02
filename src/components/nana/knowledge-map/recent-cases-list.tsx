@@ -43,6 +43,25 @@ function formatDate(iso: string): string {
 // 标签 (listCaseTags) 不缓存——可经人工挂载变更，每次拉新。
 const caseDetailCache = new Map<string, CaseResponse>();
 
+// ─── 题图 Blob URL 缓存（Round 1 perf · P1-4）───────────────
+// base64 <img> 每次 mount 浏览器都重新解码 100-200ms。
+// 转成 blob: URL 后，同 URL 重 mount 无需重新解码。
+const blobUrlCache = new Map<string, string>();
+
+function base64ToBlobUrl(base64: string): string {
+  const comma = base64.indexOf(",");
+  const header = comma > 0 ? base64.slice(0, comma) : "";
+  const mime = (header.match(/:(.*?);/) ?? [])[1] ?? "image/jpeg";
+  const raw = comma > 0 ? base64.slice(comma + 1) : base64;
+  const bytes = atob(raw);
+  const buf = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    buf[i] = bytes.charCodeAt(i);
+  }
+  const blob = new Blob([buf], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
 /**
  * 取 case 详情（带内存缓存）。命中直接返回，不命中才请求并写入缓存。
  */
@@ -57,6 +76,7 @@ export async function loadCaseDetail(caseId: string): Promise<CaseResponse> {
 /** 仅供单元测试清缓存使用 */
 export function __clearCaseDetailCacheForTests(): void {
   caseDetailCache.clear();
+  blobUrlCache.clear();
 }
 
 interface RecentCasesListProps {
@@ -291,7 +311,14 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
       if (imgs.length === 0) {
         setImageState("none");
       } else {
-        setImageState({ content: imgs[0].content });
+        const existing = blobUrlCache.get(caseId);
+        if (existing) {
+          setImageState({ content: existing });
+        } else {
+          const blobUrl = base64ToBlobUrl(imgs[0].content);
+          blobUrlCache.set(caseId, blobUrl);
+          setImageState({ content: blobUrl });
+        }
       }
     };
     const cached = caseDetailCache.get(caseId);
