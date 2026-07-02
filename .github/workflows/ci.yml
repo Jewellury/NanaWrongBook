@@ -17,6 +17,8 @@ jobs:
     name: Unit Tests
     # 只在非 tag push 时运行测试
     if: "!startsWith(github.ref, 'refs/tags/')"
+    env:
+      DATABASE_URL: "file:./data/test/test.db"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Integration Tests
     needs: unit-test
+    env:
+      DATABASE_URL: "file:./data/test/test.db"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
