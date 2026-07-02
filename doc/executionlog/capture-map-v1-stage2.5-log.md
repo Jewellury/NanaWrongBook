@@ -178,7 +178,7 @@
 
 ## 完成状态
 - [x] 所有任务完成（1–4）
-- [x] 代码已提交（commit: 见下方 Git 收口，on dev，未 push）
+- [x] 代码已提交（commit: `2c317d1` on dev，未 push）
 - [x] 本地 `npm.cmd run build` 通过（✓ Compiled successfully）
 - [x] 本地相关窄范围测试已运行：nana 套件 **11 文件 105 测试全通过**（`DATABASE_URL=file:./data/test/test.db`，guard-db 白名单内）
 - [ ] 测试容器门禁通过（二选一）：
