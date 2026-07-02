@@ -42,7 +42,9 @@ export default function KnowledgeDetailCard({
 }: Props) {
   const isStable = node.status === "stable";
   const isFrontier = node.isFrontier;
-  const isUnexplored = !isStable && !isFrontier;
+  const hasEvidence = caseEvidenceCount > 0;
+  const isCollected = !isStable && !isFrontier && hasEvidence;
+  const isUnexplored = !isStable && !isFrontier && !hasEvidence;
 
   // 格式化日期："X 月 X 日"
   let formattedDate: string | null = null;
@@ -93,6 +95,9 @@ export default function KnowledgeDetailCard({
           {isFrontier && (
             <span className="inline-block h-3.5 w-3.5 flex-none rounded-full bg-[#F2F8FC] border-2 border-dashed border-[#93B8D6]" />
           )}
+          {isCollected && (
+            <span className="inline-block h-3 w-3 flex-none rounded-full bg-[#D9D1C3] ring-2 ring-[#E8A33D]" />
+          )}
           {isUnexplored && (
             <span className="inline-block h-2.5 w-2.5 flex-none rounded-full bg-[#D9D1C3]" />
           )}
@@ -103,6 +108,13 @@ export default function KnowledgeDetailCard({
         {isFrontier && (
           <p className="mt-2 text-sm font-medium text-[#5E86A8]">
             {nextLabel}：{node.name}
+          </p>
+        )}
+
+        {/* 收过题提示 */}
+        {isCollected && (
+          <p className="mt-2 text-sm font-medium text-[#B8860B]">
+            收过 {caseEvidenceCount} 道错题，还没测过
           </p>
         )}
 

@@ -108,9 +108,11 @@ export default function KnowledgeMapPage() {
 
       const isStable = node.status === "stable";
       const isFrontier = mapData.learningFrontier.includes(nodeId);
+      const hasEvidence = (node.caseEvidenceCount ?? 0) > 0;
 
-      // 未探索节点点击不弹出
-      if (!isStable && !isFrontier) return;
+      // stable / frontier / 收过题 的节点点击弹出详情卡
+      // 纯未探索节点（没测过、没收过题）点击不弹出
+      if (!isStable && !isFrontier && !hasEvidence) return;
 
       setSelectedNodeId(nodeId);
     },
