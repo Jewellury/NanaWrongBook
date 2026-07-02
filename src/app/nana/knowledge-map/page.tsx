@@ -21,6 +21,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import KnowledgeMapCanvas from "@/components/nana/knowledge-map/knowledge-map-canvas";
+import KnowledgeMapListView from "@/components/nana/knowledge-map/knowledge-map-list-view";
 import KnowledgeDetailCard from "@/components/nana/knowledge-map/knowledge-detail-card";
 import { RecentCasesList } from "@/components/nana/knowledge-map/recent-cases-list";
 import type { KnowledgeNodeData, EdgeData, MainlineData } from "@/components/nana/knowledge-map/knowledge-map-canvas";
@@ -59,6 +60,8 @@ export default function KnowledgeMapPage() {
   const [mapData, setMapData] = useState<MapResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  // 视图模式：列表(手机默认，可读) | 图谱(SVG 全景)。默认 list (DP1)
+  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
 
   // 空状态判定：少于 2 个节点有状态记录，且没有任何 collected（收过题）节点
   // → 放宽：只挂过题、没测过的孩子也能看到画布 + 琥珀环（修断点 2）
@@ -223,17 +226,56 @@ export default function KnowledgeMapPage() {
         </div>
       )}
 
-      {/* ===== SVG 画布容器 ===== */}
+      {/* ===== 视图切换 segmented control + 画布区（非空态、非加载时显示）===== */}
       {!loading && mapData && !isEmpty && (
-        <div className="flex-1 overflow-auto px-2 pb-6">
-          <KnowledgeMapCanvas
-            nodes={mapData.nodes as KnowledgeNodeData[]}
-            edges={mapData.edges}
-            mainlines={mapData.mainlines}
-            frontier={mapData.learningFrontier}
-            onNodeClick={handleNodeClick}
-          />
-        </div>
+        <>
+          {/* segmented control: 列表 | 图谱 (DP3) */}
+          <div className="flex justify-center px-4 py-2">
+            <div className="inline-flex rounded-full bg-[#EFE8DD] p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={
+                  viewMode === "list"
+                    ? "rounded-full bg-white px-4 py-1 font-medium text-[#403A33]"
+                    : "px-4 py-1 text-[#8C857B]"
+                }
+              >
+                列表
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("graph")}
+                className={
+                  viewMode === "graph"
+                    ? "rounded-full bg-white px-4 py-1 font-medium text-[#403A33]"
+                    : "px-4 py-1 text-[#8C857B]"
+                }
+              >
+                图谱
+              </button>
+            </div>
+          </div>
+
+          {/* 画布区：list → KnowledgeMapListView; graph → KnowledgeMapCanvas */}
+          {viewMode === "list" ? (
+            <KnowledgeMapListView
+              nodes={mapData.nodes as KnowledgeNodeData[]}
+              frontier={mapData.learningFrontier}
+              onNodeClick={handleNodeClick}
+            />
+          ) : (
+            <div className="flex-1 overflow-auto px-2 pb-6">
+              <KnowledgeMapCanvas
+                nodes={mapData.nodes as KnowledgeNodeData[]}
+                edges={mapData.edges}
+                mainlines={mapData.mainlines}
+                frontier={mapData.learningFrontier}
+                onNodeClick={handleNodeClick}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* ===== 节点详情卡 ===== */}
