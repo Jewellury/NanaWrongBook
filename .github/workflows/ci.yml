@@ -57,6 +57,12 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Setup test database
+        run: |
+          mkdir -p data/test
+          npx prisma db push
+          npx tsx prisma/seed_graph.ts
+
       - name: Run integration tests
         run: npm run test:integration
 
