@@ -47,4 +47,27 @@
 ## 四、建议时机
 M3c 端到端跑通 + 归因流程接通 + 攒 2-4 周真实使用数据后，单开一轮"运营回路"。届时数据已足、且有真实使用模式可参照，比现在凭空设计仪表盘准。
 
-> 关联：[TECH_PLAN_v2.md](TECH_PLAN_v2.md)（§诊断/追踪）、[OPS_handbook.md](OPS_handbook.md)（医生模式/P4）、配题长尾（M3_peiti_* 系列工单）。
+---
+
+## 五、部署后自动化 smoke check（2026-07-02 事故驱动）
+
+> **触发**：2026-07-02 生产事故——重新部署后 `KnowledgeNode=0`（图谱种子丢失），知识地图空白、标签面板不可用。根因 Dockerfile 只跑 `prisma db seed`（admin），不跑 `seed_graph.ts`（图谱）。已手动修复，但靠人工记忆不可靠。
+
+**后续任务**：实现部署后自动化 smoke check 脚本，替代人工逐项查。
+
+| 检查项 | 期望 | 失败动作 |
+|--------|------|----------|
+| `KnowledgeNode.count()` | ≥ 48 | 报警 + 停止验收（图谱种子丢失） |
+| `KnowledgeEdge.count()` | ≥ 36 | 报警 |
+| `Mainline.count()` | ≥ 10 | 报警 |
+| 关键 API 可达（`/api/diagnosis/map` 返回 nodes） | nodes.length > 0 | 报警 |
+| `Case`/`Artifact` 用户数据未丢 | 部署前后 count 一致 | 报警（数据丢失） |
+
+**实现方向**：
+- 独立脚本 `scripts/post-deploy-smoke-check.ts`，部署后 SSH 跑（不进 Dockerfile build）
+- 返回非 0 + 可读告警信息；接邮件/IM 通知（后续）
+- **不**把 `seed_graph.ts` 放进 Dockerfile build——graph bootstrap 应是显式、幂等、可审计的独立步骤，不是 build 时副作用
+
+**关联**：[doc/00_CURRENT.md](../00_CURRENT.md) 设计债 #5、[deployment-guide.md](../guide/deployment-guide.md) §4 部署验证清单。
+
+> 关联：[TECH_PLAN_v2.md](../reference/TECH_PLAN_v2.md)（§诊断/追踪）、[OPS_handbook.md](../reference/OPS_handbook.md)（医生模式/P4）、配题长尾（M3_peiti_* 系列工单）。

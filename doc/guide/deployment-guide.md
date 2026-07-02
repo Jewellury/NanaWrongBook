@@ -188,6 +188,14 @@ docker compose -f docker-compose.prod.yml up -d
 
 # 6. 验证
 docker logs --tail 80 wrong-notebook
+
+# 7. 图谱 smoke check（防 2026-07-02 图谱缺失事故复发）
+#    生产库必须有种子图谱数据，否则知识地图空白、标签面板不可用
+sqlite3 /opt/nana/data/dev.db "SELECT COUNT(*) FROM KnowledgeNode;"
+#    期望 ≥ 48。若为 0 → 立即停止验收、报警：
+#    根因通常是重新部署丢失图谱种子（Dockerfile 只 seed admin 不 seed graph）。
+#    修复：在 wrong-notebook 容器内跑 seed_graph.ts（esbuild 打包成 bundle.js → docker cp → node 执行）。
+#    详见 doc/00_CURRENT.md 设计债 #5。
 ```
 
 ---
