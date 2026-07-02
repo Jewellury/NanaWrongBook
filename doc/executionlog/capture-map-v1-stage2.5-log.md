@@ -75,7 +75,7 @@
 
 ## 完成状态
 - [x] 所有任务完成（A–E）
-- [ ] 代码已提交（commit: 待提交——本日志随代码一起提交）
+- [x] 代码已提交（commit: `c8c819d` on dev，未 push）
 - [x] 本地 `npm.cmd run build` 通过（✓ Compiled successfully in 12.2s）
 - [x] 本地相关窄范围测试已运行：nana 套件 9 文件 101 测试全通过（`DATABASE_URL=file:./data/test/test.db`，guard-db 白名单内）
 - [ ] 测试容器门禁通过（二选一）：
