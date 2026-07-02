@@ -20,7 +20,6 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Camera, Map, ClipboardCheck } from "lucide-react";
 import { ActionCard } from "@/components/nana/shared/action-card";
-import { RecapBar } from "@/components/nana/shared/recap-bar";
 import { EmptyHint } from "@/components/nana/shared/empty-hint";
 
 interface MapNode {
@@ -120,7 +119,7 @@ export default function NanaPage() {
         />
       </div>
 
-      {/* 有记录 / 空状态轻提示（移到三卡片下方） */}
+      {/* 有记录 / 空状态轻提示（三卡片下方） */}
       <div className="mt-8">
         {loading ? (
           /* 加载中骨架 */
@@ -129,12 +128,13 @@ export default function NanaPage() {
             <div className="mt-2 h-4 w-1/2 rounded bg-[#E8E0D4]" />
           </div>
         ) : hasRecords ? (
-          <RecapBar
-            latestNodeName={latestLitNode?.name ?? ""}
-            totalLitCount={litNodes.length}
-            collectedNodeCount={collectedNodes.length}
-            hasLitNodes={litNodes.length > 0}
-          />
+          /* 有记录时显示轻装饰提示（RecapBar 已去掉——三张 ActionCard 足够引导，
+             RecapBar 纯文字提示不可点反而让人困惑） */
+          <div className="rounded-2xl border border-[#E8E0D4] bg-white/60 p-4 text-center">
+            <p className="text-sm text-[#8C857B]">
+              ✦ 继续拍题或做小检查，地图会慢慢亮起来
+            </p>
+          </div>
         ) : (
           <EmptyHint />
         )}

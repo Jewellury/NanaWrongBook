@@ -179,32 +179,20 @@ export default function KnowledgeMapCanvas({
     });
   }, [edges, pos, nodes, frontierSet, variant]);
 
-  // ── 灰底图渲染（mobile 模式：所有 48 节点灰色底图 + 边缘簇装饰）──
+  // ── 灰底图渲染（mobile 模式：所有 48 节点灰色底图圆 + 边缘簇装饰）──
+  // 注意：底图只画圆点，不画节点名——节点名由 renderedNodes 层按状态着色统一画。
+  // 否则未探索节点的灰名会被画两遍（底图灰名 + 节点层灰名 = 重影）。
   const renderedBaseMap = useMemo(() => {
     if (variant !== "mobile") return null;
 
     return (
       <>
-        {/* 所有 48 节点灰色底图圆 + 名 */}
+        {/* 所有 48 节点灰色底图圆（只画圆，名字由上层 renderedNodes 负责） */}
         <g fill="#D9D1C3">
           {nodes.map((node) => {
             const c = getMobileCoord(node.nodeId);
             return (
               <circle key={`base-${node.nodeId}`} cx={c.x} cy={c.y} r={6} />
-            );
-          })}
-        </g>
-        <g fontSize={10} fill="#BDB3A3" textAnchor="middle">
-          {nodes.map((node) => {
-            const c = getMobileCoord(node.nodeId);
-            return (
-              <text
-                key={`base-t-${node.nodeId}`}
-                x={c.x}
-                y={c.y + 16}
-              >
-                {node.name}
-              </text>
             );
           })}
         </g>
@@ -216,7 +204,7 @@ export default function KnowledgeMapCanvas({
           ))}
         </g>
 
-        {/* 边缘簇标签 */}
+        {/* 边缘簇标签（只有簇名，不是每个节点的名字） */}
         <g fontSize={10} fill="#BDB3A3" textAnchor="middle">
           {CLUSTER_LABELS.map((cl) => (
             <text key={`cl-${cl.name}`} x={cl.x} y={cl.y}>
