@@ -74,27 +74,23 @@ export async function compressImage(
 }
 
 /**
- * 检查并压缩图片（如果需要）
+ * 压缩图片（始终压缩）。
+ *
+ * Stage 2.5 修复（见 doc/auditlog/stage2.5-followup-rootcause-2026-07-02.md §问题1 根因 A）：
+ * 旧实现用 `file.size > 1MB` 判断是否压缩。手机拍照的原始 JPEG/HEIC 往往已 < 1MB，
+ * 走"不压缩"分支直接 base64 入库；但 base64 编码膨胀 ~33%，1MB 原图 → ~1.33MB 存储/传输，
+ * 实测生产库题图全是 ~1.2MB base64，手机 4G 加载需数秒。
+ *
+ * 现统一压缩：所有图片都过一遍 compressImage（maxWidth 1280、quality 0.7、≤1MB 上限）。
+ * 题图是拍一道数学题，不需要 4K 细节，1280px 足够清晰。
+ *
+ * 注意：只影响**新拍**的题图。已入库的老图不会被自动压缩（需迁移脚本，本轮不做）。
+ *
  * @param file 图片文件
- * @returns Base64 字符串
+ * @returns 压缩后的 Base64 字符串
  */
 export async function processImageFile(file: File): Promise<string> {
     const fileSizeMB = file.size / 1024 / 1024;
-    const threshold = 1; // 1MB 阈值
-
-    console.log(`文件大小: ${fileSizeMB.toFixed(2)}MB`);
-
-    if (fileSizeMB > threshold) {
-        console.log('文件超过阈值，开始压缩...');
-        return await compressImage(file, threshold);
-    } else {
-        console.log('文件大小合适，无需压缩');
-        // 直接返回 Base64
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
+    console.log(`文件大小: ${fileSizeMB.toFixed(2)}MB，开始压缩（maxWidth 1280 / quality 0.7）...`);
+    return await compressImage(file, 1 /* maxSizeMB 上限 */, 1280 /* maxWidth */, 0.7 /* quality */);
 }

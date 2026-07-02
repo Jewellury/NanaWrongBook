@@ -28,12 +28,35 @@ import {
   getCase,
   type CaseListItem,
   type CaseKnowledgeTagResponse,
+  type CaseResponse,
 } from "@/lib/nana/nana-api-client";
 
 // ─── 日期格式化：ISO → "7月1日" ───────────────────
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+// ─── case 详情缓存（Stage 2.5 修复 · 根因 B）───────────────
+// 题图是 ~1MB base64，关闭面板再点同一道题不应重拉。
+// 本轮 case 创建后不可变（无编辑端点），缓存按 caseId 永久驻留至页面会话结束；
+// 标签 (listCaseTags) 不缓存——可经人工挂载变更，每次拉新。
+const caseDetailCache = new Map<string, CaseResponse>();
+
+/**
+ * 取 case 详情（带内存缓存）。命中直接返回，不命中才请求并写入缓存。
+ */
+export async function loadCaseDetail(caseId: string): Promise<CaseResponse> {
+  const cached = caseDetailCache.get(caseId);
+  if (cached) return cached;
+  const data = await getCase(caseId);
+  caseDetailCache.set(caseId, data);
+  return data;
+}
+
+/** 仅供单元测试清缓存使用 */
+export function __clearCaseDetailCacheForTests(): void {
+  caseDetailCache.clear();
 }
 
 interface RecentCasesListProps {
@@ -206,22 +229,31 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
       });
 
     // 题图（getCase 已带 G1 归属校验：findFirst studentId）
-    getCase(caseId)
-      .then((data) => {
-        if (cancelled) return;
-        // 从 artifacts 里找 question_image（seq 最小那条，防万一有多张）
-        const imgs = (data.artifacts ?? [])
-          .filter((a) => a.type === "question_image")
-          .sort((a, b) => a.seq - b.seq);
-        if (imgs.length === 0) {
-          setImageState("none");
-        } else {
-          setImageState({ content: imgs[0].content });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setImageState("failed");
-      });
+    // 先查内存缓存：关闭面板再点同一道题不重拉 ~1MB base64（Stage 2.5 根因 B）
+    const applyCase = (data: CaseResponse) => {
+      // 从 artifacts 里找 question_image（seq 最小那条，防万一有多张）
+      const imgs = (data.artifacts ?? [])
+        .filter((a) => a.type === "question_image")
+        .sort((a, b) => a.seq - b.seq);
+      if (imgs.length === 0) {
+        setImageState("none");
+      } else {
+        setImageState({ content: imgs[0].content });
+      }
+    };
+    const cached = caseDetailCache.get(caseId);
+    if (cached) {
+      applyCase(cached);
+    } else {
+      loadCaseDetail(caseId)
+        .then((data) => {
+          if (cancelled) return;
+          applyCase(data);
+        })
+        .catch(() => {
+          if (cancelled) setImageState("failed");
+        });
+    }
 
     return () => {
       cancelled = true;
@@ -261,7 +293,8 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
     <div className="mt-3 rounded-2xl border border-[#E8E0D4] bg-white p-3">
       {/* 题图懒加载（面板顶部；与标签独立，失败不拖标签 —— 铁律 6） */}
       {imageState === null && (
-        <div className="mb-3 flex h-[120px] animate-pulse items-center justify-center rounded-xl bg-[#F2EDE3]">
+        <div className="mb-3 flex h-[200px] animate-pulse flex-col items-center justify-center gap-2 rounded-xl bg-[#F2EDE3]">
+          <ImageIcon className="size-8 text-[#B8AFA6]" />
           <span className="text-[12px] text-[#B8AFA6]">题图加载中…</span>
         </div>
       )}

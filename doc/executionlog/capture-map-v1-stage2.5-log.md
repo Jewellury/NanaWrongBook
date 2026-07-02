@@ -94,3 +94,102 @@
 - `prisma/schema.prisma` 未修改。
 - 未写 `StudentNodeState`（绿色点亮仍只走测评）。
 - 仅新增 `CaseKnowledgeTag.groupBy` **读** 查询（Stage 2 已有表），无新 model、无新迁移。
+
+---
+
+# Stage 2.5 跟进 · 题图加载慢修复（3 改动 hotfix）· 执行日志
+
+> 关联根因: doc/auditlog/stage2.5-followup-rootcause-2026-07-02.md §问题1（只修问题 1，不动问题 2）
+> 时间: 2026-07-02 (execute-agent)
+> 范围: 严格 3 个最小改动——压缩阈值修复 + case 详情缓存 + 加载骨架。不触 schema、不动列表 API base64 纪律、不碰问题 2（地图可读性）。
+
+## 执行记录
+
+### 任务 1 — processImageFile 始终压缩（根因 A）
+- 做了什么:
+  - 旧逻辑：`if (fileSizeMB > 1) compress else 直接 base64`。手机 HEIC/高压缩 JPEG 原图常 < 1MB，走"不压缩"分支；但 base64 编码膨胀 ~33%，1MB 原图 → ~1.33MB 入库/传输，实测生产库 4 张题图全是 ~1.2MB。
+  - 修复：删除"小文件直通"分支，`processImageFile` 一律调用 `compressImage(file, 1 /*maxSizeMB 上限*/, 1280 /*maxWidth*/, 0.7 /*quality*/)`。`compressImage` 内部已有"逐步降质量直到 ≤ maxSizeMB"逻辑，保持不变。
+  - maxWidth 由 1920 降到 1280：题图是拍一道数学题，不需要 4K 细节。
+  - 调用方签名/返回类型不变（3 处调用：`app/page.tsx`、`app/notebooks/[id]/add/page.tsx`、`components/nana/capture/question-image-capture.tsx` 均只 `await processImageFile(file)` 取 base64，行为兼容）。
+- 涉及文件: `src/lib/image-utils.ts`（仅 `processImageFile`）
+- 结果: ✅ 完成
+
+### 任务 2 — CaseTagPanel case 详情缓存（根因 B）
+- 做了什么:
+  - 新增模块级 `caseDetailCache: Map<string, CaseResponse>` + 导出 `loadCaseDetail(caseId)`（命中直接返回，未命中才 `getCase` 并写缓存）+ `__clearCaseDetailCacheForTests`（仅测试清缓存用）。
+  - `CaseTagPanel` 的题图加载分支：先查 `caseDetailCache.get(caseId)`，命中走 `applyCase(cached)`（瞬时、无网络）；未命中才 `loadCaseDetail(caseId)`。同一道题关闭面板再点不再重拉 ~1MB base64。
+  - **标签（listCaseTags）不缓存**——可经人工挂载变更，每次拉新（保持简单；case 详情本轮不可变，故只缓存详情）。
+  - 失败语义不变（铁律 6）：未命中请求失败仍 `setImageState("failed")`，不假装成功。
+- 涉及文件: `src/components/nana/knowledge-map/recent-cases-list.tsx`
+- 结果: ✅ 完成
+
+### 任务 3 — 加载骨架（根因 C）
+- 做了什么:
+  - 原加载态是 120px 高的细条 + 小字"题图加载中…"，1.2MB 在 4G 下要数秒，体感"卡死/空白"。
+  - 改为 200px 高（与图区 `max-h-[200px]` 对齐）的 `animate-pulse` 占位盒 + 居中 `ImageIcon` 图标 + "题图加载中…"文字。骨架成为主视觉，用户立即看到"这里在加载图"，而非空白。
+- 涉及文件: `src/components/nana/knowledge-map/recent-cases-list.tsx`
+- 结果: ✅ 完成
+
+### 任务 4 — 测试 + build
+- 做了什么:
+  - 新增 `src/__tests__/unit/nana/image-utils.test.ts`（2 测试）：mock `HTMLCanvasElement.getContext/toDataURL` + 假 `Image`（写 src 异步触发 onload），断言 100KB / 500KB 小文件都返回压缩输出（`canvas.toDataURL` 被调用），即走了压缩路径而非直通。验证根因 A 修复。
+  - 新增 `src/__tests__/unit/nana/case-detail-cache.test.ts`（2 测试）：mock `fetch`，断言同一 caseId 第二次命中缓存（fetch 只调用 1 次）；不同 caseId 各请求一次、回头取缓存不再请求。验证根因 B 修复。
+  - 窄范围回归：`src/__tests__/unit/nana` + `src/__tests__/integration/nana` → **11 文件 105 测试全通过**（基线 9 文件 101 测试，+2 文件 +4 测试，零回归）。
+  - `npm.cmd run build` 通过（✓ Compiled successfully）。
+- 涉及文件: `src/__tests__/unit/nana/image-utils.test.ts`、`src/__tests__/unit/nana/case-detail-cache.test.ts`（均新增）
+- 结果: ✅ 完成
+
+## 偏离记录
+> 记录所有在执行中对计划做的微调。审计代理会逐条复核。
+
+| # | 计划原内容 | 实际做了什么 | 原因 | 是否影响验收标准 |
+|---|-----------|-------------|------|:--:|
+| 1 | Change 2 直接在 CaseTagPanel 内联缓存逻辑 | 抽成模块级导出函数 `loadCaseDetail(caseId)` + `caseDetailCache` + `__clearCaseDetailCacheForTests` | 便于单元测试直接验证缓存契约（项目未装 @testing-library/react，无法渲染组件）；抽函数不改语义，是落地手段 | 否 |
+| 2 | Change 2 用 `Map<caseId, CaseResponse>` | 同（模块级 `Map`），命名 `caseDetailCache` | 与计划一致，仅命名 | 否 |
+| 3 | image-utils 测试"mock canvas/FileReader" | mock 了 `getContext`/`toDataURL` + 假 `Image`（写 src 触发 onload），未 mock FileReader（jsdom 原生支持） | jsdom 的 FileReader 可用，无需 mock；canvas/Image 必须补丁否则 `getContext` 返回 null | 否（仍是行为级断言：小文件走压缩路径） |
+| 4 | 计划未提 `run-nana-tests.cjs` | 临时新建 launcher 脚本设 `DATABASE_URL=file:./data/test/test.db` 跑 vitest，**测完已删除** | 本机 bash 中继不支持 `export`/inline env（与上一轮偏离 #5 同根因）；guard-db 白名单要求 DATABASE_URL 设置 | 否（临时工具，已删除，不入库） |
+
+## 上游文件修改
+| 文件 | 改了什么 | 原因 |
+|------|----------|------|
+| `src/lib/image-utils.ts` | 改 `processImageFile`：删 size 阈值分支，统一压缩 | 这是上游 wrong-notebook 的图片工具函数。3 处调用方（含上游 `app/page.tsx`、`app/notebooks/[id]/add/page.tsx`）签名/返回类型不变，仅"小文件也压缩"行为变化。属本轮 bug 修复必需的最小增量，未重排原结构、`compressImage` 函数体未动。⚠️上游文件修改 |
+
+## 遇到的问题
+| 问题 | 解决方式 |
+|------|----------|
+| 本机 bash 中继报 `execvpe(/bin/bash) failed`，不支持 `export`/`VAR=val cmd` 语法 | 临时 launcher 脚本（子进程设 env 跑 vitest CLI），已删除 |
+| `npx eslint <file>` 单独跑同样触发中继错误 | 改用 `npm.cmd run lint`（重定向到临时文件 + grep 复核），已确认新增/改动文件不引入新 lint 错误 |
+| Docker Desktop Linux engine 不健康 | 本地 Docker 不可用，测试容器门禁交由 GitHub Actions（与上轮一致） |
+
+## 范围边界确认（铁律：不扩大范围）
+- ✅ 只修问题 1（题图加载慢）。**未动**问题 2（地图手机可读性）——问题 2 走 plan-agent，本轮不碰。
+- ✅ `prisma/schema.prisma` 未修改，无新迁移。
+- ✅ 列表 API base64 纪律不变：`GET /api/nana/cases` 仍只返回 `hasImage` 标志，不返回 base64。
+- ✅ 未改 map API、未改 case 创建/列表端点。
+
+## ⚠️ 旧图不会被自动压缩（重要限制）
+- 本次压缩修复**只对新拍的题图生效**（经 `processImageFile` 入库的新图会被压到 ~200-400KB）。
+- 生产库已有的 4 张 ~1.2MB base64 老图**保持原样**，不会被自动压缩。要压缩老图需另写后台迁移脚本（读 Artifact → 解码 → 重压缩 → 回写），**本轮不做，已登记为后续优化**。
+- 缓存（任务 2）对老图同样有效：同一道老题再点不重拉，但首次仍拉 1.2MB。等老图被新图自然替换前，单次加载仍偏慢（骨架 + 缓存缓解体感）。
+
+## 措辞合规自检（OPS §4）
+- 新增/改动用户可见文案仅"题图加载中…"（保留）——**不出现** 诊断/薄弱/得分/掌握/失败。
+- 代码注释中出现"诊断/失败"均为内部技术说明（根因引用、铁律 6 错误处理说明），非用户可见文案。
+
+## 完成状态
+- [x] 所有任务完成（1–4）
+- [x] 代码已提交（commit: 见下方 Git 收口，on dev，未 push）
+- [x] 本地 `npm.cmd run build` 通过（✓ Compiled successfully）
+- [x] 本地相关窄范围测试已运行：nana 套件 **11 文件 105 测试全通过**（`DATABASE_URL=file:./data/test/test.db`，guard-db 白名单内）
+- [ ] 测试容器门禁通过（二选一）：
+  - 本地 Docker 可用时：本地 `docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test` 退出码 0
+  - 本地 Docker 不可用时：执行日志写明"本地 Docker Desktop 不可用（Linux engine 不健康），测试容器本地未跑；测试容器门禁交由 GitHub Actions 执行" ✅ 本项
+- [ ] GitHub Actions 测试容器通过后，才允许部署
+- [x] 确认测试在安全路径运行：本地用 test.db（白名单 `file:./data/test/test.db`），`./data/dev.db` 未被触碰（mtime 仍为 2026-06-29 09:50，与上轮基线一致）
+- [x] 可进入审计阶段
+
+## Git 收口
+- 分支：`dev`（未 push）。
+- 工作区另有一个**非本次产出**的未跟踪文件 `doc/plan/knowledge-map-mobile-dualmode-plan.md`（问题 2 的 plan-agent 产物），不纳入本次提交，保持各自独立 commit。
+- 改动文件：`src/lib/image-utils.ts`、`src/components/nana/knowledge-map/recent-cases-list.tsx`、新增 `src/__tests__/unit/nana/image-utils.test.ts`、`src/__tests__/unit/nana/case-detail-cache.test.ts`、本日志。
+- commit message：`fix(nana): 题图加载慢——始终压缩+详情缓存+加载骨架（3 改动 hotfix，仅问题1）`
