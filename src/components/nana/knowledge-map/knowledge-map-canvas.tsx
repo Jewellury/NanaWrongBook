@@ -34,6 +34,8 @@ export interface KnowledgeNodeData {
   sampleItem: string | null;
   teachingNotes: string | null;
   lastEvidence: string | null;
+  /** collected 弱标记计数（CaseKnowledgeTag 数量，0 = 没收过题）—— 与 status 正交 */
+  caseEvidenceCount: number;
 }
 
 export interface EdgeData {
@@ -64,6 +66,9 @@ const OTHER_R = 6;
 const FONT_SIZE = 9.5;
 const TEXT_Y_OFFSET = 16; // 节点名在 circle 下方
 const LABEL_Y_OFFSET = -14; // "下一个" 标签在 circle 上方
+
+// ── collected 弱标记：琥珀色外环（additive，叠加在原三态渲染之上，不替换）──
+const COLLECTED_AMBER = "#E8A33D";
 
 // ── 组件 ──
 export default function KnowledgeMapCanvas({
@@ -167,6 +172,17 @@ export default function KnowledgeMapCanvas({
             onClick={() => onNodeClick(node.nodeId)}
             style={{ cursor: "pointer" }}
           >
+            {/* collected 琥珀外环（additive：绿芯 + 琥珀环 = 已点亮又收过题） */}
+            {node.caseEvidenceCount > 0 && (
+              <circle
+                cx={x}
+                cy={y}
+                r={NODE_R + 5}
+                fill="none"
+                stroke={COLLECTED_AMBER}
+                strokeWidth={2}
+              />
+            )}
             {/* 外层半透明光晕 */}
             <circle
               cx={x}
@@ -212,6 +228,17 @@ export default function KnowledgeMapCanvas({
             onClick={() => onNodeClick(node.nodeId)}
             style={{ cursor: "pointer" }}
           >
+            {/* collected 琥珀外环（additive：下一个 + 琥珀环 = 下一个且收过题） */}
+            {node.caseEvidenceCount > 0 && (
+              <circle
+                cx={x}
+                cy={y}
+                r={FRONTIER_R + 4}
+                fill="none"
+                stroke={COLLECTED_AMBER}
+                strokeWidth={2}
+              />
+            )}
             {/* "下一个" 标签 */}
             <text
               x={x}
@@ -255,6 +282,17 @@ export default function KnowledgeMapCanvas({
           onClick={() => onNodeClick(node.nodeId)}
           style={{ cursor: "pointer" }}
         >
+          {/* collected 琥珀外环（additive：灰芯 + 琥珀环 = 收过题但还没测 —— 断点 2 核心反馈） */}
+          {node.caseEvidenceCount > 0 && (
+            <circle
+              cx={x}
+              cy={y}
+              r={OTHER_R + 5}
+              fill="none"
+              stroke={COLLECTED_AMBER}
+              strokeWidth={2}
+            />
+          )}
           <circle cx={x} cy={y} r={OTHER_R} fill="#D9D1C3" />
           <text
             x={x}

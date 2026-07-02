@@ -36,6 +36,8 @@ interface MapNode {
   sampleItem: string | null;
   teachingNotes: string | null;
   lastEvidence: string | null;
+  /** collected 弱标记计数（CaseKnowledgeTag 数）—— 与 status 正交 */
+  caseEvidenceCount: number;
 }
 
 interface MapResponse {
@@ -58,11 +60,15 @@ export default function KnowledgeMapPage() {
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // 空状态判定：少于 2 个节点有状态记录
+  // 空状态判定：少于 2 个节点有状态记录，且没有任何 collected（收过题）节点
+  // → 放宽：只挂过题、没测过的孩子也能看到画布 + 琥珀环（修断点 2）
   const litNodeCount = mapData
     ? mapData.stats.stable + mapData.stats.gap + mapData.stats.uncertain
     : 0;
-  const isEmpty = !loading && mapData && litNodeCount < 2;
+  const collectedNodeCount = mapData
+    ? mapData.nodes.filter((n) => (n.caseEvidenceCount ?? 0) > 0).length
+    : 0;
+  const isEmpty = !loading && mapData && litNodeCount < 2 && collectedNodeCount === 0;
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -163,6 +169,10 @@ export default function KnowledgeMapPage() {
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#D9D1C3]" />
             未探索
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#E8A33D]/30 ring-2 ring-[#E8A33D]" />
+            收过题
           </span>
         </div>
       )}

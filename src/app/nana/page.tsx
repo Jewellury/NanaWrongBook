@@ -27,6 +27,8 @@ interface MapNode {
   nodeId: string;
   name: string;
   status: string;
+  /** collected 弱标记计数（CaseKnowledgeTag 数）—— 与 status 正交 */
+  caseEvidenceCount: number;
 }
 
 interface MapResponse {
@@ -69,9 +71,13 @@ export default function NanaPage() {
       });
   }, [session]);
 
-  // 有记录态判定：存在非 untested 的节点
+  // 有记录态判定（修断点 2 · 放宽）：
+  // - litNodes：测过且非 untested（绿色点亮类）
+  // - collectedNodes：收过题（琥珀标记），即便没测过也算"有记录"
   const litNodes = mapData?.nodes?.filter((n) => n.status !== "untested") ?? [];
-  const hasRecords = litNodes.length > 0;
+  const collectedNodes =
+    mapData?.nodes?.filter((n) => (n.caseEvidenceCount ?? 0) > 0) ?? [];
+  const hasRecords = litNodes.length > 0 || collectedNodes.length > 0;
 
   // 取最近点亮的一个节点（map API 按层排序，取最后一个有状态的作为近似）
   const latestLitNode = litNodes[litNodes.length - 1];
@@ -124,8 +130,10 @@ export default function NanaPage() {
           </div>
         ) : hasRecords ? (
           <RecapBar
-            latestNodeName={latestLitNode.name}
+            latestNodeName={latestLitNode?.name ?? ""}
             totalLitCount={litNodes.length}
+            collectedNodeCount={collectedNodes.length}
+            hasLitNodes={litNodes.length > 0}
           />
         ) : (
           <EmptyHint />

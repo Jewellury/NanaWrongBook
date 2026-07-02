@@ -25,6 +25,7 @@ import {
   listMyCases,
   listCaseTags,
   tagCaseManually,
+  getCase,
   type CaseListItem,
   type CaseKnowledgeTagResponse,
 } from "@/lib/nana/nana-api-client";
@@ -181,13 +182,21 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
   const [pickedNodeId, setPickedNodeId] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  // 题图懒加载（与标签并行、独立 try/catch，互不阻塞 —— 铁律 6）
+  // null=加载中 / {content}=就绪 / 'none'=无题图（不算错）/ 'failed'=拉取失败
+  const [imageState, setImageState] = useState<
+    { content: string } | "none" | "failed" | null
+  >(null);
 
-  // 懒加载该 case 的标签（带归属过滤，服务端按当前用户校验）
+  // 懒加载该 case 的标签 + 题图（两条请求并行、各自独立 try/catch）
   useEffect(() => {
     let cancelled = false;
     setTags(null);
     setLoadFailed(false);
     setActionMsg(null);
+    setImageState(null);
+
+    // 标签（带归属过滤，服务端按当前用户校验）
     listCaseTags(caseId)
       .then((data) => {
         if (!cancelled) setTags(data.tags);
@@ -195,6 +204,25 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
       });
+
+    // 题图（getCase 已带 G1 归属校验：findFirst studentId）
+    getCase(caseId)
+      .then((data) => {
+        if (cancelled) return;
+        // 从 artifacts 里找 question_image（seq 最小那条，防万一有多张）
+        const imgs = (data.artifacts ?? [])
+          .filter((a) => a.type === "question_image")
+          .sort((a, b) => a.seq - b.seq);
+        if (imgs.length === 0) {
+          setImageState("none");
+        } else {
+          setImageState({ content: imgs[0].content });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setImageState("failed");
+      });
+
     return () => {
       cancelled = true;
     };
@@ -231,6 +259,25 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
 
   return (
     <div className="mt-3 rounded-2xl border border-[#E8E0D4] bg-white p-3">
+      {/* 题图懒加载（面板顶部；与标签独立，失败不拖标签 —— 铁律 6） */}
+      {imageState === null && (
+        <div className="mb-3 flex h-[120px] animate-pulse items-center justify-center rounded-xl bg-[#F2EDE3]">
+          <span className="text-[12px] text-[#B8AFA6]">题图加载中…</span>
+        </div>
+      )}
+      {imageState !== null &&
+        imageState !== "none" &&
+        imageState !== "failed" && (
+          <img
+            src={imageState.content}
+            alt="这道题的原图"
+            className="mx-auto mb-3 max-h-[200px] w-auto max-w-full rounded-xl border border-[#E8E0D4] object-contain"
+          />
+        )}
+      {imageState === "failed" && (
+        <p className="mb-3 text-[12px] text-[#B8AFA6]">题图没拉到，标签仍可用</p>
+      )}
+
       {/* 已挂标签 */}
       <div className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-[#403A33]">
         <Tag className="size-3.5 text-[#5E8868]" />

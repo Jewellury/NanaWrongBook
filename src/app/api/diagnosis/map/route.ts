@@ -43,6 +43,17 @@ export async function GET(req: Request) {
 
     const stateMap = new Map(states.map(s => [s.nodeId, s]));
 
+    // 单次 groupBy：按 nodeId 聚合当前学生的 CaseKnowledgeTag（collected 弱标记）
+    // where.case.studentId 做关系过滤 → 只算自己的 tag（跨用户隔离）
+    const evidenceRows = await prisma.caseKnowledgeTag.groupBy({
+      by: ['nodeId'],
+      where: { case: { studentId } },
+      _count: { nodeId: true },
+    });
+    const evidenceMap = new Map<string, number>(
+      evidenceRows.map(r => [r.nodeId, r._count.nodeId])
+    );
+
     // 查询所有节点（含详情卡字段）
     const nodes = await prisma.knowledgeNode.findMany({
       select: {
@@ -157,6 +168,8 @@ export async function GET(req: Request) {
         tier: n.tier,
         status: stateMap.get(n.id)?.status ?? 'untested',
         masteryProb: stateMap.get(n.id)?.masteryProb ?? 0.5,
+        // collected 弱标记计数（与 status 正交：挂 tag 不改 status，不写 StudentNodeState）
+        caseEvidenceCount: evidenceMap.get(n.id) ?? 0,
         judgeCriteria: n.judgeCriteria,
         sampleItem: n.sampleItem,
         teachingNotes: n.teachingNotes,
