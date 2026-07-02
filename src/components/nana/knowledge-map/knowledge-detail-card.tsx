@@ -64,9 +64,9 @@ export default function KnowledgeDetailCard({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-center">
-      {/* 半透明遮罩 */}
+      {/* 半透明遮罩（加深到 30%，确保用户看见并知道点这里关闭） */}
       <div
-        className="absolute inset-0 bg-black/10"
+        className="absolute inset-0 bg-black/30"
         onClick={onClose}
         aria-label="关闭详情"
       />
@@ -77,8 +77,13 @@ export default function KnowledgeDetailCard({
         role="dialog"
         aria-label={`知识点详情：${node.name}`}
       >
-        {/* Grip 拖动条 */}
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#EFE8DD]" />
+        {/* Grip 拖动条（可点击关闭，轻量 affordance） */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mx-auto mb-3 block h-1 w-10 cursor-pointer rounded-full bg-[#EFE8DD] transition-colors hover:bg-[#D9D1C3]"
+          aria-label="关闭"
+        />
 
         {/* 节点名称 + 状态圆点 */}
         <div className="flex items-center gap-2.5">

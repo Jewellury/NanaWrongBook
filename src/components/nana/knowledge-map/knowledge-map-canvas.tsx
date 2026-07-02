@@ -308,16 +308,6 @@ export default function KnowledgeMapCanvas({
                 strokeWidth={2}
               />
             )}
-            <text
-              x={x}
-              y={y + LABEL_Y_OFFSET}
-              textAnchor="middle"
-              fontSize={FONT_SIZE}
-              fill="#5E86A8"
-              fontWeight={600}
-            >
-              {nextLabel}
-            </text>
             <circle
               cx={x}
               cy={y}
