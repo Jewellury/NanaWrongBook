@@ -90,6 +90,8 @@ export default function CapturePage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   // Stage 1：保存成功后改为停留态（显示"去知识地图"+"再拍一道"两个去向），
   // 不再自动 1.4s 重置——用户需要时间点去向按钮（S1-2）
+  // 浮动卡状态：保存成功后弹出固定底部卡片，确保小屏可见
+  const [toastOpen, setToastOpen] = useState(false);
 
   const photoTaken = imageBase64 !== null;
 
@@ -184,7 +186,7 @@ export default function CapturePage() {
       // 成功：停留到用户选去向（S1-2：去知识地图 / 再拍一道）
       // 不再自动 1.4s 重置——显示去向按钮等用户点击
       setSaveState("saved");
-      setSaveMsg(SUCCESS_MSG);
+      setToastOpen(true);
       setCaptureCount((prev) => prev + 1);
     } catch {
       // 失败：显式报错，保留数据可重试（铁律 6）
@@ -215,15 +217,21 @@ export default function CapturePage() {
     resetAudioAndRecorder();
     setSaveState("idle");
     setSaveMsg(null);
+    setToastOpen(false);
     setCurrentTab("voice");
   }, [resetAudioAndRecorder]);
+
+  // ─── 关闭浮动卡，回退显示文档流按钮区 ──
+  const handleDismissToast = useCallback(() => {
+    setToastOpen(false);
+  }, []);
 
   const saving = saveState === "saving";
   const saved = saveState === "saved";
 
   // ─── 渲染 ─────────────────────────────────
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-[#FBF7F0]">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-[#FBF7F0]">
       {/* 自定义动画 keyframes */}
       <style>{`
         @keyframes waveAnim {
@@ -329,8 +337,8 @@ export default function CapturePage() {
 
         {/* ─── 底部固定操作区 ─── */}
         <div className="mt-auto space-y-3 pt-4">
-          {/* 保存状态提示 */}
-          {saveMsg && (
+          {/* 保存状态提示（浮动卡显示时隐藏，避免信息冗余） */}
+          {saveMsg && !(saved && toastOpen) && (
             <div
               className={`animate-fadeIn rounded-xl px-4 py-2.5 text-center text-[14px] leading-relaxed ${
                 saved
@@ -344,42 +352,45 @@ export default function CapturePage() {
             </div>
           )}
 
-          {/* 已拍计数 */}
-          <div className="text-center text-[13.5px] text-[#8C857B]">
-            已收 {captureCount} 道
-            {captureCount >= 3 && (
-              <span className="ml-1">· 可以一起看看有没有规律了</span>
-            )}
-          </div>
+          {/* 已拍计数（浮动卡显示时隐藏） */}
+          {!(saved && toastOpen) && (
+            <div className="text-center text-[13.5px] text-[#8C857B]">
+              已收 {captureCount} 道
+              {captureCount >= 3 && (
+                <span className="ml-1">· 可以一起看看有没有规律了</span>
+              )}
+            </div>
+          )}
 
           {/* 主操作区 */}
           {saved ? (
-            // ─── 保存成功：显示两个去向（S1-2：去知识地图 / 再拍一道）──
-            // + 冷启动死锁修复：给这道题挂个知识点（跳知识地图并自动打开最近题浮层）
-            <>
-              <Link
-                href="/nana/knowledge-map"
-                className="block w-full rounded-[18px] bg-[#5E8868] px-5 py-[14px] text-center text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform hover:scale-[1.02] active:scale-95"
-              >
-                去知识地图看看
-              </Link>
-              <Link
-                href="/nana/knowledge-map?openCases=1"
-                className="mt-2.5 block w-full rounded-[18px] border border-[#E8A33D]/30 bg-[#FFF8F0] px-5 py-[13px] text-center text-[15px] font-medium text-[#D4913A] transition-transform hover:scale-[1.02] active:scale-95"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Tag className="size-4" />
-                  给这道题挂个知识点
-                </span>
-              </Link>
-              <button
-                type="button"
-                onClick={handleTakeAnother}
-                className="w-full text-center text-[14px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
-              >
-                再拍一道
-              </button>
-            </>
+            // ─── 保存成功：浮动卡打开时由浮层处理，关闭后显示文档流后备 ──
+            !toastOpen && (
+              <>
+                <Link
+                  href="/nana/knowledge-map"
+                  className="block w-full rounded-[18px] bg-[#5E8868] px-5 py-[14px] text-center text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform hover:scale-[1.02] active:scale-95"
+                >
+                  去知识地图看看
+                </Link>
+                <Link
+                  href="/nana/knowledge-map?openCases=1"
+                  className="mt-2.5 block w-full rounded-[18px] border border-[#E8A33D]/30 bg-[#FFF8F0] px-5 py-[13px] text-center text-[15px] font-medium text-[#D4913A] transition-transform hover:scale-[1.02] active:scale-95"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Tag className="size-4" />
+                    给这道题挂个知识点
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleTakeAnother}
+                  className="w-full text-center text-[14px] text-[#8C857B] transition-colors hover:text-[#5E8868]"
+                >
+                  再拍一道
+                </button>
+              </>
+            )
           ) : (
             // ─── 保存前：收好这道题（无照片禁用）──
             <>
@@ -423,6 +434,56 @@ export default function CapturePage() {
           )}
         </div>
       </div>
+
+      {/* ═══ 5. Toast 浮动卡（保存成功后 fixed 底部弹出）═══ */}
+      {saved && toastOpen && (
+        <>
+          {/* 遮罩层 */}
+          <div
+            className="fixed inset-0 z-40 bg-black/15"
+            onClick={handleDismissToast}
+          />
+          {/* 浮动卡片 */}
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up rounded-t-2xl bg-[#FFFDF9] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-8px_40px_rgba(90,80,66,0.22)]"
+          >
+            {/* 成功确认 */}
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-[#EAF2EC] px-4 py-2.5 text-[14px] text-[#3F6B4C]">
+              <span className="size-5 rounded-full bg-[#5E8868] text-center text-[12px] font-bold leading-5 text-white">
+                ✓
+              </span>
+              已收好 · 识别稍后接入
+            </div>
+
+            {/* 主按钮：给这道题挂个知识点 */}
+            <Link
+              href="/nana/knowledge-map?openCases=1"
+              className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#E8A33D]/30 bg-[#FFF8F0] px-5 py-[14px] text-[15.5px] font-medium text-[#D4913A] shadow-[0_4px_12px_rgba(232,163,61,0.18)] transition-transform hover:scale-[1.02] active:scale-95"
+            >
+              <Tag className="size-[18px]" />
+              给这道题挂个知识点
+            </Link>
+
+            {/* 次要入口 */}
+            <div className="mt-3 flex items-center justify-center gap-5 text-[14px]">
+              <Link
+                href="/nana/knowledge-map"
+                className="font-medium text-[#5E8868] transition-colors hover:text-[#403A33]"
+              >
+                去知识地图看看
+              </Link>
+              <span className="text-[#D8D2C8]">·</span>
+              <button
+                type="button"
+                onClick={handleTakeAnother}
+                className="text-[#8C857B] transition-colors hover:text-[#5E8868]"
+              >
+                再拍一道
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
