@@ -22,7 +22,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Tag } from "lucide-react";
 import { QuestionImageCapture } from "@/components/nana/capture/question-image-capture";
 import { VoiceRecorder } from "@/components/nana/capture/voice-recorder";
 import { TranscriptionPanel } from "@/components/nana/capture/transcription-panel";
@@ -355,12 +355,22 @@ export default function CapturePage() {
           {/* 主操作区 */}
           {saved ? (
             // ─── 保存成功：显示两个去向（S1-2：去知识地图 / 再拍一道）──
+            // + 冷启动死锁修复：给这道题挂个知识点（跳知识地图并自动打开最近题浮层）
             <>
               <Link
                 href="/nana/knowledge-map"
                 className="block w-full rounded-[18px] bg-[#5E8868] px-5 py-[14px] text-center text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.28)] transition-transform hover:scale-[1.02] active:scale-95"
               >
                 去知识地图看看
+              </Link>
+              <Link
+                href="/nana/knowledge-map?openCases=1"
+                className="mt-2.5 block w-full rounded-[18px] border border-[#E8A33D]/30 bg-[#FFF8F0] px-5 py-[13px] text-center text-[15px] font-medium text-[#D4913A] transition-transform hover:scale-[1.02] active:scale-95"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Tag className="size-4" />
+                  给这道题挂个知识点
+                </span>
               </Link>
               <button
                 type="button"

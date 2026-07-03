@@ -99,6 +99,15 @@ export default function KnowledgeMapPage() {
       });
   }, [session]);
 
+  // 冷启动死锁修复：从拍题页 ?openCases=1 跳转过来时，自动打开最近题抽屉
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("openCases") === "1") {
+      setDrawerOpen(true);
+    }
+  }, []);
+
   // 节点点击处理
   const handleNodeClick = useCallback(
     (nodeId: string) => {
@@ -199,6 +208,16 @@ export default function KnowledgeMapPage() {
           <p className="mt-2 text-sm text-[#8C857B] max-w-xs">
             点亮一道题，灰色地图就会染上一块绿 ✦
           </p>
+          {mapData && (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/80 px-5 py-2.5 text-sm font-medium text-[#5E8868] border border-[#E8E0D4] shadow-sm transition-colors hover:bg-[#EAF2EC]"
+            >
+              <ListFilter className="size-4" />
+              最近拍过的题
+            </button>
+          )}
         </div>
       )}
 
