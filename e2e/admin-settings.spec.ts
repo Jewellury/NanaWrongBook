@@ -10,8 +10,9 @@ test('Admin can configure OpenAI settings with multi-instance support', async ({
     await page.locator('input[name="password"]').fill('123456');
     await page.locator('button[type="submit"]').click();
 
-    // Wait for login to complete
-    await page.waitForURL('**/', { timeout: 15000 });
+    // 登录后全局落点已改为 /nana，等待 /nana 后再显式导航到上游首页
+    await page.waitForURL('**/nana', { timeout: 15000 });
+    await page.goto('/');
 
     // 2. Open Settings
     await page.getByRole('button', { name: '设置' }).click();

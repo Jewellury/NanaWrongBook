@@ -70,13 +70,15 @@ test.describe('Authentication Flow', () => {
         await page.locator('button[type="submit"]').click();
 
         // --- Verify Success ---
-        // Wait for redirect to home
-        await page.waitForURL('/', { timeout: 10000 });
+        // 登录后全局落点已改为 /nana
+        await page.waitForURL('**/nana', { timeout: 10000 });
 
-        // Verify Content
-        await expect(page.locator('body')).toContainText(user.name);
+        // 验证 /nana 页面已加载（三入口标题）
+        await expect(page.locator('body')).toContainText('拍一道题');
 
         // --- Logout User ---
+        // /nana 页面没有登出按钮，先导航到上游首页
+        await page.goto('/');
         await page.locator('button[title*="Logout"], button[title*="退出"]').click();
         await page.waitForURL('**/login');
 
@@ -85,8 +87,9 @@ test.describe('Authentication Flow', () => {
         await page.locator('input[name="password"]').fill('123456');
         await page.locator('button[type="submit"]').click();
 
-        // Verify Admin Login and Home Page
-        await page.waitForURL('**/');
+        // 管理员登录后同样落到 /nana，再导航到上游首页进行后台管理
+        await page.waitForURL('**/nana');
+        await page.goto('/');
 
         // --- Go to Settings > User Management ---
         // Open Settings (Button with gear icon, sr-only text "Settings" or "设置")
@@ -122,6 +125,10 @@ test.describe('Authentication Flow', () => {
         await expect(page.locator('tr').filter({ hasText: user.email })).not.toBeVisible({ timeout: 5000 });
 
         // --- Logout Admin ---
+        // Close dialog first
+        await page.keyboard.press('Escape');
+        await expect(page.getByRole('dialog')).not.toBeVisible();
+
         // Close dialog first
         await page.keyboard.press('Escape');
         await expect(page.getByRole('dialog')).not.toBeVisible();
