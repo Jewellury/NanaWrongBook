@@ -356,3 +356,29 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 - 采集壳当前用 mock 数据（题面、逐字稿、ASR），第 5 阶段接真实 ASR/VLM
 - 轻反馈为关键词规则版（不调 LLM），第 2 阶段可升级为 LLM 驱动
 - `/nana/capture` 中 feedback API 调用使用 fallback ID `__preliminary__`，接真实 API 后需传递真实 caseId
+
+---
+
+## 2026-07-04 · 移动端登录优化第二轮 + 部署上线
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-04 | 登录直跳 /nana + 即时反馈 + 防双击 | ✅ | `fix(login)` ⚠️上游文件修改 |
+| 07-04 | /nana 首页三入口不等待地图数据 | ✅ | `fix(nana)` 底部三态：unknown 留白 / RecapBar / EmptyHint |
+| 07-04 | Bundle 分析报告（手动分析） | ✅ | `docs(perf)` analyzer 不兼容 Turbopack，手动分析 chunk |
+| 07-04 | E2E 测试同步 /nana 跳转 | ✅ | `fix(e2e)` 3 个测试文件断言对齐 ⚠️上游文件修改 |
+| 07-04 | CI 双 workflow 全绿 | ✅ | CI #29 + Build and Push #22 |
+| 07-04 | 部署到腾讯云 | ✅ | `9b226e3` → 服务器 main，307 + 48 节点 + 无 ERROR |
+
+### 经验教训（已写入 execute-agent.md）
+
+本轮实际有效工作 ~37 分钟，但因 3 个可避免的操作瓶颈导致总耗时 ~2 小时 45 分钟：
+
+1. **EP-1**：安装 `@next/bundle-analyzer` 前未查 Turbopack 兼容性，浪费 ~30 分钟
+2. **EP-2**：改登录跳转路由后未 grep E2E 测试，CI 往返返工 ~19 分钟
+3. **EP-3**：Git merge 命令被中断导致 `MERGE IN PROGRESS`，收尾 ~10 分钟
+4. **EP-4**：CI 状态用浏览器反复刷新轮询，纯等待 ~17 分钟（应用 `gh run watch`）
+
+经验教训已追加到 `doc/agents/execute-agent.md` §经验教训（Anti-patterns），并同步到运行时文件。

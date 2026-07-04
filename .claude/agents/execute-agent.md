@@ -154,6 +154,51 @@ tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "mcp__plugin_context-mo
 - 用法：SSH 登服务器 → `cd /opt/nana` → `bash scripts/deploy.sh`。
 - 如果用户要求手动部署但不指定方式，直接推荐此脚本。
 
+## 经验教训（Anti-patterns）
+
+> 以下为实际执行中踩过的坑，记录在此避免重复。每条附"根因"和"规避动作"。
+
+### EP-1：安装新依赖前必须先查兼容性
+
+- **事件**：2026-07-04，安装 `@next/bundle-analyzer` 后发现与 Next.js 16 Turbopack 不兼容，浪费 ~30 分钟（安装 → 配置 → 发现不工作 → 手动分析 → 删依赖）。
+- **根因**：只看到"Next.js 生态常用工具"就装，没查 Turbopack 兼容性。
+- **规避动作**：安装任何新依赖前，先查其文档或 issue tracker 确认与当前构建工具（Turbopack / Webpack）和框架版本兼容。不确定时先在 issue 区搜 "turbopack" 或 "next 16"。
+
+### EP-2：改路由/跳转行为时必须先 grep E2E 测试
+
+- **事件**：2026-07-04，把 `router.push("/")` 改成 `router.push("/nana")` 后直接提交，CI 跑了 6m43s 才发现 3 个 E2E 测试文件挂了，返工修测试 + 第二次 CI 往返共浪费 ~19 分钟。
+- **根因**：改了登录跳转目标，没有同步检查 E2E 测试中的 `waitForURL` 断言。
+- **规避动作**：任何涉及路由变更（`router.push`、`redirect`、`middleware` 重定向）的提交前，先执行：
+  ```bash
+  grep -rn 'waitForURL\|router\.push\|router\.replace' e2e/ src/__tests__/
+  ```
+  确认所有引用旧路径的断言已同步更新。
+
+### EP-3：Git merge 命令必须链式执行
+
+- **事件**：2026-07-04，`git merge dev` 命令被中断，留下 `MERGE IN PROGRESS` 状态，需要手动 `git commit --no-edit` 收尾，还因自动 merge message 含模板文字需额外 `git commit --amend` 修正，浪费 ~10 分钟。
+- **根因**：merge 命令单独执行，被终端中断后状态不一致。
+- **规避动作**：merge 操作用 `&&` 链式执行，避免半完成状态：
+  ```bash
+  git checkout main && git merge dev && git push origin main && git checkout dev
+  ```
+  如果 merge 产生冲突，链式中断是正确行为（冲突需要人工处理）。
+
+### EP-4：CI 状态检查用 gh CLI，不用浏览器轮询
+
+- **事件**：2026-07-04，用浏览器反复刷新 GitHub Actions 页面查 CI 状态，等了 5 轮共 ~17 分钟纯等待，效率极低。
+- **根因**：没有使用 `gh` CLI 的 `gh run watch` 或 `gh run list` 命令。
+- **规避动作**：推送后等待 CI 用以下命令：
+  ```bash
+  # 查看最近运行
+  gh run list --limit 5
+  # 实时监控最新 run（阻塞直到完成）
+  gh run watch
+  # 查看特定 run
+  gh run view <run-id>
+  ```
+  如果 `gh` 不可用，用一次 `gh run list` 查状态后等待合理时间再查，不反复刷新浏览器。
+
 ## Git 收口
 
 每完成一个独立任务或子任务后，执行 `git status` 判断是否提交。规则见 AGENTS.md §Git 收口闸门。
