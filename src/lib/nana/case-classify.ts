@@ -13,23 +13,22 @@
  * 安全（评审需求 #1 / #2）：
  * - 所有读/写 tag 的入口都先过 Case.studentId 归属校验（绝不裸查 CaseKnowledgeTag）。
  * - source 走白名单（assertValidSource）；tagCaseManually 恒用 "manual"，
- *   不接受外部传入的 source，防止客户端伪造 vlm/asr 来源。
- */
+ *   不接受外部传入的 source，防止客户端伪造 vlm 来源。
+ *
+ * Stage 3 v2 修订：source 白名单收窄为 manual + vlm（移除 asr/rule/pending）。
+ * ASR 不挂 tag，只回写 transcript artifact；pending 由"无 tag"表达。
 import { prisma } from "@/lib/prisma";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger('lib:nana:case-classify');
 
-// ─── source 白名单（评审需求 #2）──────────────────────
+// ─── source 白名单（Stage 3 v2 修订：收窄为 manual + vlm）──
 export const ALLOWED_SOURCES = new Set([
   "manual",
   "vlm",
-  "asr",
-  "rule",
-  "pending",
 ] as const);
 
-export type TagSource = "manual" | "vlm" | "asr" | "rule" | "pending";
+export type TagSource = "manual" | "vlm";
 
 /**
  * 校验 source 是否在白名单内；不在则抛错（评审需求 #2：代码层限制 + 测试覆盖）。
