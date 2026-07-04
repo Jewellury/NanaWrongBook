@@ -1,7 +1,8 @@
 /**
  * VoiceRecorder — 真实录音控件（Phase 1.5）
  *
- * 三态：idle → recording → completed
+ * 四态：idle → requesting → recording → completed
+ *   requesting: getUserMedia 等待中（防重复点击 + unmount 保护）
  *
  * 真实行为：
  * - getUserMedia({ audio: true }) 请求麦克风权限；拒绝时显式提示（不静默，铁律 6）
@@ -34,7 +35,7 @@ interface AsrProvider {
 
 // ─── 类型 ─────────────────────────────────────
 
-type RecorderState = "idle" | "recording" | "completed";
+type RecorderState = "idle" | "requesting" | "recording" | "completed";
 
 interface AudioMeta {
   durationSec: number;
@@ -74,6 +75,8 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
   const [state, setState] = useState<RecorderState>("idle");
   const [permissionMsg, setPermissionMsg] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // 停止流程锁定：防止用户点击与 60s timer 竞态导致 recorder.stop() 被调两次
+  const [isStopping, setIsStopping] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -84,6 +87,8 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // abort 标志：unmount 期间触发的 onstop 不应回写父组件（修复评审 P1）
   const abortedRef = useRef<boolean>(false);
+  // 停止锁定 ref：setTimeout 闭包中读不到最新 isStopping state，用 ref 同步
+  const isStoppingRef = useRef(false);
   // 回调用 ref，避免 useEffect cleanup 依赖闭包过期（修复评审 P1）
   const onAudioReadyRef = useRef(onAudioReady);
   const onRecordingStateChangeRef = useRef(onRecordingStateChange);
@@ -130,6 +135,9 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
 
   // ─── 开始录音 ───────────────────────────────
   const handleStartRecording = useCallback(async () => {
+    // 门禁：非 idle 态不允许重复发起（防重复点击 getUserMedia）
+    if (state !== "idle") return;
+
     setPermissionMsg(null);
 
     // 浏览器兼容探测（§7.8）
@@ -145,12 +153,24 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
       return;
     }
 
+    // 进入 requesting 态：按钮 disabled + "请求权限中…"
+    // 注意：requesting 态不触发 onRecordingStateChange(true)（父组件仅在 recording 态禁用）
+    setStateAndNotify("requesting");
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      // 权限拒绝或不可用：显式提示（铁律 6）
+      // 权限拒绝或不可用：切回 idle，按钮恢复可点（铁律 6）
+      setStateAndNotify("idle");
       setPermissionMsg("没拿到麦克风权限，可以在浏览器设置里打开。不录音也能保存这道题。");
+      return;
+    }
+
+    // unmount 保护：getUserMedia 等待期间组件被卸载/换图/离页
+    // abortedRef 已在 useEffect cleanup 中被设为 true，这里检查后释放 stream 并返回
+    if (abortedRef.current) {
+      stream.getTracks().forEach((t) => t.stop());
       return;
     }
 
@@ -202,17 +222,26 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
       setElapsed(Math.round((Date.now() - startTsRef.current) / 1000));
     }, 1000);
 
-    // 60 秒自动停止
+    // 60 秒自动停止（用 isStoppingRef 门禁，防止与用户点击竞态）
     autoStopTimerRef.current = setTimeout(() => {
+      if (isStoppingRef.current) return; // 用户已手动停止
       const r = mediaRecorderRef.current;
-      if (r && r.state !== "inactive") r.stop();
+      if (r && r.state !== "inactive") {
+        isStoppingRef.current = true;
+        setIsStopping(true);
+        r.stop();
+      }
     }, MAX_RECORDING_SEC * 1000);
-  }, [setStateAndNotify, cleanup]);
+  }, [state, setStateAndNotify, cleanup]);
 
   // ─── 停止录音 ───────────────────────────────
   const handleFinishRecording = useCallback(() => {
+    // 门禁：已在停止流程中则跳过（60s timer 或用户先点了一方）
+    if (isStoppingRef.current) return;
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
+      isStoppingRef.current = true;
+      setIsStopping(true); // 锁定 + 触发重渲染（按钮文案变"正在收…"）
       // stop() 会触发 onstop，由 onstop 统一切 completed（含 60s 自动停同路径）
       recorder.stop();
     } else {
@@ -221,16 +250,19 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
     }
   }, [setStateAndNotify]);
 
-  // ─── idle 态 ───────────────────────────────
-  if (state === "idle") {
+  // ─── idle / requesting 态 ──────────────────
+  // requesting 态复用 idle 布局，按钮 disabled + 文案变为"请求权限中…"
+  if (state === "idle" || state === "requesting") {
+    const isRequesting = state === "requesting";
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         {/* 绿色录音按钮 */}
         <button
           type="button"
           onClick={handleStartRecording}
-          className="flex size-[88px] items-center justify-center rounded-full bg-[#7FA886] shadow-[0_0_0_8px_rgba(127,168,134,0.16),0_10px_24px_rgba(94,136,104,0.32)] transition-transform hover:scale-105 active:scale-95"
-          aria-label="说说看"
+          disabled={isRequesting}
+          className="flex size-[88px] items-center justify-center rounded-full bg-[#7FA886] shadow-[0_0_0_8px_rgba(127,168,134,0.16),0_10px_24px_rgba(94,136,104,0.32)] transition-transform hover:scale-105 active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
+          aria-label={isRequesting ? "请求权限中" : "说说看"}
         >
           <svg
             width="34"
@@ -248,9 +280,9 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
           </svg>
         </button>
 
-        {/* "说说看" 手写体文案 */}
+        {/* "说说看" 手写体文案（requesting 态变为"请求权限中…"） */}
         <p className="font-['LXGW_WenKai','PingFang_SC',sans-serif] text-[21px] text-[#5E8868]">
-          说说看
+          {isRequesting ? "请求权限中…" : "说说看"}
         </p>
 
         {/* 副标题 */}
@@ -310,12 +342,13 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
           ))}
         </div>
 
-        {/* "我听完了" 按钮 */}
+        {/* "我听完了" 按钮（isStopping 态 disabled + "正在收…"） */}
         <div className="mt-3 flex justify-center">
           <button
             type="button"
             onClick={handleFinishRecording}
-            className="flex items-center gap-2 rounded-full bg-[#5E8868] px-[34px] py-[13px] text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.3)] transition-transform hover:scale-[1.02] active:scale-95"
+            disabled={isStopping}
+            className="flex items-center gap-2 rounded-full bg-[#5E8868] px-[34px] py-[13px] text-[15.5px] font-medium text-[#FFFDF9] shadow-[0_8px_18px_rgba(94,136,104,0.3)] transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
           >
             <svg
               width="17"
@@ -329,7 +362,7 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
             >
               <path d="M20 6 9 17l-5-5" />
             </svg>
-            我听完了
+            {isStopping ? "正在收…" : "我听完了"}
           </button>
         </div>
       </div>

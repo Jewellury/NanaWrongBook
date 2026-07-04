@@ -5,56 +5,68 @@
 
 ---
 
-> 最后更新: 2026-06-28
+> 最后更新: 2026-07-04
 
-## ✅ 第 1 阶段已完成——采集基础壳（P0）
+## ✅ Nana 页面响应优化已完成——按钮即时反馈
+
+### 本轮完成内容
 
 4 个 commit 全部完成并经审计通过 ✅。
 
-**回顾**：用户可进入 `/nana`（鉴权守卫），看到双状态首页（有记录/空状态），通过"拍一下这道题"进入采集壳，完成"录音→逐字稿→轻反馈→再拍一道"完整流程。case 通过 API 存入数据库。
+**回顾**：手机端点击按钮后立刻有反馈。录音按钮请求权限时显示"请求权限中…"并防重复点击；"我听完了"点击后显示"正在收…"并防 60s timer 竞态；知识地图浮层和节点按钮有 `active:scale` 触摸反馈。
 
-详见 `doc/auditlog/nana-phase1-execution-audit.md`。
+| Commit | 说明 |
+|--------|------|
+| `56dbab6` | `fix(capture)` VoiceRecorder 四态状态机 + 防竞态 + 单元测试 |
+| `26f5d0a` | `fix(map)` 浮层 pressed 态 + 节点/关闭/挂上按钮 active:scale |
+| `5f2e723` | `docs` 计划和审计报告 |
+| `7a2349f` | `docs` 执行日志和审计报告 |
+
+详见：
+- 计划 → [plan/nana-response-plan.md](plan/nana-response-plan.md)
+- 执行日志 → [executionlog/nana-response-execution-log-2026-07-04.md](executionlog/nana-response-execution-log-2026-07-04.md)
+- 审计报告 → [auditlog/audit-nana-response-execution-2026-07-04.md](auditlog/audit-nana-response-execution-2026-07-04.md)
+
+### 当前状态
+
+- **当前分支**: dev
+- **dev 最新提交**: `7a2349f`
+- **main 最新提交**: 待合入
+- **CI 状态**: 待触发
+- **部署状态**: 待部署
+
+### 下一步
+
+1. dev 合入 main + push origin main
+2. CI 绿灯
+3. 备份生产 SQLite
+4. 部署到腾讯云
 
 ---
 
-## ⏳ 下一阶段待定
-
-第 1 阶段后端（Case/Artifact API + 规则版反馈）+ 前端（首页 + 采集壳）已就绪。
-
-下一阶段可选方向（由用户拍板）：
+## ⏳ 待选方向（下一轮由用户拍板）
 
 | 方向 | 优先级 | 前置条件 |
 |------|:--:|----------|
-| **知识地图 UI**（/nana/knowledge-map） | P1 | map API 已就绪 |
-| **批次诊断报告 UI**（/nana/session） | P1 | session-items + submit-answers API 已就绪 |
-| **采集壳接真实 ASR/VLM** | P2 | 第 5 阶段计划 |
-| **轻反馈升级 LLM** | P2 | 当前规则版可用，LLM 可并行开发 |
-| **Mockup 评审遗留项** | — | 评审 AI 可在当前阶段介入 |
-
----
-
-## 📊 关联文档
-
-- 项目总纲 → [plan/nana-master-plan.md](plan/nana-master-plan.md)
-- 分阶段开发计划 → [plan/nana-development-phases.md](plan/nana-development-phases.md)
-- 闭环重设计 → [plan/capture-to-diagnosis-closed-loop-redesign.md](plan/capture-to-diagnosis-closed-loop-redesign.md)
-- 前端架构方案 → [plan/frontend-architecture-plan.md](plan/frontend-architecture-plan.md)
-- 第 1 阶段执行日志 → [executionlog/nana-phase1-execution-log.md](executionlog/nana-phase1-execution-log.md)
-- 第 1 阶段审计报告 → [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md)
+| Stage 3：真实 AI 接入最小闭环 | P1 | 计划已草拟（`doc/plan/stage3-ai-integration-plan.md`） |
+| Mobile automation 测试框架 | P2 | 计划已草拟 |
+| P3 建议：catch 块加 abortedRef 检查 | P3 | 不阻塞，可随手修 |
+| Bundle 优化（recharts/KaTeX 懒加载） | P2 | 分析报告已出 |
 
 ---
 
 ## ⚠️ 已知限制（持续有效）
 
 - KST-lite gap 只传播一层 dependents，M4 补递归
-- 不调 LLM：无 AI 判分/Newman 追问/解析生成
+- 不调 LLM：无 AI 判分/Newman 追问/解析生成（Stage 3 待接通）
 - 单主线诊断（决策 D-9 延续）
-- 采集壳当前用 mock 数据，不接真实 ASR/VLM（第 5 阶段接通）
+- 采集壳当前用 mock 数据，不接真实 ASR/VLM（Stage 3 接通）
+- 二进制 artifact 以 Base64 内联 SQLite（迁移阈值：case > 100 或 dev.db > 50MB）
 
 ## 🏗️ 设计债（在册）
 
 1. **slipFlag** — 当前仅单 boolean，复诊"连续两次"判定需 slipCount 字段
 2. **/initial 废弃** — 与 submit-answers 两条初诊路径分叉，稳定后废弃
-3. **light-feedback magic string `__preliminary__`** — 第 5 阶段接通真实 API 时处理
-4. **feedback API 未校验 case 存在性** — 第 5 阶段接通真实 API 时处理
-5. **二进制 artifact 以 Base64 内联 SQLite（Phase 1.5 引入）** — `question_image`/`audio_note` 字节以 Base64 存进 `Artifact.content`（String），~33% 体积开销，case 多了拖慢 SQLite 查询/备份。**迁移阈值**：case > 100 条或 `dev.db` > 50 MB（先到先触发）；**迁移方向**：对象存储 + URL 存 content + 独立清理策略
+3. **light-feedback magic string `__preliminary__`** — Stage 3 接通真实 API 时处理
+4. **feedback API 未校验 case 存在性** — Stage 3 接通真实 API 时处理
+5. **二进制 artifact 以 Base64 内联 SQLite** — ~33% 体积开销，case 多了拖慢查询/备份

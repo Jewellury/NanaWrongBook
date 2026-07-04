@@ -64,6 +64,8 @@ export default function KnowledgeMapPage() {
   const [viewMode, setViewMode] = useState<"list" | "graph">("graph");
   // 浮层抽屉：RecentCasesList 不再常驻上方，改为浮层入口
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // 浮层入口按钮 pressed 态（仅浮层入口按钮，不含空状态按钮和 URL 参数自动打开）
+  const [floatingBtnPressed, setFloatingBtnPressed] = useState(false);
 
   // 空状态判定：少于 2 个节点有状态记录，且没有任何 collected（收过题）节点
   // → 放宽：只挂过题、没测过的孩子也能看到画布 + 琥珀环（修断点 2）
@@ -300,8 +302,8 @@ export default function KnowledgeMapPage() {
             {viewMode === "graph" && (
               <button
                 type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="absolute bottom-3 left-3 z-30 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 text-[12px] font-medium text-[#403A33] shadow-[0_4px_16px_rgba(90,80,66,0.18)] border border-[#E8E0D4] backdrop-blur-sm transition-colors hover:bg-white"
+              onClick={() => { setDrawerOpen(true); setFloatingBtnPressed(true); }}
+              className={`absolute bottom-3 left-3 z-30 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 text-[12px] font-medium text-[#403A33] shadow-[0_4px_16px_rgba(90,80,66,0.18)] border border-[#E8E0D4] backdrop-blur-sm transition-transform hover:bg-white ${floatingBtnPressed ? 'scale-95 opacity-80' : ''}`}
               >
                 <ListFilter className="size-3.5 text-[#5E8868]" />
                 最近拍过
@@ -328,7 +330,7 @@ export default function KnowledgeMapPage() {
             mapData.nodes.map((n) => ({ id: n.nodeId, name: n.name })) ?? []
           }
           open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
+          onClose={() => { setDrawerOpen(false); setFloatingBtnPressed(false); }}
         />
       )}
     </div>

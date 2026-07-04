@@ -356,3 +356,60 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 - 采集壳当前用 mock 数据（题面、逐字稿、ASR），第 5 阶段接真实 ASR/VLM
 - 轻反馈为关键词规则版（不调 LLM），第 2 阶段可升级为 LLM 驱动
 - `/nana/capture` 中 feedback API 调用使用 fallback ID `__preliminary__`，接真实 API 后需传递真实 caseId
+
+---
+
+## 2026-07-04 · 移动端登录优化第二轮 + 部署上线
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-04 | 登录直跳 /nana + 即时反馈 + 防双击 | ✅ | `fix(login)` ⚠️上游文件修改 |
+| 07-04 | /nana 首页三入口不等待地图数据 | ✅ | `fix(nana)` 底部三态：unknown 留白 / RecapBar / EmptyHint |
+| 07-04 | Bundle 分析报告（手动分析） | ✅ | `docs(perf)` analyzer 不兼容 Turbopack，手动分析 chunk |
+| 07-04 | E2E 测试同步 /nana 跳转 | ✅ | `fix(e2e)` 3 个测试文件断言对齐 ⚠️上游文件修改 |
+| 07-04 | CI 双 workflow 全绿 | ✅ | CI #29 + Build and Push #22 |
+| 07-04 | 部署到腾讯云 | ✅ | `9b226e3` → 服务器 main，307 + 48 节点 + 无 ERROR |
+
+### 经验教训（已写入 execute-agent.md）
+
+本轮实际有效工作 ~37 分钟，但因 3 个可避免的操作瓶颈导致总耗时 ~2 小时 45 分钟：
+
+1. **EP-1**：安装 `@next/bundle-analyzer` 前未查 Turbopack 兼容性，浪费 ~30 分钟
+2. **EP-2**：改登录跳转路由后未 grep E2E 测试，CI 往返返工 ~19 分钟
+3. **EP-3**：Git merge 命令被中断导致 `MERGE IN PROGRESS`，收尾 ~10 分钟
+4. **EP-4**：CI 状态用浏览器反复刷新轮询，纯等待 ~17 分钟（应用 `gh run watch`）
+
+经验教训已追加到 `doc/agents/execute-agent.md` §经验教训（Anti-patterns），并同步到运行时文件。
+
+---
+
+## 2026-07-04 · Nana 页面响应优化（按钮即时反馈）
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-04 | VoiceRecorder 四态状态机 | ✅ | `fix(capture)` idle→requesting→recording→completed，防重复点击 + unmount 保护 |
+| 07-04 | "我听完了"防竞态 | ✅ | `isStopping` state + `isStoppingRef` 防用户点击与 60s timer 竞态 |
+| 07-04 | 知识地图浮层 pressed 态 | ✅ | `fix(map)` 浮层入口按钮 `scale-95 opacity-80` |
+| 07-04 | 节点/关闭/挂上按钮 active:scale | ✅ | 4 个按钮加触摸缩放反馈，transform 不触发 reflow |
+| 07-04 | 单元测试 4/4 通过 | ✅ | 重复点击 / 权限拒绝恢复 / unmount 保护 / stop 竞态 |
+| 07-04 | 审计通过 | ✅ | 5 项重点全部通过，1 项 P3 不阻塞建议 |
+
+### Commit 清单
+
+| Commit | 类型 | 说明 |
+|--------|------|------|
+| `56dbab6` | `fix(capture)` | 录音按钮请求态和停止态反馈 — 四态状态机+防竞态+单元测试 |
+| `26f5d0a` | `fix(map)` | 地图浮层和节点按钮触摸反馈 — pressed态+active:scale |
+| `5f2e723` | `docs` | nana-response 计划和审计报告 |
+| `7a2349f` | `docs` | nana-response 执行日志和审计报告 |
+
+### 关键设计决策
+
+- `isStopping` 用 state（触发重渲染改文案）+ `isStoppingRef`（setTimeout 闭包中读最新值），两者同步设置
+- 父组件 `capture/page.tsx` 用 `key={recorderKey}` 控制 VoiceRecorder remount，新录音时 state 全部重置，无需手动清理 `isStopping`
+- unmount 保护复用已有 `abortedRef`，getUserMedia await 后检查，不创建 recorder 不 setState
+- vitest 不改 `vitest.config.ts` 自动加载 `.env.test`，用 `cmd /c "set DATABASE_URL=... && ..."` 手动设置
