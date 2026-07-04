@@ -226,8 +226,8 @@
 
 | 状态 | 文件 | 一句话 |
 |:--:|------|--------|
-| 🔥 | [product/nana-user-manual-v1-draft.md](product/nana-user-manual-v1-draft.md) | 用户说明手册 v1（面向孩子/家长，8 个场景 + v1 不做清单） |
-| 🔥 | [product/nana-product-behavior-manual-v1.md](product/nana-product-behavior-manual-v1.md) | 产品行为手册 v1（面向开发/设计，状态机 + 文案铁律 + 数据落库 + 8 场景） |
+| 🔥 | [product/nana-user-manual-v1-draft.md](product/nana-user-manual-v1-draft.md) | 用户说明手册 v1（面向孩子/家长，8 个场景 + v1 不做清单 + 手机端线性流程图 6 张） |
+| 🔥 | [product/nana-product-behavior-manual-v1.md](product/nana-product-behavior-manual-v1.md) | 产品行为手册 v1（面向开发/设计，状态机 + 文案铁律 + 数据落库 + 8 场景 + 手机端页面状态与信息架构推演） |
 
 ---
 
