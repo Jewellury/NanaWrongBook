@@ -78,4 +78,5 @@ upload_test_output*.txt
 # Personal study materials (AI engineer exam, isolated from project)
 /study/
 .claude/
+.catpaw/
 scripts/ssh-runner.py

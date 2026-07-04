@@ -1,0 +1,46 @@
+name: Smoke Test (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: '触发原因（如：部署后验证）'
+        required: false
+        default: 'manual'
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    name: Production Smoke Test (Read-only v1)
+    timeout-minutes: 10
+    env:
+      E2E_MODE: smoke
+      E2E_SMOKE_EMAIL: ${{ secrets.E2E_SMOKE_EMAIL }}
+      E2E_SMOKE_PASSWORD: ${{ secrets.E2E_SMOKE_PASSWORD }}
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Smoke tests
+        run: npx playwright test --project=smoke
+
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: playwright-report/
+          retention-days: 14
