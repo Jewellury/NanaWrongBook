@@ -3,6 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 // Smoke 模式：测试生产环境，不启动本地 server
 const isSmoke = process.env.E2E_MODE === 'smoke';
 
+// 本地端口：3000 常被占用，E2E 用 3025 避免冲突（CI 中仍用 3000）
+const E2E_PORT = process.env.CI ? 3000 : 3025;
+const E2E_HOST = `http://127.0.0.1:${E2E_PORT}`;
+
 export default defineConfig({
     testDir: './e2e',
     fullyParallel: true,
@@ -13,14 +17,14 @@ export default defineConfig({
     use: {
         baseURL: isSmoke
             ? (process.env.E2E_BASE_URL ?? 'https://nana.nanatop.xyz')
-            : 'http://127.0.0.1:3000',
+            : E2E_HOST,
         trace: 'on-first-retry',
     },
     // Smoke 模式不启动本地 server（测试生产环境）
     ...(isSmoke ? {} : {
         webServer: {
-            command: process.env.CI ? 'npm run start' : 'npm run dev',
-            url: 'http://127.0.0.1:3000',
+            command: process.env.CI ? 'npm run start' : `npx next dev -p ${E2E_PORT}`,
+            url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
         },
