@@ -459,7 +459,7 @@ const textbookNodeMappings = [
 | knowledgeNodeCandidates | array | 系统节点候选（0-3 个） | ✅ 高置信 → CaseKnowledgeTag |
 | initialFeedback | string | 鼓励文案 | ✅ → CaseAiResult |
 | possibleMistakeReason | string | 可能的错因提示（不诊断） | ✅ → CaseAiResult |
-| nextActionSuggestion | string | 建议下一步（看视频/做类似题） | ✅ → CaseAiResult |
+| nextActionSuggestion | string | 建议下一步（复看课本章节+小动作，不承诺视频链接） | ✅ → CaseAiResult |
 
 ### 4.3 提示词（修订）
 
@@ -477,7 +477,7 @@ const textbookNodeMappings = [
    每个给 confidence(0~1) 和一句 reason。
 5. 给一句温和、鼓励式的 initialFeedback（面向学生，不透露答案对错，不批评）。
 6. possibleMistakeReason：如果从图片或音频中能看到明显的错误痕迹，用一句话提示可能的方向（如"可能在符号变换时出了差错"）。不确定则留空。不做诊断，不给确定性结论。
-7. nextActionSuggestion：给一句具体的下一步建议（如"可以看看函数单调性这节的视频"或"再做几道类似的题"）。不确定则留空。
+7. nextActionSuggestion：给一句具体的下一步建议，格式为"回看 XX 课本章节 + 一个小动作"（如"回看 2.3 一元二次不等式，重点检查移项后不等号方向"）。**不要写"看视频"**——v1 没有资源库，不承诺视频链接。不确定则留空。
 
 【纪律】
 - 只做"大致属于哪几个知识点"的判断，不做深度归因
@@ -583,13 +583,15 @@ export interface CaseAnalyzerResult {
 
 ### 5.2 手机端默认视图
 
-**手机端默认进"题目汇总"**
+**手机和桌面都默认进"题目汇总"**
 
 理由：
 1. 第一阶段用户批量拍题后，最想看的是"我拍了哪些题、按什么类分好了"
 2. 抽象图谱对基础薄弱的孩子认知负荷太高
 3. 题目汇总直接展示 AI 整理结果，信任建立更快
 4. 图谱作为"看整体情况"的次级视图，需要时再切
+5. 桌面端同样默认"题目汇总"——核心价值是"我拍的题被整理好了"，而非图谱
+6. 图谱是第二视图，手机和桌面一致
 
 ### 5.3 "题目汇总"列表设计
 
@@ -605,6 +607,7 @@ export interface CaseAnalyzerResult {
 │       └─ 3.2 函数的基本性质（2 道）
 │           └─ ...
 ├─ 未分类/暂未覆盖（textbookTopicId 为空，或题目属于当前 48 节点未覆盖的章节）
+│   └─ 分组提示："这类题还没放进当前知识地图，先帮你收在这里。"
 │   └─ ...
 └─ 打印/导出按钮
 ```
@@ -658,7 +661,7 @@ export interface CaseAnalyzerResult {
 │ "可能在符号变换时出了差错"       │ ← possibleMistakeReason
 │                              │
 │ 下一步：                      │
-│ "可以看看函数单调性这节的视频"   │ ← nextActionSuggestion
+│ "回看 3.2 函数的基本性质，     │ ← nextActionSuggestion
 └──────────────────────────────┘
 ```
 
@@ -764,7 +767,7 @@ export interface CaseAnalyzerResult {
                转写：我觉得这道题应该...
                AI 反馈：你很仔细地列举了...
                可能的方向：注意集合元素的互异性
-               下一步：可以复习一下集合的概念
+               下一步：回看 3.2 函数的基本性质，重点检查单调性判断步骤
 
 3.2 函数的基本性质
 
@@ -772,7 +775,7 @@ export interface CaseAnalyzerResult {
   │ [题图]   │  AI 摘要：判断f(x)=x²-2x...
   └─────────┘  拍摄时间：2026-07-03
                AI 反馈：这道题你尝试了...
-               下一步：可以看看函数单调性的视频
+               下一步：回看 2.3 一元二次不等式，重点检查移项后不等号方向
 ```
 
 ### 8.4 打印样式规则
@@ -780,7 +783,7 @@ export interface CaseAnalyzerResult {
 - `@media print`：隐藏所有交互按钮（编辑/改分类）
 - 题图缩略图固定宽度（如 200px）
 - 字号适配 A4 纸
-- 分页：每个课本章节分页
+- 分页：按课本章节分组，**不强制每章分页**（A4 省纸）；章节标题 `break-after: avoid`；题卡 `page-break-inside: avoid`（尽量不跨页）
 - 未分类/暂未覆盖题放最后
 
 ### 8.5 v1 不做
@@ -810,7 +813,7 @@ export interface CaseAnalyzerResult {
 |------|------|---------|
 | initialFeedback | 鼓励文案，面向学生 | "你在这道题上写了很详细的推导过程，这个习惯很好。" |
 | possibleMistakeReason | 可能的错因方向（不诊断） | "可能在符号变换时出了差错，可以检查一下这一步。" |
-| nextActionSuggestion | 建议下一步 | "可以看看函数单调性这节的视频，再做几道类似的题。" |
+| nextActionSuggestion | 建议下一步 | "回看 2.3 一元二次不等式，重点检查移项后不等号方向。" |
 
 ### 9.3 严禁输出
 
@@ -819,6 +822,7 @@ export interface CaseAnalyzerResult {
 - ❌ "你的薄弱点是XXX"
 - ❌ "得分：XX分"
 - ❌ "已诊断：XXX"
+- ❌ 严禁输出视频链接或"看视频"建议（v1 没有资源库）
 - ❌ 完整解题步骤和答案
 
 ---
@@ -835,6 +839,8 @@ idle
   → processed (收到 200 结果)
     ├─ success + 有摘要 + 有分类 → "整理好了 · 可能属于：函数的基本性质"
     │   └─ 展示 AI 摘要 + 课本分类 + 轻反馈 + [编辑] + [改分类]
+    │   └─ possibleMistakeReason 非空时展示"可能的方向"，为空时隐藏区块
+    │   └─ nextActionSuggestion 非空时展示"下一步"，为空时隐藏区块
     ├─ success + 有摘要 + 无分类 → "整理好了，但不太好分类，可以手动选"
     ├─ success + 无摘要 + 有分类 → "可能属于：XXX"（AI 没看懂题面但判断了分类）
     ├─ success + 都无 → "整理好了，但不太好分类，可以手动整理"
