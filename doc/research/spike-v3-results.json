@@ -1,0 +1,220 @@
+[
+  {
+    "name": "Pro + 图 only",
+    "success": true,
+    "latencyMs": 43397,
+    "usage": {
+      "prompt_tokens": 2371,
+      "completion_tokens": 2096,
+      "total_tokens": 4467
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n    \"transcript\": \"\",\n    \"questionSummary\": \"已知函数f(x)=a - 2/(2^x + 1)（a∈R），φ(x)=1/2 + f(x - 1/2)，设置三个问题：(1)求φ(5/2)的值；(2)判断函数f(x)的单调性并加以证明；(3)当a=1时，证明φ(x)的图象是中心对称图形。\",\n    \"knowledgeCandidates\": [\n        {\n            \"nodeId\": \"M2a-04\",\n            \"confidence\": 0.9,\n            \"reason\": \"第一小问需要计算指定自变量对应的函数值，属于求函数值的知识点范畴。\"\n        },\n        {\n            \"nodeId\": \"M2a-13\",\n            \"confidence\": 0.95,\n            \"reason\": \"第二小问要求判断并证明函数单调性，需要用到单调性定义进行推导。\"\n        },\n        {\n            \"nodeId\": \"M2a-17\",\n            \"confidence\": 0.8,\n            \"reason\": \"第三小问证明函数图象中心对称，可转化为判断函数奇偶性完成，涉及奇偶性判断的知识点。\"\n        }\n    ],\n    \"studentFacingFeedback\": \"你在这道题上写了很详细的推导过程哦，做得很棒呀，之后可以再梳理下对应知识点的应用逻辑，掌握得会更牢固~\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数f(x)=a - 2/(2^x + 1)（a∈R），φ(x)=1/2 + f(x - 1/2)，设置三个问题：(1)求φ(5/2)的值；(2)判断函数f(x)的单调性并加以证明；(3)当a=1时，证明φ(x)的图象是中心对称图形。",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-04",
+          "confidence": 0.9,
+          "reason": "第一小问需要计算指定自变量对应的函数值，属于求函数值的知识点范畴。"
+        },
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.95,
+          "reason": "第二小问要求判断并证明函数单调性，需要用到单调性定义进行推导。"
+        },
+        {
+          "nodeId": "M2a-17",
+          "confidence": 0.8,
+          "reason": "第三小问证明函数图象中心对称，可转化为判断函数奇偶性完成，涉及奇偶性判断的知识点。"
+        }
+      ],
+      "studentFacingFeedback": "你在这道题上写了很详细的推导过程哦，做得很棒呀，之后可以再梳理下对应知识点的应用逻辑，掌握得会更牢固~"
+    }
+  },
+  {
+    "name": "Pro + 图 + WAV",
+    "success": false,
+    "latencyMs": 222,
+    "zodValid": false,
+    "nodeIdHallucinations": [],
+    "error": "400: 400 The parameter `messages.content.input_audio` specified in the request are not valid: audio input is not supported by this model. Request id: 021783163927417b686cf77507a74aa4905f351832e661792cab9"
+  },
+  {
+    "name": "Lite + 图 only",
+    "success": true,
+    "latencyMs": 29990,
+    "usage": {
+      "prompt_tokens": 2355,
+      "completion_tokens": 1190,
+      "total_tokens": 3545
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n  \"transcript\": \"\",\n  \"questionSummary\": \"已知函数f(x)=a - 2/(2^x +1)，φ(x)=1/2 + f(x - 1/2)，要求(1)求φ(5/2)的值；(2)判断函数f(x)的单调性并加以证明；(3)当a=1时，证明φ(x)的图象是中心对称图形。\",\n  \"knowledgeCandidates\": [\n    {\"nodeId\": \"M2a-04\", \"confidence\": 0.9, \"reason\": \"题目第一小问要求代入自变量取值计算对应的函数值，属于求函数值的考点\"},\n    {\"nodeId\": \"M2a-13\", \"confidence\": 0.9, \"reason\": \"题目第二小问要求判断并证明给定函数的单调性，对应用定义判断单调性的考点\"},\n    {\"nodeId\": \"M2a-51\", \"confidence\": 0.8, \"reason\": \"构造φ(x)的过程中需要将x-1/2作为整体代入f的自变量位置，用到了f括号内整体代换的思路\"}\n  ],\n  \"studentFacingFeedback\": \"你在这道函数综合题上已经做了很多思考和尝试啦，慢慢梳理函数的各类性质，你一定会有很棒的收获哦。\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数f(x)=a - 2/(2^x +1)，φ(x)=1/2 + f(x - 1/2)，要求(1)求φ(5/2)的值；(2)判断函数f(x)的单调性并加以证明；(3)当a=1时，证明φ(x)的图象是中心对称图形。",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-04",
+          "confidence": 0.9,
+          "reason": "题目第一小问要求代入自变量取值计算对应的函数值，属于求函数值的考点"
+        },
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.9,
+          "reason": "题目第二小问要求判断并证明给定函数的单调性，对应用定义判断单调性的考点"
+        },
+        {
+          "nodeId": "M2a-51",
+          "confidence": 0.8,
+          "reason": "构造φ(x)的过程中需要将x-1/2作为整体代入f的自变量位置，用到了f括号内整体代换的思路"
+        }
+      ],
+      "studentFacingFeedback": "你在这道函数综合题上已经做了很多思考和尝试啦，慢慢梳理函数的各类性质，你一定会有很棒的收获哦。"
+    }
+  },
+  {
+    "name": "Lite + 图 + WAV",
+    "success": true,
+    "latencyMs": 28930,
+    "usage": {
+      "prompt_tokens": 2365,
+      "completion_tokens": 1269,
+      "total_tokens": 3634
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n  \"transcript\": \"\",\n  \"questionSummary\": \"已知函数f(x)=a - 2/(2^x +1)（a∈R），φ(x)=1/2 + f(x - 1/2)，设置三小问：求φ(5/2)的值、判断并证明f(x)的单调性、当a=1时证明φ(x)的图象是中心对称图形。\",\n  \"knowledgeCandidates\": [\n    {\"nodeId\": \"M2a-04\", \"confidence\": 0.9, \"reason\": \"第一小问要求代入自变量取值计算对应的函数值，对应求函数值的考点\"},\n    {\"nodeId\": \"M2a-13\", \"confidence\": 0.95, \"reason\": \"第二小问要求判断并证明给定函数的单调性，对应用定义判断单调性的考点\"},\n    {\"nodeId\": \"M2a-17\", \"confidence\": 0.8, \"reason\": \"证明函数图象中心对称的推导过程常结合奇偶性相关定义性质完成\"}\n  ],\n  \"studentFacingFeedback\": \"你主动动笔推导函数相关问题的状态特别好，慢慢梳理这类函数综合题的逻辑，你会越来越得心应手的哦。\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数f(x)=a - 2/(2^x +1)（a∈R），φ(x)=1/2 + f(x - 1/2)，设置三小问：求φ(5/2)的值、判断并证明f(x)的单调性、当a=1时证明φ(x)的图象是中心对称图形。",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-04",
+          "confidence": 0.9,
+          "reason": "第一小问要求代入自变量取值计算对应的函数值，对应求函数值的考点"
+        },
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.95,
+          "reason": "第二小问要求判断并证明给定函数的单调性，对应用定义判断单调性的考点"
+        },
+        {
+          "nodeId": "M2a-17",
+          "confidence": 0.8,
+          "reason": "证明函数图象中心对称的推导过程常结合奇偶性相关定义性质完成"
+        }
+      ],
+      "studentFacingFeedback": "你主动动笔推导函数相关问题的状态特别好，慢慢梳理这类函数综合题的逻辑，你会越来越得心应手的哦。"
+    }
+  },
+  {
+    "name": "clear-printed (图 only)",
+    "success": true,
+    "latencyMs": 26275,
+    "usage": {
+      "prompt_tokens": 2371,
+      "completion_tokens": 1357,
+      "total_tokens": 3728
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n    \"transcript\": \"\",\n    \"questionSummary\": \"已知函数$f(x)=a-\\\\frac{2}{2^x+1}(a\\\\in R)$，$\\\\varphi(x)=\\\\frac{1}{2}+f(x-\\\\frac{1}{2})$，设置三个问题：(1)求$\\\\varphi(\\\\frac{5}{2})$的值；(2)判断函数$f(x)$的单调性并加以证明；(3)当$a=1$时，证明$\\\\varphi(x)$的图象是中心对称图形。\",\n    \"knowledgeCandidates\": [\n        {\"nodeId\": \"M2a-04\", \"confidence\": 0.9, \"reason\": \"题目第一问要求求解指定自变量对应的函数值，对应求函数值f(a)的知识点\"},\n        {\"nodeId\": \"M2a-13\", \"confidence\": 0.95, \"reason\": \"题目第二问要求判断并证明函数单调性，对应用定义判断单调性的知识点\"},\n        {\"nodeId\": \"M2a-51\", \"confidence\": 0.8, \"reason\": \"$\\\\varphi(x)$由$f(x)$做自变量平移后组合得到，涉及抽象函数变量的整体代换处理\"}\n    ],\n    \"studentFacingFeedback\": \"你已经在题目旁边写了不少推导步骤啦，非常认真哦，可以再梳理下每一步的逻辑，看看有没有可以完善的地方~\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数$f(x)=a-\\frac{2}{2^x+1}(a\\in R)$，$\\varphi(x)=\\frac{1}{2}+f(x-\\frac{1}{2})$，设置三个问题：(1)求$\\varphi(\\frac{5}{2})$的值；(2)判断函数$f(x)$的单调性并加以证明；(3)当$a=1$时，证明$\\varphi(x)$的图象是中心对称图形。",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-04",
+          "confidence": 0.9,
+          "reason": "题目第一问要求求解指定自变量对应的函数值，对应求函数值f(a)的知识点"
+        },
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.95,
+          "reason": "题目第二问要求判断并证明函数单调性，对应用定义判断单调性的知识点"
+        },
+        {
+          "nodeId": "M2a-51",
+          "confidence": 0.8,
+          "reason": "$\\varphi(x)$由$f(x)$做自变量平移后组合得到，涉及抽象函数变量的整体代换处理"
+        }
+      ],
+      "studentFacingFeedback": "你已经在题目旁边写了不少推导步骤啦，非常认真哦，可以再梳理下每一步的逻辑，看看有没有可以完善的地方~"
+    }
+  },
+  {
+    "name": "with-handwriting (图 only)",
+    "success": true,
+    "latencyMs": 37260,
+    "usage": {
+      "prompt_tokens": 2371,
+      "completion_tokens": 1874,
+      "total_tokens": 4245
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n    \"transcript\": \"\",\n    \"questionSummary\": \"已知函数$f(x)=\\\\frac{x^2+2x+\\\\frac{1}{a}}{x}(a>0)$，第一问要求当$a=2$时判断$x\\\\in[1,+\\\\infty)$时$f(x)$的单调性并证明，第二问要求在$f(x)$在$(0,1]$单调递减、$[1,+\\\\infty)$单调递增的条件下求$a$的值，以及$f(x)$在$(0,+\\\\infty)$上的最小值\",\n    \"knowledgeCandidates\": [\n        {\n            \"nodeId\": \"M2a-13\",\n            \"confidence\": 0.9,\n            \"reason\": \"题目第一问明确要求判断并证明函数单调性，对应使用定义判断单调性的知识点\"\n        },\n        {\n            \"nodeId\": \"M1-22\",\n            \"confidence\": 0.8,\n            \"reason\": \"函数化简后为$x+\\\\frac{1}{ax}+2$，可直接套用基本不等式求解其在正区间的最小值\"\n        },\n        {\n            \"nodeId\": \"M2a-01\",\n            \"confidence\": 0.7,\n            \"reason\": \"求解函数单调性、最值类问题需要优先考虑定义域，符合定义域优先的解题原则\"\n        }\n    ],\n    \"studentFacingFeedback\": \"你已经很认真地写了很多解题步骤啦，非常棒哦，可以再回头梳理下答题逻辑，检查有没有需要完善的地方呀😊\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数$f(x)=\\frac{x^2+2x+\\frac{1}{a}}{x}(a>0)$，第一问要求当$a=2$时判断$x\\in[1,+\\infty)$时$f(x)$的单调性并证明，第二问要求在$f(x)$在$(0,1]$单调递减、$[1,+\\infty)$单调递增的条件下求$a$的值，以及$f(x)$在$(0,+\\infty)$上的最小值",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.9,
+          "reason": "题目第一问明确要求判断并证明函数单调性，对应使用定义判断单调性的知识点"
+        },
+        {
+          "nodeId": "M1-22",
+          "confidence": 0.8,
+          "reason": "函数化简后为$x+\\frac{1}{ax}+2$，可直接套用基本不等式求解其在正区间的最小值"
+        },
+        {
+          "nodeId": "M2a-01",
+          "confidence": 0.7,
+          "reason": "求解函数单调性、最值类问题需要优先考虑定义域，符合定义域优先的解题原则"
+        }
+      ],
+      "studentFacingFeedback": "你已经很认真地写了很多解题步骤啦，非常棒哦，可以再回头梳理下答题逻辑，检查有没有需要完善的地方呀😊"
+    }
+  },
+  {
+    "name": "tilted-partial (图 only)",
+    "success": true,
+    "latencyMs": 25862,
+    "usage": {
+      "prompt_tokens": 2371,
+      "completion_tokens": 1081,
+      "total_tokens": 3452
+    },
+    "zodValid": true,
+    "nodeIdHallucinations": [],
+    "rawOutput": "{\n  \"transcript\": \"\",\n  \"questionSummary\": \"已知函数g(x)的图象关于直线x=1对称，且当x≥1时g(x)=x²−1/x，要求①求g(x)的解析式；②求不等式g(x)>g(3x−1)的解集\",\n  \"knowledgeCandidates\": [\n    {\"nodeId\": \"M2a-51\", \"confidence\": 0.9, \"reason\": \"求解x<1区间的g(x)解析式时，需要将2-x整体代换代入已知区间的函数表达式\"},\n    {\"nodeId\": \"M2a-13\", \"confidence\": 0.85, \"reason\": \"解函数不等式需要先判断函数单调性，结合单调性将函数大小关系转化为自变量的关系\"},\n    {\"nodeId\": \"BG101\", \"confidence\": 0.8, \"reason\": \"将函数不等式转化为绝对值不等式后，去绝对值后需要求解一元二次不等式得到最终解集\"}\n  ],\n  \"studentFacingFeedback\": \"你已经尝试运用函数对称性和单调性来解题啦，慢慢梳理每一步的推导逻辑，会有更多收获哦~\"\n}",
+    "parsed": {
+      "transcript": "",
+      "questionSummary": "已知函数g(x)的图象关于直线x=1对称，且当x≥1时g(x)=x²−1/x，要求①求g(x)的解析式；②求不等式g(x)>g(3x−1)的解集",
+      "knowledgeCandidates": [
+        {
+          "nodeId": "M2a-51",
+          "confidence": 0.9,
+          "reason": "求解x<1区间的g(x)解析式时，需要将2-x整体代换代入已知区间的函数表达式"
+        },
+        {
+          "nodeId": "M2a-13",
+          "confidence": 0.85,
+          "reason": "解函数不等式需要先判断函数单调性，结合单调性将函数大小关系转化为自变量的关系"
+        },
+        {
+          "nodeId": "BG101",
+          "confidence": 0.8,
+          "reason": "将函数不等式转化为绝对值不等式后，去绝对值后需要求解一元二次不等式得到最终解集"
+        }
+      ],
+      "studentFacingFeedback": "你已经尝试运用函数对称性和单调性来解题啦，慢慢梳理每一步的推导逻辑，会有更多收获哦~"
+    }
+  }
+]
