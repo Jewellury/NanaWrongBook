@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "project": "nana",
+    "cycle": "weekly",
+    "script_version": "1.0.0",
+    "rules_version": "1.0.0",
+    "run_time": "2026-07-04 20:15:40 UTC",
+    "dry_run": true
+  },
+  "summary": {
+    "items_checked": 27,
+    "total_findings": 0,
+    "by_severity": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "P3": 0
+    },
+    "risk_level": "LOW"
+  },
+  "findings": [],
+  "recommendations": []
+}
