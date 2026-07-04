@@ -122,7 +122,7 @@ export function RecentCasesList({ nodes, open, onClose }: RecentCasesListProps) 
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center size-7 rounded-full text-[#8C857B] hover:bg-[#F2EDE3] transition-colors"
+            className="flex items-center justify-center size-7 rounded-full text-[#8C857B] hover:bg-[#F2EDE3] transition-colors active:scale-90"
             aria-label="关闭"
           >
             <X className="size-4" />
@@ -236,7 +236,7 @@ function RecentCasesListInner({ nodes }: { nodes: { id: string; name: string }[]
                 isSelected
                   ? "border-[#5E8868] ring-1 ring-[#5E8868]"
                   : "border-[#E8E0D4] hover:border-[#B8AFA6]",
-              ].join(" ")}
+              ].join(" ") + " active:scale-[0.98]"}
             >
               {/* 占位缩略（列表端点不返回完整题图，§12.2） */}
               <div className="flex h-[60px] items-center justify-center rounded-lg bg-[#F2EDE3]">
@@ -442,7 +442,7 @@ function CaseTagPanel({ caseId, nodes }: CaseTagPanelProps) {
           type="button"
           onClick={handleAttach}
           disabled={busy || nodes.length === 0 || pickedNodeId === ""}
-          className="inline-flex items-center gap-1 rounded-lg bg-[#5E8868] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#4F7858] disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-lg bg-[#5E8868] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#4F7858] disabled:opacity-50 active:scale-95"
         >
           <Plus className="size-3.5" />
           挂上
