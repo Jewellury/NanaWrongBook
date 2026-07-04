@@ -6,9 +6,11 @@
 
 ## 1. 工具兼容性说明
 
-`@next/bundle-analyzer` 与 Next.js 16 默认的 Turbopack 构建不兼容（构建时明确输出 "The Next Bundle Analyzer is not compatible with Turbopack builds"）。`next.config.ts` 中已配置 analyzer wrapper，仅在 `ANALYZE=1` 时启用，正常 `npm run build` 不受影响。
+`@next/bundle-analyzer` 与 Next.js 16 默认的 Turbopack 构建不兼容（构建时明确输出 "The Next Bundle Analyzer is not compatible with Turbopack builds, no report will be generated"）。配置 wrapper 后 `ANALYZE=1 npm run build` 虽然构建成功，但不生成任何可视化报告。
 
-本轮分析采用手动方式：统计 `.next/static/chunks/` 下所有 chunk 文件大小 + 关键词扫描识别包含的库。
+**审计后处理**：因 analyzer 对 Turbopack 无实际效果，已移除 `@next/bundle-analyzer` 依赖和 `next.config.ts` 中的 wrapper 配置。`next.config.ts` 恢复为原始状态。
+
+本轮分析采用**手动方式**：统计 `.next/static/chunks/` 下所有 chunk 文件大小 + 关键词扫描识别包含的库。后续如需可视化分析，可考虑 Next.js Turbopack 原生分析器（`next experimental-analyze`，当前版本 CLI 参数格式未稳定）。
 
 ## 2. 总体数据
 
