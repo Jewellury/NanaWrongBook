@@ -79,64 +79,70 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 ---
 
-### 任务 3：/nana 首屏三入口先显示
+### 任务 3：/nana 首屏三入口先显示（显式数据状态）
 
-- [ ] 去掉 `loading` 初始值 `true`，改为 `false`
-- [ ] 底部统计区在 mapData 为 `null` 时不显示骨架，直接显示空态提示或不显示
-- [ ] map API 返回后自然更新底部区域（recap 或 empty hint）
+- [ ] 三个 ActionCard **始终立即显示**，不受任何 loading 状态影响
+- [ ] map/recap 区域用显式三态控制：`unknown`（数据未知）→ `loading`（正在请求）→ `ready`（数据已返回）
+- [ ] map 数据**未知时不显示 EmptyHint**（避免误导用户以为没有记录）
+- [ ] map API 返回后才显示 RecapBar（有记录）或 EmptyHint（确认无记录）
 
 **现状**：
 ```tsx
-const [loading, setLoading] = useState(true);  // ← 初始 true，显示骨架
+const [loading, setLoading] = useState(true);  // 初始 true → 首屏就闪骨架
 // ...
 {loading ? <骨架> : hasRecords ? <recap> : <EmptyHint />}
 ```
-三个 ActionCard 其实**已经是始终渲染**的（第 94-120 行），但底部骨架在 map API 返回前一直闪着，给用户"页面还没好"的感觉。
 
-**改后**：
+问题：
+1. `loading` 初始 `true`，首屏底部就闪骨架，三入口虽在但视觉上"页面没好"
+2. 如果把初始值改成 `false`，会先闪 EmptyHint（"还没有记录哦"），map API 返回后又跳成 recap——**误导用户以为没数据**
+3. 只改初始值不够，需要一个"数据未知"的中间态
+
+**改后**：用 `mapData` 是否为 `null` 来区分"未知"和"确认无记录"：
+
 ```tsx
-const [loading, setLoading] = useState(false);  // ← 初始 false
-// ...
-// mapData 为 null 且 loading 为 false 时，直接显示 EmptyHint（不闪骨架）
-// map API 返回后，hasRecords 变化，底部自然更新
-{loading ? (
-  <骨架 />
+// 底部区域渲染逻辑（三态显式控制）
+// mapData === null → 数据未知，底部不显示任何 recap/empty hint
+// mapData !== null → 数据已返回，根据 hasRecords 显示 recap 或 empty hint
+{mapData === null ? (
+  // 数据未知：不显示骨架也不显示 EmptyHint，只留极淡占位或不渲染
+  // 三入口已在上方，这里留白即可
+  null
 ) : hasRecords ? (
-  <recap 提示 />
+  // 数据已返回且有记录：显示 recap 提示
+  <div className="rounded-2xl border border-[#E8E0D4] bg-white/60 p-4 text-center">
+    <p className="text-sm text-[#8C857B]">
+      ✦ 继续拍题或做小检查，地图会慢慢亮起来
+    </p>
+  </div>
 ) : (
+  // 数据已返回且确认无记录：显示 EmptyHint
   <EmptyHint />
 )}
 ```
 
+**loading 状态的处理**：
+- `loading` 仍保留用于 map API 请求中显示骨架，但**仅在 mapData 已有旧值时**短暂显示（即刷新场景）
+- 首次加载 `mapData === null` 时不显示骨架——三入口已经可见，底部留白比闪骨架更自然
+- 可选简化：去掉 `loading` 状态，完全用 `mapData === null` 控制（因为 map API 失败时 `mapData` 设为 `null`，底部自然不显示，不影响功能）
+
 **效果**：
-- 页面一出来就有三个入口卡 + "不急，先拍一道试试"的空态提示
-- map API 在后台加载，返回后底部自动更新
+- 页面一出来就有三个入口卡，底部干净留白
+- map API 在后台加载，返回后底部自然出现 recap 提示或 empty hint
+- 不会出现"先显示空态再跳成有记录"的误导
 - 用户不需要等 map API 就能点入口开始操作
-
-**注意**：`useEffect` 内的 `setLoading(true)` 保留——session 加载后触发 map API 时短暂显示骨架是合理的（此时三入口已可见，骨架在下方不影响操作）。
-
-#### 关于 useEffect 中 setLoading(true) 的处理
-
-为了彻底消除"空态闪 → 骨架闪 → recap"的三段跳，更好的做法是：
-
-```tsx
-// 去掉 loading 状态，改用 mapData 是否为 null 来判断
-// mapData === null → 还没拿到数据 → 底部不显示（或显示极淡占位）
-// mapData !== null → 有数据 → 显示 recap 或 empty hint
-```
-
-但这样改动稍大。**本轮保守做法**：只改初始值 `true` → `false`，保留现有逻辑。session 加载后 useEffect 会 `setLoading(true)` 短暂显示骨架，但这在三入口已经可见之后，不影响操作。
 
 ---
 
-### 任务 4：Bundle 分析（只输出报告，不拆包）
+### 任务 4：Bundle 分析（独立，只输出报告，不拆包）
 
 - [ ] 安装 `@next/bundle-analyzer` 为 devDependency
-- [ ] 在 `next.config.ts` 加 bundle analyzer wrapper
+- [ ] 在 `next.config.ts` 加 bundle analyzer wrapper，仅在 `ANALYZE=1` 时启用
 - [ ] 运行 `ANALYZE=1 npm.cmd run build`
 - [ ] 把分析结果写入 `doc/research/bundle-analysis-2026-07-04.md`
 - [ ] 识别 2.67MB 里最大的 shared chunk 和重依赖
-- [ ] 不新增大依赖，不做 PWA，不做对象存储迁移
+- [ ] **只生成报告，不做拆包，不做任何代码优化改动**
+- [ ] 不引入 PWA、COS、Web Worker、大规模 Server/Client 拆分
 
 #### 技术细节
 
@@ -181,7 +187,7 @@ set ANALYZE=1 && npm.cmd run build
 | 文件 | 操作 | 说明 | 上游文件? |
 |------|------|------|:---:|
 | `src/app/login/page.tsx` | 修改 | ① `router.push("/")` → `router.push("/nana")` ② 按钮反馈 ③ 耗时埋点 ④ 防重复提交 | ⚠️是 |
-| `src/app/nana/page.tsx` | 修改 | `loading` 初始值 `true` → `false` | 否（nana 自有文件） |
+| `src/app/nana/page.tsx` | 修改 | 底部区域改为显式三态：`mapData===null` 不显示 / 有记录显示 recap / 确认无记录显示 EmptyHint | 否（nana 自有文件） |
 | `next.config.ts` | 修改 | 加 bundle analyzer wrapper | 否（项目级配置） |
 | `package.json` | 修改 | 加 `@next/bundle-analyzer` devDependency | 否 |
 | `doc/research/bundle-analysis-2026-07-04.md` | 新增 | bundle 分析报告 | 否 |
@@ -196,7 +202,8 @@ set ANALYZE=1 && npm.cmd run build
 - [ ] **按钮反馈**：点"进入"后按钮文字变成"正在进入…"，按钮灰掉不可再点
 - [ ] **防重复提交**：快速连点登录按钮，只触发一次 signIn
 - [ ] **首屏三入口**：/nana 页面打开后三个入口卡（拍一道题、知识地图、周末小检查）立刻可见可点，不等地图 API
-- [ ] **底部异步更新**：地图 API 返回后底部区域自然更新（有记录显示 recap 提示，无记录显示 empty hint）
+- [ ] **底部不误导**：map 数据未知时底部不显示 EmptyHint（不会误导用户以为没有记录）
+- [ ] **底部异步更新**：地图 API 返回后底部区域自然出现 recap 提示或 EmptyHint（有记录显示 recap，确认无记录显示 empty hint）
 
 ### 开发环境 console 验收
 
@@ -214,10 +221,10 @@ set ANALYZE=1 && npm.cmd run build
 
 - [ ] `git status` 干净
 - [ ] commit message 标注 `⚠️上游文件修改`（login/page.tsx）
-- [ ] 按独立意图拆 commit：
-  - commit 1: `feat(login): 登录后直跳 /nana + 按钮即时反馈 ⚠️上游文件修改`
-  - commit 2: `perf(nana): 首屏三入口不等 map API`
-  - commit 3: `chore: bundle analyzer 配置 + 分析报告`
+- [ ] 按独立意图拆 commit（使用项目允许的 type）：
+  - commit 1: `fix(login): 登录后直跳 nana 并补即时反馈 ⚠️上游文件修改`
+  - commit 2: `fix(nana): 首页入口不等待地图数据`
+  - commit 3: `docs(perf): 新增 bundle 分析报告`
 
 ---
 
@@ -226,7 +233,7 @@ set ANALYZE=1 && npm.cmd run build
 | 风险 | 影响 | 缓解 |
 |------|------|------|
 | login/page.tsx 是上游文件，同步上游时可能冲突 | 低 | commit message 标注 `⚠️上游文件修改`，只改 1 行跳转目标 + 加反馈逻辑 |
-| `loading` 初始值改 `false` 后，有记录用户会先看到 EmptyHint 再闪到 recap | 低 | 三入口已可见不影响操作；如闪动明显可在后续轮次改为 `mapData === null ? null : ...` |
+| 底部三态逻辑改动，可能遗漏边界情况（map API 失败时 mapData 设为 null） | 低 | map API 失败时 mapData 设为 null，底部不显示 recap/empty hint，不影响三入口操作；用户仍可正常使用所有功能 |
 | bundle analyzer 改了 next.config.ts，可能影响生产构建 | 低 | analyzer 只在 `ANALYZE=1` 时启用，正常 build 不受影响 |
 | `@next/bundle-analyzer` 与 Next.js 16 兼容性 | 低 | 该库是 Vercel 官方维护，与 Next.js 版本同步更新 |
 
@@ -322,17 +329,61 @@ const handleSubmit = async (e: React.FormEvent) => {
 </Button>
 ```
 
-### D. /nana page.tsx 改法
+### D. /nana page.tsx 改法（显式三态）
+
+**现状**（约第 44-70 行 + 第 122-141 行）：
 
 ```tsx
-// 第 47 行
-// 现有
-const [loading, setLoading] = useState(true);
-// 改后
-const [loading, setLoading] = useState(false);
+// 状态
+const [mapData, setMapData] = useState<MapResponse | null>(null);
+const [loading, setLoading] = useState(true);  // 初始 true
+
+// useEffect 内：session 就绪后 setLoading(true) → fetch → finally setLoading(false)
+// catch 时 setMapData(null)
+
+// 渲染（约第 122-141 行）
+{loading ? (
+  <骨架 />
+) : hasRecords ? (
+  <recap 提示 />
+) : (
+  <EmptyHint />
+)}
 ```
 
-仅此一行改动。`useEffect` 内的 `setLoading(true)` 保留不动。
+**改后**：
+
+```tsx
+// 状态：loading 初始改为 false
+const [mapData, setMapData] = useState<MapResponse | null>(null);
+const [loading, setLoading] = useState(false);
+
+// useEffect 内逻辑不变：session 就绪后 setLoading(true) → fetch → finally setLoading(false)
+// catch 时 setMapData(null)
+
+// 渲染（约第 122-141 行）改为三态显式控制：
+{mapData === null ? (
+  // 数据未知：不显示骨架也不显示 EmptyHint，底部留白
+  // 三入口已在上方，用户可直接操作
+  null
+) : hasRecords ? (
+  // 数据已返回且有记录：显示 recap 提示
+  <div className="rounded-2xl border border-[#E8E0D4] bg-white/60 p-4 text-center">
+    <p className="text-sm text-[#8C857B]">
+      ✦ 继续拍题或做小检查，地图会慢慢亮起来
+    </p>
+  </div>
+) : (
+  // 数据已返回且确认无记录：显示 EmptyHint
+  <EmptyHint />
+)}
+```
+
+**关键变化**：
+1. `loading` 初始值 `true` → `false`（首屏不闪骨架）
+2. 底部渲染从 `loading ? 骨架 : ...` 改为 `mapData === null ? null : ...`（数据未知时留白）
+3. `loading` 状态仍保留（可用于刷新场景的骨架显示），但首屏不依赖它
+4. map API 失败时 `mapData` 为 `null`，底部留白，不影响三入口操作
 
 ### E. bundle analyzer next.config.ts 改法
 
