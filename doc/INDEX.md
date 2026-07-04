@@ -222,6 +222,15 @@
 
 ---
 
+## doc/product/ — 产品文档
+
+| 状态 | 文件 | 一句话 |
+|:--:|------|--------|
+| 🔥 | [product/nana-user-manual-v1-draft.md](product/nana-user-manual-v1-draft.md) | 用户说明手册 v1（面向孩子/家长，8 个场景 + v1 不做清单） |
+| 🔥 | [product/nana-product-behavior-manual-v1.md](product/nana-product-behavior-manual-v1.md) | 产品行为手册 v1（面向开发/设计，状态机 + 文案铁律 + 数据落库 + 8 场景） |
+
+---
+
 ## doc/guide/ — 使用指南
 
 | 状态 | 文件 | 一句话 |
@@ -247,5 +256,5 @@
 
 ---
 
-> 最后更新：2026-07-01 | 维护者：人类 + Claude + Codex + 三代理
-> 本次更新：Codex 记忆决策（CI 镜像部署 + Phase 1.5 真实采集门禁）
+> 最后更新：2026-07-05 | 维护者：人类 + Claude + Codex + 三代理
+> 本次更新：新增 doc/product/ 产品文档索引（用户手册 + 行为手册 v3-revised 同步）

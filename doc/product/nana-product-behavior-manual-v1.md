@@ -2,8 +2,17 @@
 
 > 面向：开发和设计（含项目 AI agent）
 > 目标：开发不要自由发挥，设计不要语义漂移
-> 关联：用户说明手册见 `nana-user-manual-v1-draft.md`，技术方案见 `doc/plan/stage3-ai-integration-plan.md`
+> 关联：用户说明手册见 `nana-user-manual-v1-draft.md`，技术方案见 `doc/plan/stage3-ai-integration-plan-v3-revised.md`
 > 权威：本文档是前端文案、状态机、数据落库行为的**唯一权威**。与代码冲突时，以本文档为准并修代码。
+> 更新日期：2026-07-05（同步 v3-revised r2+）
+
+---
+
+## 0. v1 定位
+
+v1 是 **"AI 错题卡片闭环"**：拍题 → AI 摘要/课本分类/轻反馈/下一步建议 → 持久化 → 题目汇总 → 可打印。
+
+**v1 不做**：完整 OCR、完整解题步骤、答案、深度归因、StudentNodeState 绿色点亮。
 
 ---
 
@@ -12,15 +21,104 @@
 | 入口 | URL | 触发条件 | 行为 |
 |------|-----|---------|------|
 | 首页 | `/nana` | 登录后默认 | 三卡片（拍题/知识地图/周末小检查）+ RecapBar |
-| 拍题 | `/nana/capture` | 点"拍题" | 拍照 + 录音 + 保存 + AI 整理 |
-| 知识地图 | `/nana/knowledge-map` | 点"知识地图" | 节点分组列表 + 最近拍过的题 |
+| 拍题 | `/nana/capture` | 点"拍题" | 拍照 + 录音 + 保存 + AI 整理 + AI 结果展示 |
+| 知识地图 | `/nana/knowledge-map` | 点"知识地图" | 三 tab：题目汇总（默认）/ 图谱 / 列表 |
+| 题目汇总 | `/nana/knowledge-map` → "题目汇总"tab | 默认 tab | 按课本章节分组的错题卡片列表 + 打印入口 |
+| 打印预览 | `/nana/print-preview` | 题目汇总页点"打印/导出" | 按课本章节整理的打印样式 |
 | 周末小检查 | `/nana/session` | 点"周末小检查" | 做题 → 报告 → 点亮节点 |
 
 ---
 
-## 2. 状态机
+## 2. 两层分类体系
 
-### 2.1 采集页状态机（`capture/page.tsx`）
+### 2.1 TextbookTopic（课本章节）— 孩子看到的分类层
+
+- **面向用户**：题目汇总页按课本章节分组、手动改分类的下拉框、打印页的章节标题
+- **数据来源**：16 个种子章节（TB-001 ~ TB-016），覆盖当前 48 个系统知识点对应的课本章节
+- **覆盖范围**：必修第一册第一章~第四章（14 个）+ 必修第二册第七章复数（2 个）
+- **不是完整教材目录**：后续知识图谱扩展时同步追加
+- **展示规则**：
+  - 选择器只展示有节点的 topic
+  - 未覆盖章节不出现
+  - AI 返回清单外 topicId → 代码层过滤掉，归入"未分类/暂未覆盖"
+
+### 2.2 KnowledgeNode（系统知识点）— 系统内部图谱层
+
+- **面向系统**：知识地图图谱视图、诊断引擎、BKT 追踪
+- **数据来源**：48 个系统节点（seed_graph_batch1.ts）
+- **不直接展示给孩子**：图谱 tab 仍展示，但题目汇总页用 TextbookTopic 分组
+
+### 2.3 两层关系
+
+```
+TextbookTopic (16 个)  ←→  KnowledgeNode (48 个)
+     通过 TextbookNodeMapping 连接（48 条映射，每节点恰好映射 1 个 topic）
+```
+
+### 2.4 数据表职责划分
+
+| 表 | 存什么 | source 白名单 | 说明 |
+|----|--------|--------------|------|
+| `CaseTextbookTopicTag` | Case ↔ 课本章节挂载 | `manual` / `vlm` | 孩子看到的分类 |
+| `CaseKnowledgeTag` | Case ↔ 系统知识点挂载 | `manual` / `vlm` | 系统内部图谱层，**不扩展** |
+| `CaseAiResult` | AI 分析结果快照 | — | 持久化 AI 全部输出 |
+
+> **铁律**：CaseKnowledgeTag 保持原样不扩展，只表示系统 KnowledgeNode。课本分类用独立表 CaseTextbookTopicTag。
+
+---
+
+## 3. CaseAiResult 持久化字段
+
+`CaseAiResult` 是 1:1 关联 Case 的 AI 结果快照表，持久化以下字段：
+
+| 字段 | 类型 | 说明 | 展示位置 |
+|------|------|------|---------|
+| `questionSummary` | String? | AI 一句话题目摘要 | 采集页、题目汇总、打印页 |
+| `questionSummaryEdited` | Boolean | 用户是否手动纠错 | — |
+| `transcript` | String? | 转写文字快照 | 采集页、题目汇总、打印页 |
+| `textbookTopicId` | String? (FK) | 最高置信课本分类 | 采集页、题目汇总、打印页 |
+| `textbookTopicConfidence` | Float | 置信度 | — |
+| `textbookTopicEdited` | Boolean | 用户是否手动修正 | — |
+| `initialFeedback` | String? | 鼓励文案 | 采集页、题目汇总、打印页 |
+| `possibleMistakeReason` | String? | 可能的错因方向 | 采集页、题目汇总、打印页 |
+| `nextActionSuggestion` | String? | 下一步建议 | 采集页、题目汇总、打印页 |
+| `audioStatus` | String | success/skipped/failed/timeout | — |
+| `processingStatus` | String | success/failed/timeout/pending | — |
+| `tokenUsage` | String? (JSON) | token 用量 | — |
+
+### 3.1 nextActionSuggestion 全链路一致性
+
+`nextActionSuggestion` **必须在三个位置一致展示**：
+
+| 展示位置 | 标签文案 | 说明 |
+|---------|---------|------|
+| 采集页（AI 结果面板） | "下一步：" | 拍题后即时展示 |
+| 题目汇总（题卡） | "下一步" | 历史题卡中展示 |
+| 打印预览页 | "下一步：" | 打印输出中展示 |
+
+> **纪律**：如果 CaseAiResult 中 nextActionSuggestion 为空，三处统一不展示该区块（不显示"下一步：（空）"）。
+
+### 3.2 课本章节覆盖范围声明
+
+**当前只覆盖 48 个系统知识点对应的课本章节（16 个 TextbookTopic），不是完整教材目录。**
+
+- TB-001 ~ TB-014：必修第一册（第一章~第四章）
+- **TB-015 / TB-016：必修第二册第七章复数**（复数在必修第二册，不是必修第一册）
+  - TB-015：第七章 复数 → 7.1 复数的概念（映射 M1-26, M1-27, M1-28）
+  - TB-016：第七章 复数 → 7.2 复数的四则运算（映射 M1-29, M1-30）
+
+### 3.3 重复 /process 覆盖保护
+
+| 字段 | 保护条件 | 行为 |
+|------|---------|------|
+| `questionSummary` | `questionSummaryEdited === true` | 不覆盖，保留用户编辑 |
+| `textbookTopicId` | `textbookTopicEdited === true` | 不覆盖，保留用户选择 |
+
+---
+
+## 4. 状态机
+
+### 4.1 采集页状态机（`capture/page.tsx`）
 
 ```
 photoState: "empty" | "photoTaken"
@@ -45,21 +143,34 @@ recorderState: "idle" | "recording" | "completed"
   - payload > 3MB → 禁保存（提示"材料太大，请重新拍一张或录短一些"）
 ```
 
-### 2.2 /process 结果状态
+### 4.2 /process 结果状态
 
 ```
 status: "success" | "failed" | "timeout"
 audioStatus: "success" | "skipped" | "failed" | "timeout"
 
 组合矩阵：
-  status=success + audioStatus=success → 有转写 + 有标签（理想）
-  status=success + audioStatus=skipped → 无转写 + 有标签（webm/无音频）
-  status=success + audioStatus=success(空转写) → 无转写 + 有标签（WAV但AI没听出内容）
-  status=failed → 无写入，UI 显示"没接上"
-  status=timeout → 无写入，UI 显示"超时了"
+  status=success + audioStatus=success → 有转写 + 有AI结果（理想）
+  status=success + audioStatus=skipped → 无转写 + 有AI结果（webm/无音频）
+  status=success + audioStatus=success(空转写) → 无转写 + 有AI结果（WAV但AI没听出内容）
+  status=failed → CaseAiResult 写入 processingStatus=failed，UI 显示"没接上"
+  status=timeout → CaseAiResult 写入 processingStatus=timeout，UI 显示"超时了"
 ```
 
-### 2.3 知识地图节点分组（`knowledge-map-list-view.tsx`）
+### 4.3 采集页 processed 子状态
+
+```
+processed 状态下的子状态（根据 /process 返回内容）：
+  success + 有摘要 + 有分类 → "整理好了 · 可能属于：XXX"
+    └─ 展示 AI 摘要 + 课本分类 + 轻反馈 + 可能方向 + 下一步 + [编辑] + [改分类]
+  success + 有摘要 + 无分类 → "整理好了，但不太好分类，可以手动选"
+  success + 无摘要 + 有分类 → "可能属于：XXX"（AI 没看懂题面但判断了分类）
+  success + 都无 → "整理好了，但不太好分类，可以手动整理"
+  failed → "识别没接上，可以手动整理"
+  timeout → "整理超时了，可以重试或手动整理"
+```
+
+### 4.4 知识地图节点分组（`knowledge-map-list-view.tsx`）
 
 ```
 分组优先级（互斥完备）：stable > frontier > collected > untested
@@ -87,9 +198,9 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 
 ---
 
-## 3. UI 文案规范
+## 5. UI 文案规范
 
-### 3.1 采集页文案
+### 5.1 采集页文案
 
 | 状态 | 文案 | 备注 |
 |------|------|------|
@@ -97,17 +208,59 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | 按钮初始（有照片） | "收好这道题" | 绿色 |
 | 保存中 | "正在收…" | 不说"正在保存""正在上传" |
 | 保存成功→processing | "正在整理这题…" | 不说"正在识别""正在诊断" |
-| success + 有转写 + 有标签 | "转写好了 · 可能属于：XXX" | "可能"留余地 |
-| success + 无转写 + 有标签 | "可能属于：XXX" | 不提转写 |
-| success + 有转写 + 无标签 | "转写好了 · 这题不太好分类" | |
-| success + 都无 | "整理好了，但不太好分类，可以手动挂" | 给出路 |
+| success + 有摘要 + 有分类 | "整理好了 · 可能属于：XXX" | "可能"留余地 |
+| success + 有摘要 + 无分类 | "整理好了，但不太好分类，可以手动选" | |
+| success + 无摘要 + 有分类 | "可能属于：XXX" | |
+| success + 都无 | "整理好了，但不太好分类，可以手动整理" | 给出路 |
 | failed | "识别没接上，可以手动整理" | 不说"失败" |
 | timeout | "整理超时了，可以重试或手动整理" | 不说"超时失败" |
-| 低置信候选 | "不太确定，先放未分类" | 不硬塞 |
 | 录音中禁保存 | "先把话说完，再收这道题" | |
 | payload 超限 | "材料太大，请重新拍一张或录短一些" | |
 
-### 3.2 知识地图文案
+### 5.2 AI 结果面板文案
+
+| 元素 | 文案 | 备注 |
+|------|------|------|
+| 摘要标签 | "AI 摘要：" | 不说"识别出的题目""题目原文" |
+| 摘要替代说法 | "这题大概在问" | 另一种友好说法 |
+| 摘要为空 | "这题不太好概括，可以自己写一句" | 给出路 |
+| 课本分类标签 | "可能属于：" | 不说"属于""已分类" |
+| 反馈标签 | "AI 想对你说：" | 不说"解析""答案" |
+| 错因标签 | "可能的方向：" | 不说"诊断结果""错因分析" |
+| 下一步标签 | "下一步：" | 不说"你应该""必须" |
+| 编辑按钮 | "编辑" | |
+| 改分类按钮 | "改分类" | 不说"纠错""修正错误" |
+| 用户纠错后 | "已更新" | 不说"已修正" |
+
+### 5.3 题目汇总页文案
+
+| 元素 | 文案 | 备注 |
+|------|------|------|
+| 页面标题 | "题目汇总" | |
+| Tab 名称 | "题目汇总" / "图谱" / "列表" | 题目汇总为默认 tab |
+| 分组标题 | "第一章 集合与常用逻辑用语" / "未分类/暂未覆盖" | |
+| 题卡摘要标签 | "AI 摘要" | |
+| 题卡分类标签 | "课本分类" | |
+| 题卡反馈标签 | "AI 想对你说" | |
+| 题卡错因标签 | "可能的方向" | |
+| 题卡建议标签 | "下一步" | |
+| 题卡时间 | "拍摄于 7月3日" | Case.createdAt |
+| 有转写标记 | "有语音记录" 图标 | |
+| 无转写标记 | 不显示 | |
+| AI 角标 | "AI 候选" | 区分来源 |
+| 手动角标 | "手动" | 区分来源 |
+| 打印按钮 | "打印/导出" | |
+
+### 5.4 打印预览页文案
+
+| 元素 | 文案 | 备注 |
+|------|------|------|
+| 标题 | "我的错题汇总 — 按课本章节整理" | |
+| 生成时间 | "生成时间：YYYY-MM-DD" | |
+| 每题标签 | "AI 摘要：" / "拍摄时间：" / "转写：" / "AI 反馈：" / "可能的方向：" / "下一步：" | 全部展示 |
+| 未分类分组标题 | "未分类/暂未覆盖" | 放最后 |
+
+### 5.5 知识地图文案
 
 | 元素 | 文案 | 备注 |
 |------|------|------|
@@ -119,7 +272,7 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | 首页回顾条（有点亮） | "上次你点亮了：XXX" / "你的地图上已经有 N 个光点了 ✦" | |
 | 首页回顾条（只收过题） | "你最近收过题的知识点有 N 个" / "还没做小检查，做完就能点亮它们 ✦" | 不说"点亮了" |
 
-### 3.3 转写面板文案
+### 5.6 转写面板文案
 
 | 状态 | 文案 | 备注 |
 |------|------|------|
@@ -129,7 +282,7 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | 音频格式不支持 | "语音暂未转写" | webm/mp4 |
 | 转写为空 | 保留"尚未转写"占位 | 不覆盖 |
 
-### 3.4 禁用词清单
+### 5.7 禁用词清单
 
 | 禁用词 | 替代 | 理由 |
 |--------|------|------|
@@ -143,15 +296,18 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | 错误 | 没接上 / 再试一次 | 不出现技术术语 |
 | 已识别 | 可能属于 | 不做确定性承诺 |
 | 已分类 | 可能属于 | |
+| 识别出的完整题目 | AI 摘要 | v1 不做完整 OCR |
 | 超时失败 | 超时了 | 去"失败"字 |
 | 网络错误 | 没接上 | 不说技术术语 |
 | 服务器错误 | 没接上 | |
+| 解析 / 答案 | 轻反馈 / 可能的方向 | v1 不做完整解析 |
+| 错因分析 | 可能的方向 | 不做确定性诊断 |
 
 ---
 
-## 4. 数据落库规范
+## 6. 数据落库规范
 
-### 4.1 落库表
+### 6.1 落库表
 
 | 表 | 何时写 | 写什么 | source | 持久化 |
 |----|--------|--------|--------|:------:|
@@ -160,21 +316,42 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | `Artifact` (audio_meta) | createCase | durationSec/mime/sizeBytes | — | ✅ |
 | `Artifact` (transcript) | createCase | "尚未转写" 占位 | — | ✅ |
 | `Artifact` (transcript) 更新 | /process 成功 + 转写非空 + 原内容是占位 | 转写文字 | — | ✅ |
+| `CaseAiResult` | /process 成功 | questionSummary, transcript, textbookTopicId, initialFeedback, possibleMistakeReason, nextActionSuggestion, audioStatus, processingStatus, tokenUsage | — | ✅ |
 | `CaseKnowledgeTag` | /process 成功 + confidence ≥ 0.5 | nodeId, confidence, note | "vlm" | ✅ |
 | `CaseKnowledgeTag` | 用户手动挂载 | nodeId, confidence=1.0 | "manual" | ✅ |
+| `CaseTextbookTopicTag` | /process 成功 + confidence ≥ 0.5 | textbookTopicId, confidence, note | "vlm" | ✅ |
+| `CaseTextbookTopicTag` | 用户手动改分类 | textbookTopicId, confidence=1.0 | "manual" | ✅ |
 | `StudentNodeState` | 周末小检查做对 | status="stable" | — | ✅ |
 
-### 4.2 不落库
+### 6.2 不落库
 
 | 数据 | 为什么不落库 |
 |------|-------------|
 | 低置信候选 (confidence < 0.5) | v1 不持久化，只在 /process 即时响应中返回 |
-| questionSummary | v1 只即时展示，不持久化（后续可加表存储） |
-| studentFacingFeedback | v1 只即时展示，不持久化 |
 | AI 原始输出 (rawOutput) | 只写日志，不入库 |
-| token 用量 (usage) | 只写日志，不入库（后续可加成本追踪表） |
+| recognizedQuestionText | v1 不做完整 OCR，此字段从 JSON schema 移除 |
 
-### 4.3 覆盖规则
+### 6.3 CaseAiResult 写入时机
+
+```
+/process 端点执行流程：
+1. Case Analyzer 调用成功
+2. upsert CaseAiResult（caseId 关联）：
+   - questionSummary = result.questionSummary
+   - transcript = result.transcript（非空时）
+   - textbookTopicId = 最高置信候选（≥0.5 时）
+   - textbookTopicConfidence = 对应置信度
+   - initialFeedback = result.initialFeedback
+   - possibleMistakeReason = result.possibleMistakeReason
+   - nextActionSuggestion = result.nextActionSuggestion
+   - audioStatus = 推导
+   - processingStatus = "success"
+3. transcript 回写 Artifact（同 v3 原版逻辑）
+4. knowledgeNodeCandidates (≥0.5) → upsert CaseKnowledgeTag(source="vlm")
+5. textbookTopicCandidates (≥0.5) → upsert CaseTextbookTopicTag(source="vlm", textbookTopicId=...)
+```
+
+### 6.4 覆盖规则
 
 **transcript artifact 覆盖守则**（铁律）：
 1. 只有 `isPlaceholderTranscript(content) === true` 时才覆盖
@@ -182,7 +359,12 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 3. 非占位不覆盖（人 > AI）
 4. 无 transcript artifact 不创建（createCase 恒创建，理论不会缺失）
 
-### 4.4 caseEvidenceCount 计数规则
+**CaseAiResult 重复 /process 覆盖保护**：
+- `questionSummaryEdited === true` → 不覆盖 questionSummary
+- `textbookTopicEdited === true` → 不覆盖 textbookTopicId
+- 其他字段（initialFeedback, possibleMistakeReason, nextActionSuggestion）每次覆盖最新
+
+### 6.5 caseEvidenceCount 计数规则
 
 ```
 按 distinct(caseId, nodeId) 计数，不按行数计数。
@@ -193,90 +375,98 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 实现：findMany + distinct(['nodeId', 'caseId']) → Map 聚合
 ```
 
+### 6.6 CaseTextbookTopicTag.source 白名单
+
+**只允许两个值**：`"manual"` | `"vlm"`。不预留 asr/rule/pending。
+
+```typescript
+export const TEXTBOOK_TOPIC_TAG_SOURCES = ["manual", "vlm"] as const;
+export type TextbookTopicTagSource = (typeof TEXTBOOK_TOPIC_TAG_SOURCES)[number];
+```
+
 ---
 
-## 5. 七个场景（技术视角）
+## 7. 八个场景（技术视角）
 
-### 场景 1：清晰题，无录音
+### 场景 1：清晰题图，无录音，AI 成功分类
 
 | 维度 | 内容 |
 |------|------|
 | 用户行为 | 拍照 → "收好这道题" |
 | 请求序列 | POST /cases（artifacts: question_image + transcript 占位）→ 201 → POST /cases/:id/process |
 | /process 输入 | imageDataUrl=题图, audioBase64=无, audioFormat=无 |
-| /process 输出 | status=success, audioStatus=skipped, transcript=无, tags=[vlm标签], questionSummary=即时展示, feedback=即时展示 |
-| UI 文案 | "可能属于：用定义判断单调性" |
-| 落库 | Artifact(transcript) 不更新（无转写）; CaseKnowledgeTag(source=vlm) ×N |
-| 不落库 | questionSummary, feedback, lowConfidenceCandidates |
-| 误解风险 | "可能属于"被理解为"确定属于" |
-| 防误解 | "可能"措辞 + "AI 候选"角标 |
+| /process 输出 | status=success, audioStatus=skipped, questionSummary=有, textbookTopic=有, initialFeedback=有, possibleMistakeReason=有, nextActionSuggestion=有, transcript=无 |
+| UI 文案 | "整理好了 · 可能属于：函数的基本性质" |
+| 落库 | Artifact(transcript) 不更新; CaseAiResult(全部字段); CaseTextbookTopicTag(source=vlm); CaseKnowledgeTag(source=vlm) |
+| 时间戳 | Case.createdAt = 拍摄时间 |
+| 误解风险 | "AI 摘要"被理解为"完整 OCR" |
+| 防误解 | "AI 摘要"不说"识别出的题目"; "可能属于"留余地 |
 
-### 场景 2：拍题 + 讲思路，AI 成功
+### 场景 2：清晰题图 + 语音，AI 转写并给轻反馈
 
 | 维度 | 内容 |
 |------|------|
 | 用户行为 | 拍照 → "讲讲思路"tab → 录音 → "收好这道题" |
 | 请求序列 | POST /cases（artifacts: question_image + audio_note + audio_meta + transcript 占位）→ 201 → POST /cases/:id/process |
 | /process 输入 | imageDataUrl=题图, audioBase64=WAV纯Base64, audioFormat="wav" |
-| /process 输出 | status=success, audioStatus=success, transcript=转写文字, tags=[vlm标签], questionSummary=即时展示, feedback=即时展示 |
-| UI 文案 | "转写好了 · 可能属于：求函数值 f(a)" |
-| 落库 | Artifact(transcript) 更新为转写文字; CaseKnowledgeTag(source=vlm) ×N |
-| 不落库 | questionSummary, feedback |
-| 误解风险 | 转写文字被理解为标准答案 |
-| 防误解 | "转写仅供参考，原音为准" |
+| /process 输出 | status=success, audioStatus=success, transcript=转写文字, questionSummary=有, textbookTopic=有, initialFeedback=有, possibleMistakeReason=有, nextActionSuggestion=有 |
+| UI 文案 | "整理好了 · 可能属于：函数的基本性质" + 转写面板显示文字 |
+| 落库 | Artifact(transcript) 更新; CaseAiResult(全部字段); CaseTextbookTopicTag(source=vlm); CaseKnowledgeTag(source=vlm) |
+| 时间戳 | Case.createdAt = 拍摄时间; CaseAiResult.updatedAt = 整理时间; "有语音记录"图标 |
+| 误解风险 | 转写被理解为标准答案; 轻反馈被理解为完整解析 |
+| 防误解 | "转写仅供参考，原音为准"; "AI 想对你说"不说"解析"; "可能的方向"不说"诊断" |
 
-### 场景 3：照片歪，AI 低置信
+### 场景 3：图片不清楚，AI 只能给摘要或无法分类
 
 | 维度 | 内容 |
 |------|------|
 | 用户行为 | 拍了歪照 → "收好这道题" |
 | 请求序列 | POST /cases → 201 → POST /cases/:id/process |
 | /process 输入 | imageDataUrl=歪题图, audioBase64=无 |
-| /process 输出 | status=success, audioStatus=skipped, tags=[], lowConfidenceCandidates=[{nodeId, confidence=0.3, reason}] |
-| UI 文案 | "整理好了，但不太好分类，可以手动挂" 或 "不太确定，先放未分类" |
-| 落库 | Artifact(transcript) 不更新; CaseKnowledgeTag 不写 |
-| 不落库 | lowConfidenceCandidates（刷新即失） |
+| /process 输出 | status=success, audioStatus=skipped, questionSummary=可能有(也可能空), textbookTopicCandidates=[]或低置信, knowledgeNodeCandidates=[]或低置信 |
+| UI 文案 | "整理好了，但不太好分类，可以手动选" 或 "整理好了，但不太好分类，可以手动整理" |
+| 落库 | Artifact(transcript) 不更新; CaseAiResult(questionSummary如有, textbookTopicId=空, processingStatus=success); CaseTextbookTopicTag 不写; CaseKnowledgeTag 不写 |
+| 时间戳 | Case.createdAt = 拍摄时间 |
 | 误解风险 | "不好分类"被理解为"题太差" |
-| 防误解 | "不太好分类"不说"题不清晰"; "可以手动挂"给出路 |
+| 防误解 | "不太好分类"不说"题不清晰"; "可以手动选"给出路 |
 
-### 场景 4：AI 挂错，手动改
+### 场景 4：AI 课本分类错了，孩子手动改
 
 | 维度 | 内容 |
 |------|------|
-| 用户行为 | 知识地图 → 最近拍过的题 → 点开详情 → 选知识点 → "挂上" |
-| 请求序列 | GET /cases/:id/tags → POST /cases/:id/tags { nodeId } |
-| UI 变化 | 标签列表新增一条 "手动"角标; AI 标签保留 "AI 候选"角标 |
-| 落库 | CaseKnowledgeTag(source=manual, confidence=1.0) |
+| 用户行为 | 采集页/题目汇总 → 点"改分类" → 选新课本章节 → 保存 |
+| 请求序列 | PATCH /cases/:id/ai-result { textbookTopicId: 新ID } |
+| UI 变化 | 课本分类更新; 角标从"AI 候选"变"手动"; 显示"已更新" |
+| 落库 | CaseAiResult.textbookTopicId=新ID, textbookTopicEdited=true; CaseTextbookTopicTag(source=manual, confidence=1.0) |
 | 不删除 | AI 标签(source=vlm) 保留 |
+| 覆盖保护 | 后续 /process 不覆盖 textbookTopicId（textbookTopicEdited=true） |
 | 误解风险 | "AI 挂错了"被理解为"AI 不好用" |
-| 防误解 | "AI 候选"角标暗示可改; 不说"纠错"说"手动挂" |
+| 防误解 | "改分类"不说"纠错"; "已更新"不说"已修正" |
 
-### 场景 5：收了题但没变绿
-
-| 维度 | 内容 |
-|------|------|
-| 用户行为 | 拍多道题 → 去知识地图看 |
-| 数据状态 | CaseKnowledgeTag 有记录; StudentNodeState 无记录 |
-| UI 表现 | 节点在"收过题"琥珀色分组; 不在"已点亮"绿色分组 |
-| 首页回顾条 | "你最近收过题的知识点有 N 个，还没做小检查，做完就能点亮它们" |
-| 落库 | 只有 CaseKnowledgeTag; 没有写 StudentNodeState |
-| 误解风险 | "收了这么多题怎么不亮" |
-| 防误解 | 回顾条明确提示"做完小检查才能点亮"; 颜色区分琥珀vs绿色 |
-
-### 场景 6：小检查后点亮
+### 场景 5：AI 给了"下一步建议"，但不承诺完整解析
 
 | 维度 | 内容 |
 |------|------|
-| 用户行为 | 周末小检查 → 做对题 |
-| 请求序列 | POST /api/diagnosis/submit-answers → 系统判定对错 → 更新 StudentNodeState |
-| 数据状态 | StudentNodeState.status = "stable" |
-| UI 表现 | 知识地图节点从"收过题"移到"已点亮"绿色分组 |
-| 首页回顾条 | "上次你点亮了：用定义判断单调性" / "你的地图上已经有 N 个光点了" |
-| 落库 | StudentNodeState(status=stable); CaseKnowledgeTag 保留不删 |
-| 误解风险 | "点亮了是不是永远亮" |
-| 防误解 | "已点亮"不说"已掌握"; v1 阶段点亮了就是点亮了 |
+| 用户行为 | 拍题 → AI 整理完成 → 看到"下一步：可以看看 XX 的视频" |
+| /process 输出 | nextActionSuggestion 非空 |
+| 落库 | CaseAiResult.nextActionSuggestion 持久化 |
+| 展示位置 | 采集页 + 题目汇总题卡 + 打印页（三处一致） |
+| 误解风险 | "下一步建议"被理解为"解题步骤" |
+| 防误解 | "下一步可以"不说"你应该""答案是"; nextActionSuggestion 为空时三处统一不展示 |
 
-### 场景 7：网络慢/没接上
+### 场景 6：题目属于当前 48 节点覆盖外章节，进入"未分类/暂未覆盖"
+
+| 维度 | 内容 |
+|------|------|
+| 用户行为 | 拍了一道三角函数的题 |
+| /process 输出 | status=success, questionSummary=有, textbookTopicCandidates=[]（清单外 topicId 被过滤）, knowledgeNodeCandidates=[] |
+| UI 文案 | "整理好了，但不太好分类，可以手动选" |
+| 落库 | CaseAiResult(questionSummary, textbookTopicId=空, processingStatus=success); CaseTextbookTopicTag 不写; CaseKnowledgeTag 不写 |
+| 题目汇总 | 归入"未分类/暂未覆盖"分组 |
+| 误解风险 | "未分类"被理解为"AI 不会" |
+| 防误解 | "未分类/暂未覆盖"不说"无法识别""不支持"; 仍展示 AI 摘要和轻反馈 |
+
+### 场景 7：网络慢或 AI 失败，题已保存，可稍后重试/手动整理
 
 | 维度 | 内容 |
 |------|------|
@@ -284,13 +474,24 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | 请求序列 | POST /cases → 201（题图已存）→ POST /cases/:id/process → 超时/报错 |
 | /process 输出 | status=timeout 或 status=failed, error=原因 |
 | UI 文案 | "整理超时了，可以重试或手动整理" 或 "识别没接上，可以手动整理" |
-| 落库 | Artifact(question_image) 已保存; Artifact(transcript) 保留占位; CaseKnowledgeTag 不写 |
+| 落库 | Artifact(question_image) 已保存; CaseAiResult(processingStatus=failed/timeout, 其他字段空); CaseTextbookTopicTag 不写; CaseKnowledgeTag 不写 |
+| 题目汇总 | 归入"未分类/暂未覆盖"分组 |
 | 误解风险 | "没接上是不是题没存" |
 | 防误解 | "可以手动整理"暗示题已存; 不说"失败""错误" |
 
+### 场景 8：题目汇总打印给孩子复习
+
+| 维度 | 内容 |
+|------|------|
+| 用户行为 | 题目汇总页 → 点"打印/导出" → 跳转 /nana/print-preview → 浏览器打印/另存PDF |
+| 展示内容 | 按课本章节分组; 每题: 题图+摘要+时间+转写+反馈+错因+下一步; 未分类放最后 |
+| 打印样式 | @media print: 隐藏所有交互按钮; 题图固定宽度; 字号适配A4; 每章分页 |
+| 误解风险 | 打印输出被理解为"标准答案" |
+| 防误解 | 打印的是错题汇总清单; AI 摘要和轻反馈只是辅助参考 |
+
 ---
 
-## 6. 颜色语义
+## 8. 颜色语义
 
 | 颜色 | Hex | 语义 | 用于 |
 |------|-----|------|------|
@@ -305,50 +506,45 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 **颜色铁律**：
 - 绿色 **只** 表示"已点亮"（StudentNodeState status=stable）
 - 琥珀色 **只** 表示"收过题"（CaseEvidenceCount > 0）
-- 不得用绿色表示"AI 成功"——AI 成功用文字"转写好了""可能属于"表达
+- 不得用绿色表示"AI 成功"——AI 成功用文字"整理好了""可能属于"表达
 - 不得用红色表示"失败"——用浅褐文字 + "没接上"文案
 
 ---
 
-## 7. 即时展示 vs 持久化
+## 9. 时间戳规范
 
-| 数据 | 即时展示 | 持久化 | 历史可见 | 说明 |
-|------|:--------:|:------:|:--------:|------|
-| transcript (转写文字) | ✅ | ✅ | ✅ | 回写 Artifact，后续打开 case 可见 |
-| knowledgeCandidates (confidence≥0.5) | ✅ | ✅ | ✅ | 写 CaseKnowledgeTag，知识地图/标签面板可见 |
-| knowledgeCandidates (confidence<0.5) | ✅ | ❌ | ❌ | 只在 /process 响应中返回，刷新即失 |
-| questionSummary (题目摘要) | ✅ | ❌ | ❌ | v1 只即时展示，不落库。**后续版本如需历史可见，需新增字段或表** |
-| studentFacingFeedback (鼓励文案) | ✅ | ❌ | ❌ | v1 只即时展示，不落库。**后续版本如需历史可见，需新增字段或表** |
-| tags (已有标签列表) | ✅ | ✅ | ✅ | 从 CaseKnowledgeTag 查，含 manual + vlm |
+| 信息 | 数据来源 | 展示位置 | v1 |
+|------|---------|---------|:--:|
+| 拍摄/保存时间 | `Case.createdAt` | 采集页、题目汇总、打印页 | ✅ |
+| 有语音记录 | `CaseAiResult.transcript` 非空 或 有 audio_note artifact | 题目汇总题卡图标 | ✅ |
+| 整理时间 | `CaseAiResult.updatedAt` | 题目汇总题卡（如有 AI 结果） | ✅ |
+| 音频逐句时间轴 | — | — | ❌ v2 待办 |
 
-### 设计决策：questionSummary 和 feedback 为什么 v1 不持久化？
-
-1. **最小闭环原则**：v1 只做"转写 + 轻分类"，额外输出是加分项不是必须项
-2. **表结构不变**：不新增字段/表，降低 v1 复杂度
-3. **后续路径**：如果产品验证有价值，v2 可在 Case 表加 `questionSummary`/`feedback` 字段，或新增 `CaseAiResult` 表
-4. **用户影响**：即时展示时用户能看到（"可能属于：XXX"已经包含了摘要的核心信息），刷新后消失不影响核心功能
+> **v1 不做音频逐句时间轴**。当前数据结构（Artifact + CaseAiResult）不支持逐句时间戳。如有需要列入 v2 待办。
 
 ---
 
-## 8. 失败分支汇总
+## 10. v1 不做的能力
 
-| 场景 | status | audioStatus | UI 文案 | 数据写入 | 用户出路 |
-|------|--------|-------------|---------|----------|---------|
-| 正常+转写+标签 | success | success | "转写好了 · 可能属于：XXX" | transcript + vlm tag | 查看/手动改 |
-| 正常+无转写+标签 | success | skipped | "可能属于：XXX" | vlm tag | 查看/手动改 |
-| 正常+转写+无标签 | success | success | "转写好了 · 这题不太好分类" | transcript | 手动挂 |
-| 正常+都无 | success | skipped | "整理好了，但不太好分类，可以手动挂" | 无 | 手动挂 |
-| 超时 | timeout | timeout | "整理超时了，可以重试或手动整理" | 无 | 重试/手动挂 |
-| 报错 | failed | failed | "识别没接上，可以手动整理" | 无 | 重试/手动挂 |
-| JSON 解析失败 | failed | failed | "识别没接上，可以手动整理" | 无 | 重试/手动挂 |
-| 无题图 | failed | skipped | "缺少题图，无法分析" | 无 | 拍照 |
-| 无音频 | success | skipped | "可能属于：XXX" | vlm tag | 查看/手动改 |
-| webm/mp4 格式 | success | skipped | "可能属于：XXX" | vlm tag | 查看/手动改 |
-| 跨用户访问 | 404 | — | — | — | — |
+| 能力 | 延后理由 |
+|------|---------|
+| 图片裁剪 | 已有 `react-image-crop` 依赖，但接入采集页非闭环必需 |
+| 图片旋转 | Canvas transform 可实现，但同上 |
+| 涂抹/马赛克 | v1 不做图片编辑 |
+| 疑似重复题提醒 | 文本相似度算法+UI 交互，非闭环核心 |
+| 完整 OCR | v1 用 questionSummary 一句话摘要够用 |
+| 完整解题步骤/答案 | v1 只做轻反馈，不误导 |
+| Problem/Attempt 模型 | v1 仍 1 Case = 1 拍题 |
+| PDF 直接导出 | 浏览器打印另存为 PDF 够用 |
+| 选择性打印（勾选题目） | v1 全部打印，v2 加勾选 |
+| 音频逐句时间轴 | 当前数据结构不支持，v2 待办 |
+| 深度归因/绿色点亮 | 拍题不触发 StudentNodeState，只有周末小检查做对了才点亮 |
+| 图片 embedding 去重 | 过重 |
+| recognizedQuestionText | v1 不做完整 OCR，此字段从 JSON schema 移除 |
 
 ---
 
-## 9. v2 遗留文件标注
+## 11. v2 遗留文件标注
 
 以下文件在 v2 Round 1 创建，**v3 不再进入主路径**，但保留文件不删除（避免 git 历史混乱）：
 
@@ -362,3 +558,22 @@ audioStatus: "success" | "skipped" | "failed" | "timeout"
 | `src/lib/nana/case-classify.ts` | source 白名单 | **复用** | v3 仍使用（source 收窄为 manual+vlm） |
 
 > **注意**：execute-agent 在 v3 Round 1 中应新建 `case-analyzer.ts`，不修改 `asr-transcribe.ts` 和 `vlm-classify.ts`。如果 build 时这两个文件有 lint 错误（如 unused import），可加 `// @ts-nocheck` 或直接删除，不尝试修复。
+
+---
+
+## 12. 失败分支汇总
+
+| 场景 | status | audioStatus | UI 文案 | 数据写入 | 用户出路 |
+|------|--------|-------------|---------|----------|---------|
+| 正常+转写+AI结果 | success | success | "整理好了 · 可能属于：XXX" | transcript + CaseAiResult + vlm tag | 查看/手动改 |
+| 正常+无转写+AI结果 | success | skipped | "整理好了 · 可能属于：XXX" | CaseAiResult + vlm tag | 查看/手动改 |
+| 正常+转写+无分类 | success | success | "整理好了，但不太好分类，可以手动选" | transcript + CaseAiResult(无topicId) | 手动选分类 |
+| 正常+都无 | success | skipped | "整理好了，但不太好分类，可以手动整理" | CaseAiResult(摘要如有) | 手动整理 |
+| 超时 | timeout | timeout | "整理超时了，可以重试或手动整理" | CaseAiResult(processingStatus=timeout) | 重试/手动整理 |
+| 报错 | failed | failed | "识别没接上，可以手动整理" | CaseAiResult(processingStatus=failed) | 重试/手动整理 |
+| JSON 解析失败 | failed | failed | "识别没接上，可以手动整理" | CaseAiResult(processingStatus=failed) | 重试/手动整理 |
+| 无题图 | failed | skipped | "缺少题图，无法分析" | 无 | 拍照 |
+| 无音频 | success | skipped | "整理好了 · 可能属于：XXX" | CaseAiResult + vlm tag | 查看/手动改 |
+| webm/mp4 格式 | success | skipped | "整理好了 · 可能属于：XXX" | CaseAiResult + vlm tag | 查看/手动改 |
+| 覆盖外章节 | success | skipped/ | "整理好了，但不太好分类，可以手动选" | CaseAiResult(无topicId) | 手动选或等待扩展 |
+| 跨用户访问 | 404 | — | — | — | — |
