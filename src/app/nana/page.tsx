@@ -44,7 +44,7 @@ interface MapResponse {
 export default function NanaPage() {
   const { data: session } = useSession();
   const [mapData, setMapData] = useState<MapResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -120,22 +120,22 @@ export default function NanaPage() {
       </div>
 
       {/* 有记录 / 空状态轻提示（三卡片下方） */}
+      {/* 三态显式控制：mapData===null（数据未知）不显示任何提示，避免误导；
+          mapData 返回后再显示 recap 或 EmptyHint */}
       <div className="mt-8">
-        {loading ? (
-          /* 加载中骨架 */
-          <div className="animate-pulse rounded-2xl bg-white/60 p-5">
-            <div className="h-4 w-3/4 rounded bg-[#E8E0D4]" />
-            <div className="mt-2 h-4 w-1/2 rounded bg-[#E8E0D4]" />
-          </div>
+        {mapData === null ? (
+          /* 数据未知：不显示骨架也不显示 EmptyHint，底部留白。
+             三入口已在上方，用户可直接操作 */
+          null
         ) : hasRecords ? (
-          /* 有记录时显示轻装饰提示（RecapBar 已去掉——三张 ActionCard 足够引导，
-             RecapBar 纯文字提示不可点反而让人困惑） */
+          /* 数据已返回且有记录：显示轻装饰提示 */
           <div className="rounded-2xl border border-[#E8E0D4] bg-white/60 p-4 text-center">
             <p className="text-sm text-[#8C857B]">
               ✦ 继续拍题或做小检查，地图会慢慢亮起来
             </p>
           </div>
         ) : (
+          /* 数据已返回且确认无记录：显示 EmptyHint */
           <EmptyHint />
         )}
       </div>

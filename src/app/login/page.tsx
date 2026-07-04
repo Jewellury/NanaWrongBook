@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,19 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const submitLock = useRef(false);  // 防极速双击
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitLock.current) return;  // 双重锁防重复提交
+        submitLock.current = true;
         setLoading(true);
         setError("");
+
+        const t0 = performance.now();
+        if (process.env.NODE_ENV === "development") {
+            console.log("[login-timing] signIn start");
+        }
 
         try {
             const result = await signIn("credentials", {
@@ -29,14 +37,23 @@ export default function LoginPage() {
                 password,
             });
 
+            if (process.env.NODE_ENV === "development") {
+                console.log(`[login-timing] signIn took ${(performance.now() - t0).toFixed(0)}ms`);
+            }
+
             if (result?.error) {
                 setError(t.auth?.login?.failed || 'Login failed');
+                submitLock.current = false;  // 失败后允许重试
             } else {
-                router.push("/");
+                if (process.env.NODE_ENV === "development") {
+                    console.log('[login-timing] router.push("/nana") called');
+                }
+                router.push("/nana");
                 router.refresh();
             }
         } catch (error) {
             setError(t.auth?.login?.error || 'An error occurred');
+            submitLock.current = false;  // 异常后允许重试
         } finally {
             setLoading(false);
         }
@@ -83,7 +100,7 @@ export default function LoginPage() {
                         )}
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading
-                                ? (t.auth?.login?.loggingIn || 'Logging in...')
+                                ? "正在进入…"
                                 : (t.auth?.login?.action || 'Login')}
                         </Button>
                         <div className="text-center text-sm text-muted-foreground">

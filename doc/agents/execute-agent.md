@@ -147,6 +147,11 @@
 ### 验证声明
 - 如果本地生产构建或 Docker 构建未验证，执行日志中必须写"未验证"，不得写"完成"或"通过"。
 
+### 一键部署脚本
+- 用户说"部署/发布/上线"时，优先使用 `scripts/deploy.sh`（8 步：分支检查 → git pull → 备份 SQLite → pull 镜像 → up -d → 健康检查）。
+- 用法：SSH 登服务器 → `cd /opt/nana` → `bash scripts/deploy.sh`。
+- 如果用户要求手动部署但不指定方式，直接推荐此脚本。
+
 ## Git 收口
 
 每完成一个独立任务或子任务后，执行 `git status` 判断是否提交。规则见 AGENTS.md §Git 收口闸门。
