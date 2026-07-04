@@ -27,7 +27,8 @@ test('Upload image, correct, save, and verify in notebook', async ({ page }) => 
     await page.getByLabel(/邮箱|Email/).fill('admin@localhost');
     await page.getByLabel(/^密码$|^Password$/).fill('123456');
     await page.getByRole('button', { name: /登录|Login/ }).click();
-    await page.waitForURL('**/', { timeout: 15000 });
+    // 登录后全局落点已改为 /nana，等待 /nana 后再显式导航到目标页
+    await page.waitForURL('**/nana', { timeout: 15000 });
 
     // 2. Ensure a Notebook exists
     // Go to Notebooks page
