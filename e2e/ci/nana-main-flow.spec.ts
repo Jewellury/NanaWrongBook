@@ -35,6 +35,10 @@ test.describe('Nana 主链路（移动端）', () => {
     await page.locator('input[name="confirmPassword"]').fill(user.password);
     await page.locator('select[name="educationStage"]').selectOption(user.stage);
     await page.locator('input[name="enrollmentYear"]').fill(user.year);
+
+    // 注册成功后 register/page.tsx 会弹 alert，用 once 仅处理这一次，
+    // 避免吞掉后续流程中可能出现的意外 dialog
+    page.once('dialog', (d) => d.accept());
     await page.locator('button[type="submit"]').click();
 
     // 注册成功跳 login，失败（已存在）也跳 login
@@ -62,14 +66,14 @@ test.describe('Nana 主链路（移动端）', () => {
     await page.getByText('拍一道题').click();
     await page.waitForURL('**/nana/capture', { timeout: 5000 });
 
-    // 验证拍题页空状态
-    await expect(page.getByText('先拍一下这道题')).toBeVisible({ timeout: 5000 });
+    // 验证拍题页空状态——"点这里拍照，或从相册选"是上传区空状态独有文案
+    // （页面上有两处"先拍一下这道题"：上传按钮 aria-label + 底部禁用保存按钮文案，
+    //  用副标题唯一定位避免 strict mode 歧义）
+    await expect(page.getByText('点这里拍照，或从相册选')).toBeVisible({ timeout: 5000 });
 
     // ─── 5. 上传 fixture 图片 ──────────────────────────
-    // 点击"先拍一下这道题"按钮触发隐藏的 input[type="file"]
-    await page.getByRole('button', { name: '先拍一下这道题' }).click();
-
-    const fixturePath = path.join(__dirname, '../fixtures/nana/cases/clear-printed.jpg');
+    // 直接对隐藏的 input[type="file"] 设值（Playwright 最佳实践，无需先点击按钮）
+    const fixturePath = path.resolve(process.cwd(), 'tests/fixtures/nana/cases/clear-printed.jpg');
     await page.setInputFiles('input[type="file"]', fixturePath);
 
     // 验证图片预览出现
@@ -96,9 +100,10 @@ test.describe('Nana 主链路（移动端）', () => {
     // 等待地图重新加载
     await expect(page.getByRole('heading', { name: '我的知识地图' })).toBeVisible({ timeout: 10000 });
 
-    // 验证最近题浮层出现（"最近拍过的题"标题或 case 卡片）
-    // RecentCasesList 在有 case 时显示"最近拍过的题"标题
-    await expect(page.getByText('最近拍过的题')).toBeVisible({ timeout: 10000 });
+    // 验证最近题浮层出现——抽屉标题
+    // "最近拍过的题"在页面上多处出现（空状态按钮 + 抽屉标题 h2 + 列表标题 h2），
+    // 用 heading 角色排除按钮，.first() 定位抽屉标题（DOM 中最先出现）
+    await expect(page.getByRole('heading', { name: '最近拍过的题' }).first()).toBeVisible({ timeout: 10000 });
 
     // ─── 9. 题图详情可见 ───────────────────────────────
     // 点击第一个 case 卡片（按钮内含日期文本如"7月4日"）
