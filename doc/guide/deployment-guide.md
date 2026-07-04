@@ -15,6 +15,7 @@
 5. [备份策略](#5-备份策略)
 6. [故障排查](#6-故障排查)
 7. [密钥管理](#7-密钥管理)
+8. [常见问题](#8-常见问题)
 
 ---
 
@@ -87,7 +88,12 @@ git push origin main                        # 触发 GitHub Actions
 # 4. test container: migrate + seed + test:all
 # 5. docker build + push → GHCR（三个 tag）
 
-# ===== 服务器 =====
+# ===== 服务器（方式一：一键脚本，推荐）=====
+ssh root@119.28.42.208
+cd /opt/nana
+bash scripts/deploy.sh                      # 一键部署（检查分支→pull→备份→拉镜像→重启→健康检查）
+
+# ===== 服务器（方式二：手动分步）=====
 ssh root@119.28.42.208
 cd /opt/nana
 bash backup.sh                              # 备份 SQLite（失败则停）
@@ -95,6 +101,18 @@ docker compose -f docker-compose.prod.yml pull   # 拉新镜像
 docker compose -f docker-compose.prod.yml up -d  # 重建容器
 docker logs --tail 80 wrong-notebook        # 确认启动正常
 ```
+
+> 💡 **推荐使用一键脚本**：`bash scripts/deploy.sh` 自动完成分支检查、commit 记录、git pull、数据库备份、镜像拉取、容器重启和健康检查，减少手动操作失误。
+
+### 关于 `docker compose` 的注意事项
+
+> ⚠️ **关键理解**：`docker-compose.prod.yml` 使用 `image:` 方式（没有 `build` 指令）
+>
+> - `docker compose up -d --build` → **静默不生效**（没有 build 指令，compose 什么都不做）
+> - `docker compose build --no-cache` → **静默不生效**（同上）
+> - 正确操作是：**`docker compose pull && docker compose up -d`**
+>
+> `scripts/deploy.sh` 已正确处理这一逻辑，不必记住上述区别。
 
 ### CI 门禁
 
@@ -238,6 +256,29 @@ docker logs --tail 120 wrong-notebook
 | `bcryptjs/umd/index.js` not found | standalone 未跟踪 | `next.config.ts` 加 `outputFileTracingIncludes` |
 | `Admin seed failed`（非致命） | 管理员已存在 | 日志 WARN，不影响使用 |
 
+### `No services to build` / `docker compose build` 无实际效果
+
+> ⚠️ 这是本轮部署最容易踩的坑。
+
+**现象**：
+- 运行 `docker compose build --no-cache` 后输出 `No services to build`，以为构建成功，但其实什么都没发生
+- 运行 `docker compose up -d --build` 容器立刻重启，但跑的仍是旧镜像
+
+**根因**：
+`docker-compose.prod.yml` 使用 `image: ghcr.io/jewellury/nanawrongbook:latest`，没有 `build` 指令。
+Docker Compose 在没有 `build` 指令的服务上会静默跳过构建步骤——**不报错、不提示**。
+
+**正确操作**：
+```bash
+# ✅ 拉取最新镜像
+docker compose -f docker-compose.prod.yml pull
+
+# ✅ 重启容器（用新镜像）
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**预防**：使用 `scripts/deploy.sh` 一键部署，脚本已正确处理这一逻辑。
+
 ### HTTPS 不通
 
 ```mermaid
@@ -281,6 +322,66 @@ docker exec caddy curl -sk --resolve nana.nanatop.xyz:443:127.0.0.1 https://nana
 
 ---
 
+## 8. 常见问题
+
+### Q1：部署后功能按钮/页面不可见
+
+**可能原因**：服务器上的容器仍在运行旧镜像——`docker compose pull` 拉取的新镜像没有生效。
+
+**排查步骤**：
+```bash
+# 1. 确认当前运行的镜像版本
+docker inspect wrong-notebook --format '{{.Config.Image}}'
+
+# 2. 确认 GHCR 上的最新镜像
+#    访问 https://ghcr.io/jewellury/nanawrongbook/tags 查看 latest tag 更新时间
+
+# 3. 如果镜像不一致，说明 CI 可能未完成，或 pull 操作未执行正确
+#    重新部署：
+bash /opt/nana/scripts/deploy.sh
+```
+
+**常见陷阱**：运行了 `docker compose up -d --build` 以为构建了新镜像，但实际上 prod compose 没有 `build` 指令，容器用的是旧镜像。正确操作是 `docker compose pull && docker compose up -d`。
+
+### Q2：`docker compose pull` 拉取不到新镜像
+
+**可能原因**：GitHub Actions CI 尚未完成构建，或构建失败。
+
+**排查步骤**：
+```bash
+# 1. 检查 GitHub Actions 运行状态
+#    访问 https://github.com/Jewellury/NanaWrongBook/actions
+
+# 2. 查看最近一次 push 的 CI 结果
+#   - ✅ 绿色 = 构建成功，可以 pull
+#   - ❌ 红色 = 构建失败，排查 CI 日志
+#   - 🟡 黄色 = 运行中，等待完成
+```
+
+**门禁**：CI 失败 → 不得部署。修复必须回到本地仓库完成，不在服务器热修。
+
+### Q3：部署后如何确认一切正常？
+
+```bash
+# 快速检查清单
+# 1. 应用页面能打开
+curl -sk https://nana.nanatop.xyz/nana
+
+# 2. 容器运行正常
+docker ps --filter "name=wrong-notebook" --format "{{.Status}}"
+docker ps --filter "name=caddy" --format "{{.Status}}"
+
+# 3. 图谱数据存在（防 2026-07-02 图谱缺失事故）
+sqlite3 /opt/nana/data/dev.db "SELECT COUNT(*) FROM KnowledgeNode;"
+# 期望 ≥ 48。若为 0 立即报警，停止验收。
+# 修复：在 wrong-notebook 容器内跑 seed_graph.ts（详见回滚指南 §4）
+
+# 4. 最近部署日志无 ERROR
+docker logs --tail 30 wrong-notebook 2>&1 | grep -i "error" || echo "无 ERROR 日志"
+```
+
+---
+
 ## 附：关键文件索引
 
 | 文件 | 用途 |
@@ -292,5 +393,6 @@ docker exec caddy curl -sk --resolve nana.nanatop.xyz:443:127.0.0.1 https://nana
 | `.github/workflows/build-and-push.yml` | CI workflow（push main 触发） |
 | `Dockerfile` | 多阶段构建（deps → builder → runner） |
 | `backup.sh` | SQLite 每日备份脚本 |
+| `scripts/deploy.sh` | 服务器一键部署脚本（分支检查 → pull → 备份 → 拉镜像 → 重启 → 健康检查） |
 | `Caddyfile` | Caddy HTTPS 反代配置 |
 | `next.config.ts` | Next.js 配置（standalone + outputFileTracingIncludes） |

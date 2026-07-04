@@ -57,9 +57,42 @@
 - 录音组件涉及 MediaRecorder 时必须处理 unmount cleanup：录音中切 tab/换图/保存/离页不能让旧 recorder 后台回写到新题图。
 - 若本地 Docker 不可用，Phase 1.5 这类前端状态修复可先用 `npm.cmd run build` 做本地验证，但最终仍需 GitHub Actions 测试容器绿灯后才能部署。
 
+### Nana v1 闭环与 AI 边界
+- 用户侧“v1 闭环”不是动线修正版；必须包含真实 ASR、题图/VLM 理解、初步分类、Case 挂到知识地图、用户能在知识地图看到整理结果。未接真 AI 的阶段只能称为动线修正或骨架版。
+- ASR/VLM 进入 v1 必需范围，但产品措辞仍要诚实：识别未完成时只能说“识别稍后接入”或“已收好”，不得暗示已诊断。
+- Stage 3 类异步 AI 处理不要只写“201 后不阻塞”而不说明机制；应明确保存后如何触发处理、失败如何记录、前端如何展示“识别中/失败/已分类”。在没有队列前，可优先采用保存后由前端触发 `process` 接口的显式方案。
+
+### 知识地图与标签语义
+- `CaseKnowledgeTag` 表示题目和系统知识点的采集/分类证据，不等于掌握，不得直接写成 `StudentNodeState.stable`，也不得让节点变绿色。
+- 绿色“已点亮”只来自测评或诊断状态；琥珀色 evidence layer 表示“收过题/有错题记录”；蓝色 frontier 表示“下一个/可以先看”。无测评数据时，应优先用“可以先看/起点”而不是强说“下一个”。
+- 孩子手工挂标签时不应直接面对 48 个内部 KnowledgeNode；学生可见层应按课本章节/日常叫法组织。孩子标签是“我认为这题跟 X 有关”的证据，不是系统诊断结论。
+- 学生课本目录标签与系统 KnowledgeNode 应分层保存并通过映射表连接；后续新增表时优先考虑 `TextbookTopic`、`TextbookTopicKnowledgeNode`、`CaseStudentTopicTag`，并继续保留 `CaseKnowledgeTag` 作为系统/AI/管理员内部标签。
+- 孩子标签和系统标签不一致时，前台应温和共存，例如“你收在 X，它可能还和 Y 有关”，不要说“你选错了”。
+
+### 知识地图移动端体验
+- 手机端知识地图应是地图优先的整屏体验，不应让最近题图或错题列表常驻占据上半屏。题图预览和最近题列表适合放在底部抽屉、浮层或按需展开入口中。
+- 移动端图谱不能把 2460px 桌面 SVG 强缩到 375px；若要接近设计稿，应使用手机尺寸 viewBox 和手工/专门布局，让节点名 1:1 可读。列表模式可以作为可访问备选，但不能替代“知识地图”的地图心智。
+- RecapBar 更适合作为状态回顾，不宜再承担和首页 ActionCard 重复的导航入口；首页已有一级入口时，避免多个按钮跳同一页面造成“点了没反应”的体感。
+
+### 生产图谱数据与种子脚本
+- 生产库可能出现 admin seed 已跑但图谱 seed 未跑的状态，因为 Prisma `db seed` 和 `npm run seed` 可能指向不同脚本。若 KnowledgeNode/Mainline 为空，知识地图和挂标签会整体不可用。
+- 不要把生产图谱 seed 放进 Dockerfile build。静态图谱数据应通过幂等部署后 bootstrap、一次性运维脚本或 smoke check 保障；执行前必须备份，执行后明确报 KnowledgeNode/KnowledgeEdge/Mainline 等行数。
+- 部署后 smoke check 应包含图谱数据非空检查，例如 `KnowledgeNode.count() > 0`；为 0 时应停止验收并报警。
+
+### 移动端性能与题图处理
+- 题图列表 API 不应返回完整 Base64；列表只返回轻量标志，单题详情按需懒加载，并缓存已拉取的 case detail。
+- 手机拍照原图即使文件小于 1 MB，也可能因 Base64 膨胀和尺寸过大造成加载慢；新题图应统一走压缩流程，而不是只按原始 file.size 判断是否压缩。
+- 旧测试图或测试 case 清理属于生产数据删除，必须按账号范围备份、报数、确认后执行；优先删除整套测试 case/artifact/tag，避免留下半残数据。
+- 手机“点击慢/不顺畅”要先测量再修，重点看路由点击反馈、KnowledgeMapCanvas 重绘、旧 Base64 图、bundle/hydration、浮层动画和 API waterfall。不要凭感觉把多个性能改动揉成一个大改。
+
+### CI 门禁维护
+- 即使一次变更看似纯前端，只要 CI 红灯就不得直接部署。若 CI 因环境变量如 `DATABASE_URL` 缺失而长期红灯，应先修复 CI 门禁，再继续发布。
+- CI 修复应作为独立 `fix` commit，不写入密钥，确保 `guard-db.ts` 白名单、测试数据库路径和 workflow env 一致。
+
 ## 待持续观察
 - 项目 AI 是否稳定执行“task 结束后先做 git 收口”的流程。
 - 扫描类脚本是否已经统一成批次隔离或合并去重，避免覆盖写。
 - 如果后续再次出现“只总结不收口”的情况，需要继续强化收尾闸门提示。
-- Phase 1.5 真实采集上线后，手机真机需验收：拍照、录音权限、保存 case、Artifact 入库、无 mock 题残留、无“诊断完成”暗示。
+- 真机验收继续以手机实际体感为准：拍照、录音权限、保存 case、题图加载、知识地图可读性、浮层可关闭、无“诊断完成”暗示。
 - 后续应补 MediaRecorder/jsdom 单测，至少覆盖“录音中 unmount 不回写父组件并清理 stream/timer”。
+- Stage 3 增加 transcript 或 case 更新端点时，需要补充前端 case detail 缓存失效机制，例如更新后 `caseDetailCache.delete(id)`。
