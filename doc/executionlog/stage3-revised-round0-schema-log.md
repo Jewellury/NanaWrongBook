@@ -253,6 +253,7 @@ if (dbTopicCount !== 16) {
 | 2 | **TextbookNodeMapping.nodeId 无 FK** | 如果 KnowledgeNode 被删除，映射记录不会自动清理 | 与 CaseKnowledgeTag / MistakeNode 同款松挂接策略，守铁律 3；清理靠应用层 |
 | 3 | **seed 脚本未注册到 package.json** | `npm run seed` 仍跑 `seed_graph.ts`，不会自动跑本脚本 | 按设计：本脚本需手动执行 `npx tsx prisma/seed_textbook_topics.ts`，后续部署时单独编排 |
 | 4 | **设计债 #4 游离 DB** | `.env` 的 `DATABASE_URL=file:/app/data/dev.db` 本地解析到 `E:\app\data\dev.db`（仓库外游离 DB） | **已解决**：执行 migration/seed 时显式设 `$env:DATABASE_URL = "file:../data/dev.db"`，指向项目本地 DB |
+| 5 | **游离 DB 外部残留** | 首次误操作（`set` 未生效）导致 `E:\app\data\dev.db` 被应用了 stage3 migration，该游离 DB 中存在 4 张新表（空表，无 seed 数据） | **暂不删除**，待用户单独确认是否清理。不影响项目本地 `e:\nana\data\dev.db` 的正确性 |
 
 ---
 
