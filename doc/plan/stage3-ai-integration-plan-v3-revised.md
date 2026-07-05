@@ -7,7 +7,7 @@
 > 种子数据: [doc/research/seed_graph_batch1.ts](../research/seed_graph_batch1.ts)（48 节点定义源）
 > 计划日期: 2026-07-04（初版）→ 2026-07-05（收敛版修订）
 > 计划者: plan-agent
-> 版本: **v3-revised 收敛版 r4（基于评审 5+4 项反馈 + 产品推演 6 项修订）**
+> 版本: **v3-revised 收敛版 r5（基于评审 5+4 项反馈 + 产品推演 6 项修订 + Round UI-0 排查 6 项回填）**
 > 边界: **错题卡片闭环**——拍题 → AI 识别题面摘要+课本分类+轻反馈 → 持久化 → 题目汇总列表 → 可打印。**不做深度诊断、不做 Newman 归因、不写 StudentNodeState、不让节点变绿。**
 
 ---
@@ -34,6 +34,17 @@
 | 15 | 打印页偏"后台日志"，需弱化技术元信息 | **默认不打印时间/置信度/source**，保留小题图 |
 | 16 | 需明确 OCR v2 候选路线 | **新增 v2 候选：AI 题面文本（可编辑 OCR）**，先做 Spike |
 | 17 | 列表 API 不得返回 base64 题图 | **原图必须详情懒加载**，列表 API 只返回摘要文本 |
+
+### 0.4 Round UI-0 排查回填 r5（2026-07-05）
+
+| # | 排查结论 | 回填位置 |
+|---|---------|----------|
+| 18 | 打印预览新建 `/nana/print-preview`，不复用上游 error-items 页 | §14.5.4 结论 1、§14 文件清单 |
+| 19 | LightFeedback 不扩展，Stage 3 新建 `ai-result-panel.tsx` | §14.5.4 结论 2、§14 文件清单 |
+| 20 | 列表/summary API 只返回轻量字段，不得返回 base64 | §14.5.4 结论 3、§15 Round 2 |
+| 21 | 异步整理状态查询契约（4 步流程） | §14.5.4 结论 4、§10 状态机 |
+| 22 | Round 1-5 文件清单+风险等级更新（3 项高风险） | §14 文件清单、§15 实施顺序 |
+| 23 | 验收标准新增 #22 批量拍题不被阻塞 + #23 三态可见 | §13 验收标准 |
 
 ### 0.2 收敛版 r2（4 项反馈）
 
@@ -1143,6 +1154,8 @@ await prisma.caseAiResult.upsert({
 | 19 | CaseAiResult.textbookTopicId 有 FK 约束 | 写入不存在的 topicId | 数据库拒绝 |
 | 20 | 未覆盖章节归入未分类 | 拍一道当前 48 节点覆盖外的题 | 题目汇总页显示在"未分类/暂未覆盖" |
 | 21 | 真实 provider 不进 CI | CI 日志 | 只跑 mock |
+| 22 | 批量拍题不被 AI 整理阻塞 | 连续拍 3 道题，每道保存后立即拍下一道 | 每道保存后 ≤2s 即可继续拍，不等 AI 整理完成；3 道题的整理状态在题目汇总页分别可见 |
+| 23 | 整理三态在题目汇总可见 | 拍题后进入题目汇总页 | 整理中显示"整理中…"；已整理显示 AI 结果；整理失败显示"整理没接上，可以手动整理" |
 
 ### 构建验收
 
@@ -1156,22 +1169,29 @@ await prisma.caseAiResult.upsert({
 
 ## 14. 文件变更清单
 
+> **Round UI-0 排查后更新**（2026-07-05）：标注排查发现的风险等级调整和新文件。
+
 | 文件 | 操作 | 说明 | 风险 |
 |------|------|------|:--:|
 | `prisma/schema.prisma` | **修改（⚠️新增表）** | 新增 4 表 + Case 加 relation | 中 |
 | `prisma/seed_textbook_topics.ts` | **新增** | TextbookTopic 种子数据（16 topics + 48 mappings） | 低 |
 | `src/lib/nana/case-analyzer.ts` | **新增** | 一体化 Case Analyzer（6 字段） | 低 |
-| `src/app/api/nana/cases/[id]/process/route.ts` | **新增** | /process 端点（CaseAiResult 持久化） | 中 |
+| `src/app/api/nana/cases/[id]/process/route.ts` | **新增** | POST 触发整理 + GET 查询状态（轮询用） | 中 |
 | `src/app/api/nana/cases/[id]/ai-result/route.ts` | **新增** | GET/PATCH AI 结果（用户纠错用） | 低 |
-| `src/app/api/nana/cases/summary/route.ts` | **新增** | 题目汇总列表 API（按课本章节分组） | 低 |
+| `src/app/api/nana/cases/summary/route.ts` | **新增** | 题目汇总列表 API（按课本章节分组，轻量字段） | 中 |
+| `src/app/api/nana/cases/route.ts` | **修改** | GET 列表扩展返回 aiSummary/textbookChapter/processStatus | 中 |
 | `src/app/api/diagnosis/map/route.ts` | **修改** | caseEvidenceCount 改 distinct caseId | 低 |
-| `src/app/nana/knowledge-map/page.tsx` | **修改** | 三 tab IA 重构 | 中 |
-| `src/components/nana/knowledge-map/case-summary-view.tsx` | **新增** | 题目汇总视图组件 | 低 |
-| `src/components/nana/knowledge-map/case-card.tsx` | **新增** | 题卡组件（题图+摘要+分类+反馈） | 低 |
-| `src/app/nana/capture/page.tsx` | **修改** | 保存后调 /process + AI 结果展示 | 中 |
-| `src/components/nana/capture/ai-result-panel.tsx` | **新增** | AI 结果展示+纠错面板 | 低 |
-| `src/lib/nana/nana-api-client.ts` | **修改** | 加 processCase / updateAiResult / getSummary | 低 |
-| `src/app/nana/print-preview/page.tsx` | **新增** | Nana 打印预览页 | 低 |
+| `src/app/nana/page.tsx` | **修改** | 首页文案微调（"拍题"/"题目汇总"） | 低 |
+| `src/app/nana/knowledge-map/page.tsx` | **修改** | 三 tab IA 重构（默认题目汇总） | 中 |
+| `src/components/nana/knowledge-map/case-summary-view.tsx` | **新增** | 题目汇总视图组件 | 中 |
+| `src/components/nana/knowledge-map/case-card.tsx` | **新增** | 题卡组件（主卡+展开，非横向小卡） | 高 |
+| `src/components/nana/knowledge-map/recent-cases-list.tsx` | **修改** | 主卡重排：横向小卡→纵向大卡+展开 | 高 |
+| `src/app/nana/capture/page.tsx` | **修改** | 状态机重写：同步停留→异步整理+轮询 | 高 |
+| `src/components/nana/capture/ai-result-panel.tsx` | **新增** | AI 结果展示+纠错面板（5 字段+空值隐藏） | 中 |
+| `src/components/nana/capture/light-feedback.tsx` | **不改** | 保留不动，不扩展（排查结论 2） | — |
+| `src/lib/nana/nana-api-client.ts` | **修改** | 加 processCase / getProcessStatus / getAiResult / getSummary | 低 |
+| `src/app/nana/print-preview/page.tsx` | **新增** | Nana 专用打印预览页（不复用上游，排查结论 1） | 高 |
+| `src/app/print-preview/page.tsx` | **不改** | 上游打印页保留不动，不混用 | — |
 | `.env.example` | **修改（⚠️上游文件）** | 追加 VOLCENGINE_* | 低 |
 | `src/__tests__/unit/nana/case-analyzer.test.ts` | **新增** | mock 测试 | 低 |
 | `src/__tests__/integration/nana/process-api.test.ts` | **新增** | 集成测试 | 低 |
@@ -1181,6 +1201,7 @@ await prisma.caseAiResult.upsert({
 > **不扩展 CaseKnowledgeTag**（保持原样）。
 > **涉及上游文件修改**：`.env.example` 追加。
 > **不修改上游已有 model 的字段**。
+> **Round UI-0 排查新增风险标注**：题目汇总主卡重排（高）、拍题页状态机重写（高）、打印预览新建（高）为三个最高风险项。
 
 ---
 
@@ -1278,6 +1299,78 @@ await prisma.caseAiResult.upsert({
 - 用户确认后才能进入 Round 1-5 前端开发
 - 如果排查发现现有代码结构与计划冲突较大，**停下来回 plan-agent 重新评估**
 
+### 14.5.4 排查结论（2026-07-05 完成）
+
+> 排查清单已输出至 `doc/executionlog/round-ui0-frontend-audit.md`，以下为需回填到计划的 6 项结论。
+
+#### 结论 1：打印预览——新建 `/nana/print-preview`，不复用上游
+
+现有 `src/app/print-preview/page.tsx` 基于上游 `error-items` 系统（`ErrorItem` 类型，含 `questionText`/`answerText`/`analysis`/`originalImageUrl` 等字段），与 Nana cases 数据模型（`Case` + `Artifact` base64 题图 + `CaseKnowledgeTag`）完全不同。
+
+**决策**：新建 `src/app/nana/print-preview/page.tsx`，不复用、不修改上游打印页。现有打印页服务于上游错题本功能，不应混用。
+
+#### 结论 2：LightFeedback 不作为既有组件扩展——Stage 3 新建 AI 结果组件
+
+`src/components/nana/capture/light-feedback.tsx` 虽然存在但**从未被拍题页实际使用**（拍题页"帮你整理" tab 是占位文本）。现有组件仅 2 字段（hint + relatedTags），调用规则版 `/feedback` 端点（不调 LLM）。
+
+**决策**：不扩展 `light-feedback.tsx`。Stage 3 新建 `src/components/nana/capture/ai-result-panel.tsx`，从零实现 5 字段展示（aiSummary/textbookChapter/aiMessage/possibleMistakeReason/nextActionSuggestion）+ 空值隐藏 + 编辑/改分类入口。原 `light-feedback.tsx` 保留不动（不删不改），避免破坏潜在引用。
+
+#### 结论 3：列表/summary API 只返回轻量字段——不得返回 base64 原图
+
+现有 `GET /api/nana/cases` 列表仅 select `{ id, createdAt, artifacts: { select: { type } } }`，不返回 content 字段——**此约束已被现有代码满足**。
+
+Stage 3 扩展后的列表/summary API 返回字段明确为：
+
+```typescript
+// GET /api/nana/cases（列表）和 GET /api/nana/cases/summary（按章节分组）
+{
+  id: string,
+  createdAt: string,
+  hasImage: boolean,
+  hasAudio: boolean,
+  // Stage 3 新增轻量字段：
+  aiSummary: string | null,           // CaseAiResult.questionSummary
+  textbookChapter: string | null,     // TextbookTopic.chapter + TextbookTopic.name
+  processStatus: "pending" | "processing" | "success" | "failed",
+}
+```
+
+**硬约束**：列表/summary API 绝不返回 `artifacts.content`（base64 题图）。原图必须通过 `GET /api/nana/cases/:id` 详情懒加载。
+
+#### 结论 4：异步整理状态查询契约
+
+保存 case 后用户可立即继续拍下一道，AI 整理在后台异步进行。状态查询通过以下契约实现：
+
+```
+1. POST /api/nana/cases → 201 + { id, ... }
+   前端拿到 caseId，后台调 POST /api/nana/cases/:id/process
+
+2. 前端轮询 GET /api/nana/cases/:id/process（3s 间隔，最多 60s）
+   返回 { status: "processing" | "success" | "failed" | "timeout" }
+   - 收到 success/failed → 停止轮询，更新该题状态
+   - 超 60s → 停止轮询，显示 timeout 文案
+
+3. 题目汇总页通过 GET /api/nana/cases/summary 获取每题 processStatus
+   - 不依赖轮询，进入页面时一次性加载
+   - processStatus = "processing" → 显示"整理中…"
+   - processStatus = "success" → 显示 AI 结果
+   - processStatus = "failed" → 显示"整理没接上，可以手动整理"
+
+4. AI 结果卡通过 GET /api/nana/cases/:id/ai-result 获取完整 5 字段
+   - 仅在 processStatus = "success" 时调用
+   - 支持 PATCH /api/nana/cases/:id/ai-result 用户纠错
+```
+
+**关键约束**：批量拍题时，每拍一道保存成功后立即允许下一拍，不被 AI 整理（~30s）阻塞。整理状态在题目汇总页和 AI 卡片中通过上述 API 查询。
+
+#### 结论 5：Round 1-5 文件清单和风险等级（更新后）
+
+见 §14 文件变更清单（已更新）和 §15 实施顺序（已更新）。
+
+#### 结论 6：验收标准补充
+
+见 §13 验收标准（已补充 #22 批量拍题不被阻塞 + #23 三态可见）。
+
 ---
 
 ## 15. 实施顺序
@@ -1308,25 +1401,28 @@ Round 1: Case Analyzer lib + mock 单测（低风险，Round 0 审计通过后�
   ├─ case-analyzer.test.ts
   └─ npm.cmd run build + test
 
-Round 2: /process 端点 + 集成测试（中风险）
-  ├─ process/route.ts（CaseAiResult + CaseTextbookTopicTag 持久化）
+Round 2: /process 端点 + GET 状态查询 + 集成测试（中风险）
+  ├─ process/route.ts（POST 触发整理 + GET 查询状态轮询用，CaseAiResult 持久化）
   ├─ ai-result/route.ts（GET/PATCH 纠错）
+  ├─ cases/route.ts 修改（GET 列表扩展轻量字段，排查结论 3）
   ├─ map/route.ts 改（distinct caseId）
   └─ process-api.test.ts
 
-Round 3: 题目汇总 API + 视图（中风险）
-  ├─ cases/summary/route.ts
-  ├─ case-summary-view.tsx + case-card.tsx
-  ├─ knowledge-map/page.tsx 三 tab 重构
+Round 3: 题目汇总 API + 视图（高风险——主卡重排）
+  ├─ cases/summary/route.ts（轻量字段，不返回 base64）
+  ├─ case-summary-view.tsx + case-card.tsx（纵向大卡+展开，非横向小卡）
+  ├─ recent-cases-list.tsx 修改（主卡重排：横向小卡→纵向大卡）
+  ├─ knowledge-map/page.tsx 三 tab 重构（默认题目汇总）
   └─ case-summary-api.test.ts
 
-Round 4: 采集页 AI 结果展示（中风险）
-  ├─ capture/page.tsx 识别状态 + AI 结果面板
-  ├─ ai-result-panel.tsx
-  └─ nana-api-client.ts 扩展
+Round 4: 采集页异步整理 + AI 结果面板（高风险——状态机重写）
+  ├─ capture/page.tsx 状态机重写：同步停留→异步整理+3s/60s 轮询
+  ├─ ai-result-panel.tsx（5 字段+空值隐藏+编辑/改分类，排查结论 2）
+  ├─ nana-api-client.ts 扩展（processCase/getProcessStatus/getAiResult/getSummary）
+  └─ 首页文案微调 page.tsx（低风险，可并入本轮）
 
-Round 5: 打印预览 + .env.example + 验收（低风险）
-  ├─ nana/print-preview/page.tsx
+Round 5: 打印预览 + .env.example + 验收（高风险——数据源不同）
+  ├─ nana/print-preview/page.tsx（Nana 专用，不复用上游，排查结论 1）
   ├─ .env.example 追加
   └─ npm.cmd run build + test
 ```
@@ -1504,12 +1600,12 @@ DROP TABLE IF EXISTS TextbookTopic;
 5. ⬜ **Schema migration 确认**：新增 4 表（§16），`--create-only` 生成后交用户确认再执行
 6. ⬜ **生产环境环境变量**：服务器 .env 需配置 VOLCENGINE_* 变量
 7. ⬜ **产品手册同步更新**：用户手册和行为手册需同步更新
-8. ⬜ **Round UI-0 前端修改点排查**：排查清单交用户确认后才能进前端开发
+8. ✅ **Round UI-0 前端修改点排查**：排查清单已完成（`doc/executionlog/round-ui0-frontend-audit.md`），6 项结论已回填至本计划 §14.5.4
 9. ✅ **异步整理选项确认**：v1 做异步整理，保存后允许继续拍，题目汇总显示整理状态
 10. ✅ **打印题图缩略图尺寸**：`max-width: 180px; max-height: 120px; object-fit: contain;`
 11. ✅ **轮询间隔**：3 秒起步，最多 60 秒，超时提示"稍后在题目汇总里看"
-12. ⬜ **Round UI-0 前端修改点排查**：排查清单交用户确认后才能进前端开发（异步整理已确认，排查可开始）
+12. ✅ **Round UI-0 前端修改点排查**：排查清单已完成，6 项结论已回填（排查结论 1-6）
 
 ---
 
-> 本方案可进入 Round UI-0（前端修改点排查），但 **schema Round 0 暂不启动**——异步整理已确认会影响 /process 契约、前端状态机、题目汇总状态字段，需先排查清楚前端/API 修改点。
+> 本方案 Round UI-0 排查已完成并回填。**Round 0（Schema）可启动**——异步整理契约、前端/API 修改点已排查清楚。
