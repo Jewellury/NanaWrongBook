@@ -459,4 +459,149 @@ describe('/process API 集成测试', () => {
     });
     expect(res.status).toBe(400);
   });
+
+  // 新测试：重复 /process 时，用户未编辑则清理旧的 vlm 标签
+  test('POST 重复 /process：用户未编辑 → 清理旧的 source="vlm" 标签', async () => {
+    const caseId = await createTestCase();
+    
+    // 第一次 process
+    mockAnalyzeCase.mockResolvedValueOnce({
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: 'TB-010', confidence: 0.85, reason: '第一次分类' },
+      ],
+      knowledgeNodeCandidates: [
+        { nodeId: validNodeId, confidence: 0.8, reason: '第一次知识点' },
+      ],
+    });
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    // 验证第一次的标签已创建
+    let topicTags = await _testPrisma.caseTextbookTopicTag.findMany({
+      where: { caseId, source: 'vlm' },
+    });
+    expect(topicTags.length).toBe(1);
+    expect(topicTags[0].textbookTopicId).toBe('TB-010');
+
+    // 第二次 process 使用不同的分类
+    mockAnalyzeCase.mockResolvedValueOnce({
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: 'TB-020', confidence: 0.9, reason: '第二次分类' },
+      ],
+      knowledgeNodeCandidates: [
+        { nodeId: validNodeId, confidence: 0.85, reason: '第二次知识点' },
+      ],
+    });
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    // 验证旧的 vlm 标签被清理，只有新的标签
+    topicTags = await _testPrisma.caseTextbookTopicTag.findMany({
+      where: { caseId, source: 'vlm' },
+    });
+    expect(topicTags.length).toBe(1);
+    expect(topicTags[0].textbookTopicId).toBe('TB-020');
+  });
+
+  // 新测试：用户手动标签不应被清理
+  test('POST 重复 /process：手动添加的标签(source="manual")不受影响', async () => {
+    const caseId = await createTestCase();
+    
+    // 第一次 process
+    mockAnalyzeCase.mockResolvedValueOnce(MOCK_RESULT);
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    // 手动添加标签
+    await _testPrisma.caseTextbookTopicTag.create({
+      data: {
+        caseId,
+        textbookTopicId: validTopicId,
+        source: 'manual',
+        confidence: 1.0,
+        note: '用户手动添加',
+      },
+    });
+
+    // 第二次 process
+    mockAnalyzeCase.mockResolvedValueOnce({
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: 'TB-020', confidence: 0.9, reason: 'AI 新分类' },
+      ],
+    });
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    // 验证手动标签保留，vlm 标签被替换
+    const allTopicTags = await _testPrisma.caseTextbookTopicTag.findMany({
+      where: { caseId },
+      orderBy: { source: 'asc' },
+    });
+    expect(allTopicTags.length).toBe(2);
+    expect(allTopicTags[0].source).toBe('manual');
+    expect(allTopicTags[0].textbookTopicId).toBe(validTopicId);
+    expect(allTopicTags[1].source).toBe('vlm');
+    expect(allTopicTags[1].textbookTopicId).toBe('TB-020');
+  });
+
+  // 新测试：POST 响应返回持久化后的数据而非 AI 原始响应
+  test('POST 响应返回持久化后的数据而非 AI 原始响应', async () => {
+    const caseId = await createTestCase();
+    
+    // 用户先编辑了分类
+    const firstResult = {
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: 'TB-010', confidence: 0.85, reason: 'AI 分类' },
+      ],
+    };
+    mockAnalyzeCase.mockResolvedValueOnce(firstResult);
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    // 模拟用户编辑分类
+    await _testPrisma.caseAiResult.update({
+      where: { caseId },
+      data: { 
+        textbookTopicId: validTopicId, 
+        textbookTopicEdited: true,
+        questionSummary: '用户修改的摘要',
+        questionSummaryEdited: true,
+      },
+    });
+
+    // 第二次 process
+    const secondResult = {
+      ...MOCK_RESULT,
+      questionSummary: 'AI 新的摘要',
+      textbookTopicCandidates: [
+        { topicId: 'TB-020', confidence: 0.9, reason: 'AI 新分类' },
+      ],
+    };
+    mockAnalyzeCase.mockResolvedValueOnce(secondResult);
+    
+    const res = await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+    const body = await res.json();
+    
+    // 响应应返回持久化后的数据（用户编辑的值）
+    expect(body.questionSummary).toBe('用户修改的摘要');
+    expect(body.textbookTopic.id).toBe(validTopicId);
+    
+    // 同时验证知识点标签使用新的 AI 结果
+    const tags = await _testPrisma.caseKnowledgeTag.findMany({
+      where: { caseId, source: 'vlm' },
+    });
+    expect(tags.length).toBe(1);
+    expect(tags[0].nodeId).toBe(validNodeId);
+  });
 });

@@ -115,6 +115,13 @@ async function persistAiResult(
     .filter((c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD)
     .sort((a, b) => b.confidence - a.confidence)[0];
 
+  // 2. 清理旧的 vlm 来源标签（仅在用户未编辑时）
+  if (!existing?.textbookTopicEdited) {
+    await prisma.caseTextbookTopicTag.deleteMany({
+      where: { caseId, source: "vlm" },
+    });
+  }
+
   // 1. upsert CaseAiResult
   const aiResult = await prisma.caseAiResult.upsert({
     where: { caseId },
@@ -205,7 +212,17 @@ async function persistAiResult(
     }
   }
 
-  return aiResult;
+  // 重新查询以包含 textbookTopic 关系
+  const resultWithRelations = await prisma.caseAiResult.findUnique({
+    where: { caseId },
+    include: {
+      textbookTopic: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+
+  return resultWithRelations!;
 }
 
 // ─── 辅助：持久化失败结果 ─────────────────────────────
@@ -312,46 +329,39 @@ export async function POST(
       });
     }
 
-    await persistAiResult(id, result, caseRecord.aiResult);
+    const persistedAiResult = await persistAiResult(id, result, caseRecord.aiResult);
 
-    const topTopic = result.textbookTopicCandidates
-      .filter((c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD)
-      .sort((a, b) => b.confidence - a.confidence)[0];
-
-    let textbookTopicInfo: { id: string; name: string; confidence: number } | undefined;
-    if (topTopic) {
-      const topic = await prisma.textbookTopic.findUnique({
-        where: { id: topTopic.topicId },
-        select: { id: true, name: true },
-      });
-      if (topic) {
-        textbookTopicInfo = {
-          id: topic.id,
-          name: topic.name,
-          confidence: topTopic.confidence,
-        };
-      }
-    }
-
-    const tags = await prisma.caseKnowledgeTag.findMany({
-      where: { caseId: id },
-      select: { id: true, nodeId: true, source: true, confidence: true, note: true },
-    });
+    // 获取持久化后的标签数据
+    const [tags, textbookTags] = await Promise.all([
+      prisma.caseKnowledgeTag.findMany({
+        where: { caseId: id },
+        select: { id: true, nodeId: true, source: true, confidence: true, note: true },
+      }),
+      prisma.caseTextbookTopicTag.findMany({
+        where: { caseId: id },
+        select: { id: true, textbookTopicId: true, source: true, confidence: true, note: true },
+      }),
+    ]);
 
     logger.info({ caseId: id }, "Case AI 整理成功");
 
     return NextResponse.json({
       status: "success",
-      audioStatus: result.audioStatus,
-      questionSummary: result.questionSummary,
-      textbookTopic: textbookTopicInfo,
-      feedback: result.initialFeedback,
-      possibleMistakeReason: result.possibleMistakeReason,
-      nextActionSuggestion: result.nextActionSuggestion,
-      transcript: result.transcript || undefined,
+      audioStatus: persistedAiResult.audioStatus,
+      questionSummary: persistedAiResult.questionSummary,
+      textbookTopic: persistedAiResult.textbookTopicId
+        ? {
+            id: persistedAiResult.textbookTopicId,
+            name: persistedAiResult.textbookTopic?.name || "",
+            confidence: persistedAiResult.textbookTopicConfidence,
+          }
+        : undefined,
+      feedback: persistedAiResult.initialFeedback,
+      possibleMistakeReason: persistedAiResult.possibleMistakeReason,
+      nextActionSuggestion: persistedAiResult.nextActionSuggestion,
+      transcript: persistedAiResult.transcript || undefined,
       tags,
-      textbookTopicCandidates: result.textbookTopicCandidates,
-      knowledgeNodeCandidates: result.knowledgeNodeCandidates,
+      textbookTags,
     });
   } catch (error) {
     logger.error({ error }, "POST /process 异常");
