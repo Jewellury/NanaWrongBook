@@ -179,3 +179,69 @@ VS Code shell integration 偶尔会出现 `shell_integration_warning: did not st
 | commit message 含括号 | `-m "docs(r4): ..."` | `-m "docs r4: ..."` |
 | 切换目录 | `cd /d e:\nana` | 不需要（默认就在 e:\nana） |
 | cmd 包装 | `cmd /c "cd /d ... && ..."` | 直接执行 PowerShell 命令 |
+
+---
+
+# 文件编辑工具避坑规则
+
+> 以下规则解决一个反复出现的问题：`string_replace`、`MultiEdit`、`write` 在处理大段含中文、`$transaction`、模板字符串、方括号路径 `[id]` 的代码时，返回 `"undefined" is not valid JSON` 错误，导致编辑卡死。
+
+## 铁律：优先用 patch，不要大段 string_replace
+
+小改动（单行、几行、局部函数替换）用 `string_replace` 可以。但**大段代码（超过 ~15 行）尤其是包含以下元素的，禁止用 `string_replace` / `MultiEdit` / `write` 整文件覆写**：
+
+- 中文字符
+- 模板字符串（反引号）
+- `$` 符号（如 `prisma.$transaction`）
+- JSON 序列化内容
+- 方括号路径 `[id]`
+
+**替代方案**：创建 `.patch` 文件 → `git apply` 应用。
+
+## 铁律：大改动拆成多个小 patch
+
+每个 patch 只做一个意图：
+1. 先改函数签名
+2. 再改事务包裹
+3. 再改内部 `prisma.` → `tx.`
+4. 再补测试
+
+每个 patch 应用后立即验证（`git diff` 确认），失败了容易定位。
+
+## 铁律：不要用 PowerShell 内联脚本写复杂文件
+
+`node -e "..."` 在 PowerShell 里遇到引号、反斜杠、中文、模板字符串很容易被截断或转义错。
+
+如果必须脚本化，优先写临时 `.js` 文件再执行，**但用完必须清理临时文件**。
+
+## 铁律：测试文件追加大块用"锚点 patch"
+
+不要整文件覆写。找稳定锚点（如最后一个 `});` 前），用 patch 在锚点附近插入新测试。
+
+## 铁律：文件改到半状态时先停下来盘点
+
+如果一次编辑失败，文件可能处于半修改状态。**不要继续盲改**：
+
+1. 先 `git diff` 看当前状态
+2. 明确列出：哪些已改成功、哪些还没改
+3. 如果混乱，`git checkout -- <file>` 回退到已提交版本重来
+
+## 铁律：改完马上跑窄测试
+
+```powershell
+$env:DATABASE_URL='file:./data/test/test.db'
+npx.cmd vitest run src/__tests__/integration/nana/process-api.test.ts
+```
+
+先让相关测试绿，再跑 `npm.cmd run build`。
+
+## 速查表
+
+| 场景 | ❌ 错误做法 | ✅ 正确做法 |
+|------|-----------|-----------|
+| 改 15+ 行含中文/`$`/反引号的代码 | 大段 `string_replace` | 写 `.patch` 文件 → `git apply` |
+| 整文件重写 | `write` 覆写 | 拆成多个小 patch 逐个应用 |
+| 写复杂 JS 脚本 | `node -e "..."` 内联 | 写临时 `.js` 文件，执行后清理 |
+| 文件改到一半失败 | 继续盲改 | `git diff` 盘点 → 必要时 `git checkout` 重来 |
+| 测试追加 100+ 行 | `write` 整文件 | 锚点 patch 在 `});` 前插入 |
+| 改完验证 | 直接跑 `npm run build` | 先跑窄测试 `vitest run <具体文件>` |
