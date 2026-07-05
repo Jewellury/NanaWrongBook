@@ -27,6 +27,7 @@
 | ✅ | [CLAUDE.md](../CLAUDE.md) | Claude Code 运行时说明（context-mode 路由等） |
 | ✅ | [OPENCODE.md](../OPENCODE.md) | OpenCode 运行时说明（与 Claude 的差异） |
 | 🔥 | [00_CURRENT.md](00_CURRENT.md) | 当前项目整体状态 + 下一步 + 交接 |
+| 🔥 | [BACKLOG.md](BACKLOG.md) | **统一待办台账**：Product Backlog / Tech Debt / Code Remnant / Ops Debt / UX Follow-up / Research/Spike / Decision Pending |
 | ✅ | [DECISIONS.md](DECISIONS.md) | 技术决策台账（D 系列 + 门禁 + 开放项速查） |
 | ✅ | [progress.md](progress.md) | 项目历史轨迹，每轮追加 |
 | 🔥 | [active_spec.md](active_spec.md) | 当前轮任务详情（第 1 阶段开发中），每轮替换 |

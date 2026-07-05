@@ -4,6 +4,7 @@
 > 当前轮任务详情 → [active_spec.md](active_spec.md)
 > 历史叙事 → [progress.md](progress.md)
 > 决策台账 → [DECISIONS.md](DECISIONS.md)
+> 完整待办/技术债台账 → [BACKLOG.md](BACKLOG.md)
 
 Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产出)
 
@@ -127,6 +128,8 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 ---
 
 ## 设计债（在册，待后续轮次处理）
+
+> **统一待办/技术债台账已迁移至 [BACKLOG.md](BACKLOG.md)。以下为迁移前旧记录，仍有效但以 BACKLOG.md 为准。**
 
 | # | 设计债 | 说明 | 状态 |
 |---|--------|------|:--:|
