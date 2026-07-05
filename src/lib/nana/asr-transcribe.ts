@@ -1,5 +1,10 @@
 /**
- * ASR 音频转写薄封装（Stage 3 Round 1）
+ * @deprecated Stage 3 v2 遗留代码（Code Remnant, TD-5）。
+ * v3-revised 改用一体化 case-analyzer.ts，本文件不再使用。
+ * 不允许新代码 import。v3 case-analyzer + /process 稳定后删除并移除对应测试。
+ * 保留期间可参考其 OpenAI SDK 调用、超时、音频格式处理实现。
+ *
+ * ASR 音频转写薄封装（Stage 3 v2 Round 1）
  *
  * 调火山方舟豆包 Seed 2.0 Lite 做音频转写。
  * 使用 OpenAI 兼容接口（input_audio 类型）。

@@ -135,6 +135,7 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 | 3 | 二进制 artifact 以 Base64 内联 SQLite（Phase 1.5 引入） | `question_image`/`audio_note` 字节以 Base64 存进 `Artifact.content`（String），~33% 体积开销，case 多了拖慢 SQLite 查询/备份。**迁移阈值**：case > 100 条或 `dev.db` > 50 MB（先到先触发）；**迁移方向**：对象存储 + URL 存 content + 独立清理策略 | ⬜ |
 | 4 | `.env` DATABASE_URL 本地游离 DB（Phase 1.5 审计登记） | `.env` 的 `DATABASE_URL=file:/app/data/dev.db` 是 Docker 容器内路径，本地非 Docker 运行 prisma 时解析到 `E:\app\data\dev.db`（仓库外游离 DB），非项目 `data/dev.db`。生产/CI 容器内路径正确无影响。本地开发走 Docker 或显式设 `DATABASE_URL=file:./data/dev.db` 绕过。后续配置治理统一 | ⬜ |
 | 5 | 部署后图谱 smoke check（2026-07-02 生产事故驱动） | **事故**：2026-07-02 发现生产库 `KnowledgeNode=0`（48 节点从未灌入），根因是 Dockerfile 只跑 `prisma db seed`（admin 用户），不跑 `seed_graph.ts`（图谱数据），每次重新部署图谱数据丢失。已手动用 esbuild bundle 在容器内执行 `seed_graph.ts` 修复（48 节点/36 边/10 主线/101 题入库）。**防复发**：① 部署后检查 `KnowledgeNode.count() > 0`，为 0 立即报警停验收（见 deployment-guide §4）；② 后续实现自动化 smoke check 脚本（见 ops-feedback-loop-backlog）；③ **不**把 seed 放进 Dockerfile build（避免 build 时副作用 + 单独 graph bootstrap 更清晰） | ⬜ |
+| 6 | Stage 3 v2 残留代码（TD-5） | `src/lib/nana/asr-transcribe.ts` + `src/lib/nana/vlm-classify.ts` 是 v2 双管线半成品，v3-revised 改用一体化 `case-analyzer.ts`。**当前处置**：保留不删、加 `@deprecated`、禁止新 import。**关闭条件**：v3 case-analyzer + /process 稳定后一次性删除废弃 lib + 对应测试。详见 [DECISIONS.md TD-5](DECISIONS.md) | ⬜ |
 
 ---
 

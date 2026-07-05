@@ -36,6 +36,7 @@
 | TD-2 | 2026-06-15 | design_debt | `/initial` 一步式初诊与 submit-answers 两条路径分叉，建议稳定后废弃 /initial | [active_spec.md](active_spec.md) 设计债 #2 | proposed |
 | TD-3 | 2026-06-28 | design_debt | light-feedback.tsx 中 caseId 未定义时使用 magic string `__preliminary__` 调用反馈 API。当前不引起 bug，但引入不存在的 ID 进入日志。第 5 阶段接通真实 API 时须传递真实 caseId。 | [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md) §问题清单 | accepted |
 | TD-4 | 2026-06-28 | design_debt | feedback API handler 不校验 case 是否存在（不查 DB），接收任意 caseId 返回反馈。第 5 阶段应加入 `prisma.case.findUnique` 校验，case 不存在返回 404。 | [auditlog/nana-phase1-execution-audit.md](auditlog/nana-phase1-execution-audit.md) §问题清单 | accepted |
+| TD-5 | 2026-07-05 | code_remnant | Stage 3 v2 残留代码：`src/lib/nana/asr-transcribe.ts` 和 `src/lib/nana/vlm-classify.ts` 是 v2 双管线方案半成品，v3-revised 改用一体化 `case-analyzer.ts` 替代。**当前处置**：保留不删、不移动、加 `@deprecated` 注释、禁止新代码 import。**关闭条件**：v3 case-analyzer + /process 稳定后一次性删除废弃 lib + 对应测试（`asr-transcribe.test.ts`），不移动到 `_deprecated/` 目录。 | [stage3-ai-integration-plan-v3-revised.md](plan/stage3-ai-integration-plan-v3-revised.md) §2.2 | accepted |
 
 ---
 
@@ -56,6 +57,7 @@
 - **TD-2** /initial 废弃时机（建议 M4 稳定 submit-answers 路径后废弃）
 - **TD-3** light-feedback magic string `__preliminary__`（第 5 阶段接通真实 API 时处理）
 - **TD-4** feedback API 未校验 case 存在性（第 5 阶段接通真实 API 时处理）
+- **TD-5** Stage 3 v2 残留代码清理（关闭条件：v3 case-analyzer + /process 稳定后删除）
 - **M3b vs M4 优先级**：下一轮先做哪个（建议 M4，见 [00_CURRENT.md](00_CURRENT.md) 下一步）
 - **上游测试环境隔离**：5 个上游测试在 `.env.test` 下失败，根因是上游对环境变量有隐含默认值假设。建议后续开独立计划处理
 
