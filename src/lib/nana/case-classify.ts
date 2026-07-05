@@ -17,6 +17,7 @@
  *
  * Stage 3 v2 修订：source 白名单收窄为 manual + vlm（移除 asr/rule/pending）。
  * ASR 不挂 tag，只回写 transcript artifact；pending 由"无 tag"表达。
+ */
 import { prisma } from "@/lib/prisma";
 import { createLogger } from "@/lib/logger";
 

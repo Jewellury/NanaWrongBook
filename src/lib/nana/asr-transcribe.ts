@@ -19,6 +19,7 @@
  */
 
 import OpenAI from "openai";
+import type { ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("lib:nana:asr-transcribe");
@@ -160,25 +161,31 @@ export async function asrTranscribe(input: AsrInput): Promise<AsrResult> {
   try {
     logger.info({ mime, format, model, audioBase64Length: audioBase64.length }, "ASR 调用开始");
 
+    // 显式标注 contentParts 类型，避免 TypeScript 联合类型窄化到 developer message 分支
+    // （OpenAI SDK v6 的 ChatCompletionDeveloperMessageParam.content 只接受 text|refusal）
+    const contentParts: ChatCompletionContentPart[] = [
+      {
+        type: "text",
+        text: "请把这段语音转写成文字，只输出转写结果，不要加任何解释。",
+      },
+      {
+        type: "input_audio",
+        input_audio: {
+          data: audioBase64,
+          // OpenAI SDK 类型只允许 "wav"|"mp3"，但火山方舟豆包 Lite 实际支持
+          // wav/mp3/flac/ogg/m4a/aac（Round 0 预验证确认），用 as any 绕过 SDK 类型限制
+          format: format as any,
+        },
+      },
+    ];
+
     const response = await client.chat.completions.create(
       {
         model,
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text: "请把这段语音转写成文字，只输出转写结果，不要加任何解释。",
-              },
-              {
-                type: "input_audio",
-                input_audio: {
-                  data: audioBase64,
-                  format: format as "wav" | "mp3" | "flac" | "ogg" | "m4a" | "aac",
-                },
-              },
-            ],
+            content: contentParts,
           },
         ],
         max_tokens: 2048,
