@@ -137,3 +137,90 @@ Round 2 新增 2 个文件, 不改既有代码。回退用 git revert, 无风险
 ## 10. 下一步
 
 Round 2 审计通过后 -> Round 3（题目汇总 API + 视图, 或 ai-result 纠错端点）。
+
+---
+
+## 11. P1 修复轮（审计后）
+
+### 审计发现 3 个 P1
+
+| # | 问题 | 修复 |
+|---|------|------|
+| P1-1 | `CaseKnowledgeTag(source="vlm")` 无清理逻辑，旧标签永久残留 | 事务内增加 `tx.caseKnowledgeTag.deleteMany` |
+| P1-2 | `persistAiResult` 5 步 DB 操作无事务包裹，半状态风险 | 全部包进 `prisma.$transaction(async (tx) => {...})` |
+| P1-3 | 3 个测试用不存在的 `TB-020`，FK 约束失败 | `beforeAll` 动态取 2 个 TextbookTopic，替换为 `validTopicId2` |
+
+### 修复结果
+
+- commit: `2f0f26c` — `fix stage3-r2: 清理旧 vlm 标签并用事务保护 process 持久化`
+- `npm run build` ✅
+- `npx vitest run` ✅ — 18/18 通过（原 14 + 新增 4）
+- 审计复审 ✅ 通过
+
+---
+
+## 12. 文件编辑经验教训（工具层面）
+
+> 本轮 P1 修复过程中，编辑工具多次失败，导致大量时间浪费。以下经验供后续会话参考。
+
+### 核心原则
+
+**不要整文件覆写，不要大段 string_replace，不要 PowerShell 内联复杂脚本；用小块 apply_patch，每块只做一个意图，改完立刻跑窄测试和看 diff。**
+
+### 具体规则
+
+1. **小改动用 `apply_patch` / `git apply`**
+   - 单行、几行、局部函数替换，用 patch 最稳
+   - 不要用大段 `string_replace` 硬怼，尤其是包含中文、反引号、`$`、JSON、Prisma transaction 的代码块
+
+2. **大改动拆成多个小 patch**
+   - 先改函数签名 → 再改事务包裹 → 再改内部 `prisma.` → `tx.` → 再补测试
+   - 每个 patch 只做一件事，失败了也容易定位
+
+3. **不要用 PowerShell 内联脚本写复杂文件**
+   - `node -e "..."` 在 PowerShell 里遇到引号、反斜杠、中文、模板字符串很容易被截断或转义错
+   - 如果必须脚本化，优先写临时 `.js` 文件再执行，但注意清理
+
+4. **路径带 `[id]` 时不用怕**
+   - `git apply` / `apply_patch` 可以正常处理 `src/app/api/nana/cases/[id]/process/route.ts`
+   - 真正的问题是工具传输层处理大段 JSON 失败，不是路径本身
+
+5. **测试文件追加大块用"锚点 patch"**
+   - 不要整文件覆写
+   - 找稳定锚点（如最后一个 `});` 前），用 patch 在锚点附近插入新测试
+
+6. **改完马上跑窄测试**
+   ```powershell
+   $env:DATABASE_URL='file:./data/test/test.db'
+   npx.cmd vitest run src/__tests__/integration/nana/process-api.test.ts
+   ```
+   先让相关测试绿，再跑 `npm.cmd run build`
+
+7. **如果文件被改到半状态，先停下来盘点**
+   - 明确列出：哪些已改成功、哪些还没改、当前可能不一致在哪里
+   - 不要继续盲改，否则半成品扩大
+
+8. **涉及 DB 多步写入，优先整体事务**
+   ```typescript
+   await prisma.$transaction(async (tx) => {
+     // all writes via tx
+   })
+   ```
+   - 事务内不要混用 `prisma.` 和 `tx.`，否则原子性是假的
+
+9. **修测试数据不要硬编码不存在的 seed ID**
+   ```typescript
+   const topics = await prisma.textbookTopic.findMany({
+     orderBy: { id: "asc" },
+     take: 2,
+   });
+   validTopicId = topics[0].id;
+   validTopicId2 = topics[1].id;
+   ```
+
+10. **每次编辑收口必须看 git diff**
+    ```bash
+    git diff -- src/app/api/nana/cases/[id]/process/route.ts
+    git diff -- src/__tests__/integration/nana/process-api.test.ts
+    ```
+    确认没有误删、没有临时调试代码、没有临时 patch 文件混进去
