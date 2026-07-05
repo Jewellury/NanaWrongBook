@@ -302,6 +302,8 @@ model Case {
   createdAt DateTime   @default(now())
   artifacts Artifact[]
   knowledgeTags CaseKnowledgeTag[]   // ← Stage 2 新增：Case↔知识点挂载
+  aiResult          CaseAiResult?           // ← Stage 3 新增：1:1 关系（FK 在 CaseAiResult.caseId 侧，Case 表不加列）
+  textbookTopicTags CaseTextbookTopicTag[]  // ← Stage 3 新增：1:N 关系（FK 在 CaseTextbookTopicTag.caseId 侧，Case 表不加列）
 }
 
 model Artifact {
@@ -334,4 +336,89 @@ model CaseKnowledgeTag {
   @@unique([caseId, nodeId, source])  // 同 case 同节点同来源不重复
   @@index([caseId])
   @@index([nodeId])
+}
+
+// ============================================================
+// Stage 3：AI 错题卡片闭环（个性化数学诊断辅导系统 · 增量）
+// 全部新增表，不改 wrong-notebook 已有模型，不改 CaseKnowledgeTag
+// 对应 stage3-ai-integration-plan-v3-revised.md §2
+// ============================================================
+
+// 课本章节（16 条种子数据，覆盖当前 48 个系统节点）
+model TextbookTopic {
+  id          String   @id          // "TB-001" 等
+  name        String                // "集合的概念"（课本小节名）
+  chapter     String                // "第一章 集合与常用逻辑用语"
+  section     String                // "1.1 集合的概念"
+  stage       String                // "必修一" | "必修第二册"
+  order       Int      @default(0)  // 排序用
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mappings    TextbookNodeMapping[]
+  caseTags    CaseTextbookTopicTag[]
+  aiResults   CaseAiResult[]  // ← 反向关系（CaseAiResult.textbookTopicId FK）
+
+  @@index([stage, order])
+}
+
+// 课本章节↔系统节点映射（nodeId 松挂接 KnowledgeNode，无 FK，守铁律 3）
+model TextbookNodeMapping {
+  textbookTopicId String
+  nodeId          String
+  textbookTopic   TextbookTopic @relation(fields: [textbookTopicId], references: [id], onDelete: Cascade)
+
+  @@id([textbookTopicId, nodeId])
+  @@index([nodeId])
+}
+
+// AI 分析结果持久化（1:1 关联 Case）
+model CaseAiResult {
+  id              String   @id @default(cuid())
+  caseId          String   @unique  // 1:1，一个 case 只存最新一次 AI 结果
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  // AI 识别结果
+  questionSummary       String?   // AI 生成的一句话题目摘要
+  questionSummaryEdited Boolean  @default(false)  // 用户是否手动纠错
+  transcript            String?   // 转写文字快照（从 Artifact 同步）
+
+  // AI 课本分类结果
+  textbookTopicId       String?   // 最高置信课本分类（给用户看）
+  textbookTopic         TextbookTopic? @relation(fields: [textbookTopicId], references: [id], onDelete: SetNull)  // FK：TextbookTopic 是 Nana 自有新表，不违反铁律 3
+  textbookTopicConfidence Float   @default(0.0)
+  textbookTopicEdited   Boolean  @default(false)  // 用户是否手动修正
+
+  // AI 轻反馈
+  initialFeedback       String?   // 鼓励文案
+  possibleMistakeReason String?   // 可能的错因（不诊断，只提示方向）
+  nextActionSuggestion  String?   // 建议下一步
+
+  // 元数据
+  audioStatus           String   @default("skipped")  // success | skipped | failed | timeout
+  processingStatus      String   @default("pending")  // success | failed | timeout | pending
+  error                 String?  // 失败原因
+  tokenUsage            String?  // JSON: {promptTokens, completionTokens, totalTokens}
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([textbookTopicId])
+}
+
+// Case↔课本章节挂载（类似 CaseKnowledgeTag，但独立表；source 只允许 manual/vlm，代码层白名单）
+model CaseTextbookTopicTag {
+  id              String   @id @default(cuid())
+  caseId          String
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  textbookTopicId String
+  textbookTopic   TextbookTopic @relation(fields: [textbookTopicId], references: [id], onDelete: Cascade)
+  source          String   // "manual" | "vlm"（代码层白名单强制，详见 §2.6）
+  confidence      Float    @default(0.0)  // manual=1.0，vlm 给概率
+  note            String?
+  createdAt       DateTime @default(now())
+
+  @@unique([caseId, textbookTopicId, source])
+  @@index([caseId])
+  @@index([textbookTopicId])
 }
