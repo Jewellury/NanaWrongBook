@@ -105,7 +105,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.VOLCENGINE_API_KEY = 'test-key';
   process.env.VOLCENGINE_BASE_URL = 'https://test.example.com/api/v3';
-  process.env.PRO_MODEL_NAME = 'test-pro-model';
+  process.env.LITE_MODEL_NAME = 'test-lite-model';
   process.env.CASE_ANALYZER_TIMEOUT_MS = '5000';
 });
 
@@ -454,6 +454,19 @@ describe('analyzeCase: API 调用参数', () => {
     expect(textContent.text).toContain('TB-010');
     expect(textContent.text).toContain('M1-04');
     expect(textContent.text).toContain('M2a-13');
+  });
+
+  test('调用模型来自 Lite env（LITE_MODEL_NAME），不使用 Pro', async () => {
+    // 同时设置 LITE 和 PRO env，验证实际使用的是 LITE
+    process.env.LITE_MODEL_NAME = 'lite-model-assert';
+    process.env.PRO_MODEL_NAME = 'pro-model-should-not-be-used';
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    await analyzeCase(makeInput());
+
+    const callArg = mockChatCompletionsCreate.mock.calls[0][0];
+    expect(callArg.model).toBe('lite-model-assert');
+    expect(callArg.model).not.toBe('pro-model-should-not-be-used');
   });
 });
 

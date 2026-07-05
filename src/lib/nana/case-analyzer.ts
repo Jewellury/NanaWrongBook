@@ -120,18 +120,22 @@ const CaseAnalyzerSchema = z.object({
 // ─── 音频格式映射 ──────────────────────────────────────
 
 /**
- * 豆包 input_audio.format 实际支持的格式（Round 0 预验证确认）。
- * webm/mp4 不在列表中（API 明确拒绝）。
+ * 豆包 Lite input_audio.format 支持的格式。
+ *
+ * 注意：Round 0 预验证只实测了 WAV 确认可用、webm/mp4 确认拒绝。
+ * mp3/flac/ogg/m4a/aac 是官方文档列出但未全部实测，
+ * 真实手机音频场景可能遇到“看起来支持，其实失败”。
+ * v1 暂全部允许，失败时由调用方 catch 走 failed 状态。
  *
  * 来源：Round 0 预验证脚本 + asr-transcribe.ts（TD-5）参考
  */
 const SUPPORTED_AUDIO_FORMATS = new Set([
-  "wav",
-  "mp3",
-  "flac",
-  "ogg",
-  "m4a",
-  "aac",
+  "wav",     // ✅ 实测可用
+  "mp3",     // ⚠️ 未实测
+  "flac",    // ⚠️ 未实测
+  "ogg",     // ⚠️ 未实测
+  "m4a",     // ⚠️ 未实测
+  "aac",     // ⚠️ 未实测
 ]);
 
 /**
@@ -303,10 +307,11 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
     throw new CaseAnalyzerError("未设置 VOLCENGINE_API_KEY 环境变量");
   }
   const baseURL = process.env.VOLCENGINE_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3";
+  // v3-revised 走 Lite 一体化：Pro 不支持音频，Lite 同时支持图片+音频
   const model =
-    process.env.PRO_ENDPOINT_ID ||
-    process.env.PRO_MODEL_NAME ||
-    "doubao-seed-2-0-pro-260215";
+    process.env.LITE_ENDPOINT_ID ||
+    process.env.LITE_MODEL_NAME ||
+    "doubao-seed-2-0-lite-260215";
 
   const client = new OpenAI({
     apiKey,

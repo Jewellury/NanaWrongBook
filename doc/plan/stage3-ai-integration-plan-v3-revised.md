@@ -1192,7 +1192,7 @@ await prisma.caseAiResult.upsert({
 |------|------|------|:--:|
 | `prisma/schema.prisma` | **修改（⚠️新增表）** | 新增 4 表 + Case 加 relation | 中 |
 | `prisma/seed_textbook_topics.ts` | **新增** | TextbookTopic 种子数据（16 topics + 48 mappings） | 低 |
-| `src/lib/nana/case-analyzer.ts` | **新增** | 一体化 Case Analyzer（6 字段） | 低 |
+| `src/lib/nana/case-analyzer.ts` | **新增** | 一体化 Case Analyzer（7 字段） | 低 |
 | `src/app/api/nana/cases/[id]/process/route.ts` | **新增** | POST 触发整理 + GET 查询状态（轮询用） | 中 |
 | `src/app/api/nana/cases/[id]/ai-result/route.ts` | **新增** | GET/PATCH AI 结果（用户纠错用） | 低 |
 | `src/app/api/nana/cases/summary/route.ts` | **新增** | 题目汇总列表 API（按课本章节分组，轻量字段） | 中 |
@@ -1414,7 +1414,7 @@ Round 0: Schema SQL + 种子数据草案（前置，不碰任何业务代码）
   └─ 验证：npx prisma studio 看到新表有数据
 
 Round 1: Case Analyzer lib + mock 单测（低风险，Round 0 审计通过后才开始）
-  ├─ case-analyzer.ts（6 字段 + 双候选）
+  ├─ case-analyzer.ts（7 字段 + 双候选）
   ├─ case-analyzer.test.ts
   └─ npm.cmd run build + test
 
@@ -1587,7 +1587,7 @@ DROP TABLE IF EXISTS TextbookTopic;
 | §0 v3 核心变更 | **保留** | v3 vs v2 对比仍有效 |
 | §1 大白话概述 | **替换** | 从"AI 挂知识点"改为"错题卡片闭环" |
 | §2 现有代码盘点 | **补充** | 新增 TextbookTopic 相关组件 |
-| §3 Case Analyzer lib 契约 | **替换** | 6 字段 JSON + 双候选 |
+| §3 Case Analyzer lib 契约 | **替换** | 7 字段 JSON + 双候选 |
 | §4 音频 skipped 规则 | **保留** | 不变 |
 | §5 /process 端点设计 | **替换** | CaseAiResult 持久化 |
 | §6 落库策略 | **替换** | 全部持久化 + CaseAiResult + CaseTextbookTopicTag |
