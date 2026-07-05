@@ -115,15 +115,21 @@ async function persistAiResult(
     .filter((c) => c.confidence >= HIGH_CONFIDENCE_THRESHOLD)
     .sort((a, b) => b.confidence - a.confidence)[0];
 
-  // 2. 清理旧的 vlm 来源标签（仅在用户未编辑时）
+  // 整个持久化流程在单个事务中，任一步失败都回滚，不留半状态
+  return prisma.$transaction(async (tx) => {
+    // 1. 清理旧的 vlm 来源标签（仅在用户未编辑时）
+    //    manual 标签一律保留（where 限定 source="vlm"）
   if (!existing?.textbookTopicEdited) {
-    await prisma.caseTextbookTopicTag.deleteMany({
+    await tx.caseTextbookTopicTag.deleteMany({
+      where: { caseId, source: "vlm" },
+    });
+    await tx.caseKnowledgeTag.deleteMany({
       where: { caseId, source: "vlm" },
     });
   }
 
-  // 1. upsert CaseAiResult
-  const aiResult = await prisma.caseAiResult.upsert({
+    // 2. upsert CaseAiResult
+    await tx.caseAiResult.upsert({
     where: { caseId },
     create: {
       caseId,
@@ -145,7 +151,7 @@ async function persistAiResult(
       transcript: result.transcript || null,
       textbookTopicId: existing?.textbookTopicEdited
         ? undefined
-        : topTopic?.topicId,
+        : (topTopic?.topicId ?? null),
       textbookTopicConfidence: existing?.textbookTopicEdited
         ? undefined
         : (topTopic?.confidence ?? 0),
@@ -158,28 +164,28 @@ async function persistAiResult(
     },
   });
 
-  // 2. transcript 回写 Artifact
+    // 3. transcript 回写 Artifact
   if (result.transcript) {
-    const existingTranscript = await prisma.artifact.findFirst({
+    const existingTranscript = await tx.artifact.findFirst({
       where: { caseId, type: "transcript" },
       select: { id: true },
     });
     if (existingTranscript) {
-      await prisma.artifact.update({
+      await tx.artifact.update({
         where: { id: existingTranscript.id },
         data: { content: result.transcript },
       });
     } else {
-      await prisma.artifact.create({
+      await tx.artifact.create({
         data: { caseId, type: "transcript", content: result.transcript, seq: 0 },
       });
     }
   }
 
-  // 3. 高置信 knowledgeNodeCandidates -> upsert CaseKnowledgeTag(source="vlm")
+    // 4. 高置信 knowledgeNodeCandidates -> upsert CaseKnowledgeTag(source="vlm")
   for (const c of result.knowledgeNodeCandidates) {
     if (c.confidence >= HIGH_CONFIDENCE_THRESHOLD) {
-      await prisma.caseKnowledgeTag.upsert({
+      await tx.caseKnowledgeTag.upsert({
         where: { caseId_nodeId_source: { caseId, nodeId: c.nodeId, source: "vlm" } },
         create: {
           caseId,
@@ -193,10 +199,10 @@ async function persistAiResult(
     }
   }
 
-  // 4. 高置信 textbookTopicCandidates -> upsert CaseTextbookTopicTag(source="vlm")
+    // 5. 高置信 textbookTopicCandidates -> upsert CaseTextbookTopicTag(source="vlm")
   for (const c of result.textbookTopicCandidates) {
     if (c.confidence >= HIGH_CONFIDENCE_THRESHOLD) {
-      await prisma.caseTextbookTopicTag.upsert({
+      await tx.caseTextbookTopicTag.upsert({
         where: {
           caseId_textbookTopicId_source: { caseId, textbookTopicId: c.topicId, source: "vlm" },
         },
@@ -212,8 +218,8 @@ async function persistAiResult(
     }
   }
 
-  // 重新查询以包含 textbookTopic 关系
-  const resultWithRelations = await prisma.caseAiResult.findUnique({
+    // 6. 重新查询以包含 textbookTopic 关系
+    const resultWithRelations = await tx.caseAiResult.findUnique({
     where: { caseId },
     include: {
       textbookTopic: {
@@ -222,7 +228,8 @@ async function persistAiResult(
     },
   });
 
-  return resultWithRelations!;
+    return resultWithRelations!;
+  });
 }
 
 // ─── 辅助：持久化失败结果 ─────────────────────────────

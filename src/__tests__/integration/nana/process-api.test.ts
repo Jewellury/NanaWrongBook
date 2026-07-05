@@ -124,6 +124,7 @@ const MOCK_RESULT = {
 // will be filled in beforeAll
 let validNodeId: string;
 let validTopicId: string;
+let validTopicId2: string;
 
 // ─── 生命周期 ─────────────────────────────────────────
 
@@ -151,9 +152,14 @@ beforeAll(async () => {
   if (!node) throw new Error('测试库无 KnowledgeNode 种子数据');
   validNodeId = node.id;
 
-  const topic = await _testPrisma.textbookTopic.findFirst({ select: { id: true } });
-  if (!topic) throw new Error('测试库无 TextbookTopic 种子数据');
-  validTopicId = topic.id;
+  const topics = await _testPrisma.textbookTopic.findMany({
+    select: { id: true },
+    orderBy: { id: 'asc' },
+    take: 2,
+  });
+  if (topics.length < 2) throw new Error('测试库 TextbookTopic 种子数据不足');
+  validTopicId = topics[0].id;
+  validTopicId2 = topics[1].id;
 
   // 更新 MOCK_RESULT 使用真实 nodeId
   MOCK_RESULT.knowledgeNodeCandidates[0].nodeId = validNodeId;
@@ -489,7 +495,7 @@ describe('/process API 集成测试', () => {
     mockAnalyzeCase.mockResolvedValueOnce({
       ...MOCK_RESULT,
       textbookTopicCandidates: [
-        { topicId: 'TB-020', confidence: 0.9, reason: '第二次分类' },
+        { topicId: validTopicId2, confidence: 0.9, reason: '第二次分类' },
       ],
       knowledgeNodeCandidates: [
         { nodeId: validNodeId, confidence: 0.85, reason: '第二次知识点' },
@@ -504,7 +510,54 @@ describe('/process API 集成测试', () => {
       where: { caseId, source: 'vlm' },
     });
     expect(topicTags.length).toBe(1);
-    expect(topicTags[0].textbookTopicId).toBe('TB-020');
+    expect(topicTags[0].textbookTopicId).toBe(validTopicId2);
+  });
+
+  test('POST repeated process with low confidence clears old vlm knowledge and textbook tags', async () => {
+    const caseId = await createTestCase();
+
+    mockAnalyzeCase.mockResolvedValueOnce({
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: validTopicId, confidence: 0.85, reason: 'first topic' },
+      ],
+      knowledgeNodeCandidates: [
+        { nodeId: validNodeId, confidence: 0.85, reason: 'first node' },
+      ],
+    });
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    expect(await _testPrisma.caseTextbookTopicTag.count({
+      where: { caseId, source: 'vlm' },
+    })).toBe(1);
+    expect(await _testPrisma.caseKnowledgeTag.count({
+      where: { caseId, source: 'vlm' },
+    })).toBe(1);
+
+    mockAnalyzeCase.mockResolvedValueOnce({
+      ...MOCK_RESULT,
+      textbookTopicCandidates: [
+        { topicId: validTopicId2, confidence: 0.2, reason: 'low topic' },
+      ],
+      knowledgeNodeCandidates: [
+        { nodeId: validNodeId, confidence: 0.2, reason: 'low node' },
+      ],
+    });
+    await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
+      params: Promise.resolve({ id: caseId }),
+    });
+
+    expect(await _testPrisma.caseTextbookTopicTag.count({
+      where: { caseId, source: 'vlm' },
+    })).toBe(0);
+    expect(await _testPrisma.caseKnowledgeTag.count({
+      where: { caseId, source: 'vlm' },
+    })).toBe(0);
+
+    const aiResult = await _testPrisma.caseAiResult.findUnique({ where: { caseId } });
+    expect(aiResult!.textbookTopicId).toBeNull();
   });
 
   // 新测试：用户手动标签不应被清理
@@ -527,12 +580,21 @@ describe('/process API 集成测试', () => {
         note: '用户手动添加',
       },
     });
+    await _testPrisma.caseKnowledgeTag.create({
+      data: {
+        caseId,
+        nodeId: validNodeId,
+        source: 'manual',
+        confidence: 1.0,
+        note: '用户手动添加知识点',
+      },
+    });
 
     // 第二次 process
     mockAnalyzeCase.mockResolvedValueOnce({
       ...MOCK_RESULT,
       textbookTopicCandidates: [
-        { topicId: 'TB-020', confidence: 0.9, reason: 'AI 新分类' },
+        { topicId: validTopicId2, confidence: 0.9, reason: 'AI 新分类' },
       ],
     });
     await POST(mockPost(`/api/nana/cases/${caseId}/process`), {
@@ -548,7 +610,17 @@ describe('/process API 集成测试', () => {
     expect(allTopicTags[0].source).toBe('manual');
     expect(allTopicTags[0].textbookTopicId).toBe(validTopicId);
     expect(allTopicTags[1].source).toBe('vlm');
-    expect(allTopicTags[1].textbookTopicId).toBe('TB-020');
+    expect(allTopicTags[1].textbookTopicId).toBe(validTopicId2);
+
+    const allKnowledgeTags = await _testPrisma.caseKnowledgeTag.findMany({
+      where: { caseId },
+      orderBy: { source: 'asc' },
+    });
+    expect(allKnowledgeTags.length).toBe(2);
+    expect(allKnowledgeTags[0].source).toBe('manual');
+    expect(allKnowledgeTags[0].nodeId).toBe(validNodeId);
+    expect(allKnowledgeTags[1].source).toBe('vlm');
+    expect(allKnowledgeTags[1].nodeId).toBe(validNodeId);
   });
 
   // 新测试：POST 响应返回持久化后的数据而非 AI 原始响应
@@ -583,7 +655,7 @@ describe('/process API 集成测试', () => {
       ...MOCK_RESULT,
       questionSummary: 'AI 新的摘要',
       textbookTopicCandidates: [
-        { topicId: 'TB-020', confidence: 0.9, reason: 'AI 新分类' },
+        { topicId: validTopicId2, confidence: 0.9, reason: 'AI 新分类' },
       ],
     };
     mockAnalyzeCase.mockResolvedValueOnce(secondResult);
