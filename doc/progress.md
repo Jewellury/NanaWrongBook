@@ -413,3 +413,37 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 - 父组件 `capture/page.tsx` 用 `key={recorderKey}` 控制 VoiceRecorder remount，新录音时 state 全部重置，无需手动清理 `isStopping`
 - unmount 保护复用已有 `abortedRef`，getUserMedia await 后检查，不创建 recorder 不 setState
 - vitest 不改 `vitest.config.ts` 自动加载 `.env.test`，用 `cmd /c "set DATABASE_URL=... && ..."` 手动设置
+
+---
+
+## 2026-07-05 · Stage 3 v3-revised：AI 错题卡片集成（Round 0-2）
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-05 | Round 0: Schema + Seed | ✅ | 4 张新表 migration + 16 topics + 48 mappings seed |
+| 07-05 | Round 1: case-analyzer.ts | ✅ | 一体化 Case Analyzer lib + 33 mock 单测全绿 |
+| 07-05 | Round 2: /process API | ✅ | POST+GET handler + 18 集成测试全绿 |
+| 07-05 | Round 2 P1 修复 | ✅ | 3 个 P1 全部修复（CaseKnowledgeTag 清理 + 事务包裹 + 测试数据） |
+| 07-05 | Round 2 审计 | ✅ | 初审 ❌ 3 P1 → 修复 → 复审 ✅ 通过 |
+
+### Commit 清单
+
+| Commit | 类型 | 说明 |
+|--------|------|------|
+| `e5628ef` | feat | stage3-r0: 4 new tables schema + migration + seed + log |
+| `7c93cfd` | feat | Stage3 v3-revised Round 1 case-analyzer.ts + 33 mock 单测 |
+| `848ea22` | feat | Stage3 v3-revised Round 2 /process API + 14 集成测试 |
+| `81d8a4a` | fix | Stage 3 v3-revised Round 2 P1：POST 响应返回持久化数据，清理旧 vlm 标签 |
+| `2f0f26c` | fix | stage3-r2: 清理旧 vlm 标签并用事务保护 process 持久化 |
+| `7dd6aff` | docs | 记录 Round 2 P1 修复结果和文件编辑经验教训 |
+
+### 关键设计决策
+
+- **一体化 Case Analyzer**：合并 v2 的 asr-transcribe + vlm-classify 为单次 AI 调用，减少 API 往返
+- **高置信阈值 0.5**：confidence >= 0.5 自动挂 tag，< 0.5 只返回候选不挂 tag
+- **用户纠错保护**：`questionSummaryEdited` / `textbookTopicEdited` 为 true 时，update 设字段为 undefined（不覆盖）
+- **事务原子性**：`persistAiResult` 全部 DB 操作包在 `prisma.$transaction` 中，任一步失败回滚
+- **旧标签清理**：每次 /process 重跑时，先 delete 旧 vlm 标签再 upsert 新的，避免残留；manual 标签不受影响
+- **文件编辑工具避坑**：大段含中文/$transaction/模板字符串的代码禁止 string_replace，改用 .patch + git apply
