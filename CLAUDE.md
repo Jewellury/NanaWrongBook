@@ -113,3 +113,69 @@ When spawning subagents (Agent/Task tool), the routing block is automatically in
 - 标记 todo 为 `in_progress` 时，在 content 里写明"完成标志 = XXX 文件存在/命令退出码 0/..."
 - 达到标志 → 立即推进到下一步，不停顿
 - 如果不确定完成标志是什么，说明任务定义不够清晰，先问用户
+
+---
+
+# PowerShell 终端避坑规则
+
+> 本项目开发环境为 Windows，终端实际是 PowerShell（非 cmd）。CatPaw 的终端工具底层调用 PowerShell，导致部分 cmd/bash 习惯写法会报错。以下规则避免重复踩坑。
+
+## 铁律：每条命令单独执行，不用 && 链式拼接
+
+PowerShell 5.x（Windows 10 默认）**不支持 `&&`**。以下写法会报错：
+
+```
+❌ cd /d e:\nana && git status          → "标记 && 不是有效语句分隔符"
+❌ git add . && git commit -m "..."     → 同上
+```
+
+**正确做法**：拆成多条命令分别执行，或用 `;` 分隔（PowerShell 语法）：
+
+```
+✅ git add doc/INDEX.md                 → 单独执行
+✅ git commit -m "描述"                  → 单独执行
+✅ git status                           → 单独执行
+```
+
+> 如果必须一条命令完成多步，用 `;` 而非 `&&`。但**推荐拆开执行**，更清晰、更安全。
+
+## 铁律：commit message 不用括号
+
+PowerShell 会把括号 `()` 当子表达式解析。以下写法会报错：
+
+```
+❌ git commit -m "docs(r4): 修订内容"   → "无法将 r4 项识别为 cmdlet"
+❌ git commit -m "feat(core): 新功能"   → 同上
+```
+
+**正确做法**：去掉括号，用空格或短横替代：
+
+```
+✅ git commit -m "docs r4: 修订内容"
+✅ git commit -m "feat core: 新功能"
+✅ git commit -m "docs: r4 推演修订"
+```
+
+## 铁律：不用 cd /d，直接用工作目录
+
+PowerShell 不识别 `cd /d`（这是 cmd 专属语法）。CatPaw 终端默认工作目录已是 `e:\nana`，不需要 cd：
+
+```
+❌ cmd /c "cd /d e:\nana && git status" → 多层转义容易出问题
+✅ git status                           → 直接执行，工作目录已正确
+```
+
+## 已知偶发问题：shell integration 延迟
+
+VS Code shell integration 偶尔会出现 `shell_integration_warning: did not start within 5 seconds`，导致命令看起来"卡住"或"无输出"。
+
+**处理方式**：直接重试同一条命令即可，不需要修改命令本身。这不是命令错误，是终端集成层的时序问题。
+
+## 速查表
+
+| 场景 | ❌ 错误写法 | ✅ 正确写法 |
+|------|-----------|-----------|
+| 多命令拼接 | `cmd1 && cmd2` | 拆开分别执行，或用 `;` |
+| commit message 含括号 | `-m "docs(r4): ..."` | `-m "docs r4: ..."` |
+| 切换目录 | `cd /d e:\nana` | 不需要（默认就在 e:\nana） |
+| cmd 包装 | `cmd /c "cd /d ... && ..."` | 直接执行 PowerShell 命令 |
