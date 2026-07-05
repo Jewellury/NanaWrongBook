@@ -1034,6 +1034,23 @@ POST /api/nana/cases/:id/process
 }
 ```
 
+### 11.1.1 异步整理状态语义（Round 2 API 设计必须明确）
+
+> **问题**：Case 创建后但尚未调 /process 时，CaseAiResult 表中没有对应行。这行不存在到底算什么状态？
+
+| 数据状态 | processingStatus 值 | 前端展示 | 说明 |
+|----------|---------------------|----------|------|
+| CaseAiResult 行不存在 | `pending` | "整理中…" | Case 刚创建，尚未触发 /process 或 /process 正在执行但还没写行 |
+| processingStatus = `processing` | `processing` | "整理中…" | /process 已开始执行，已写入行但结果未就绪（预留，v1 可能不用到） |
+| processingStatus = `success` | `success` | 显示 AI 结果 | /process 成功完成 |
+| processingStatus = `failed` | `failed` | "整理没接上，可以手动整理" | /process 执行失败 |
+
+**API 契约约束**（Round 2 必须落实）：
+- `GET /api/nana/cases/summary` 和 `GET /api/nana/cases` 返回的 `processStatus` 字段：**CaseAiResult 行不存在时返回 `"pending"`，不返回 null**。前端不靠猜。
+- `GET /api/nana/cases/:id/process`（轮询端点）同理：行不存在 = `pending`。
+- 前端拿到 `pending` 展示"整理中…"，与 `processing` 展示一致（v1 不区分两者）。
+- **timeout 不是数据库状态**：timeout 是前端轮询超 60s 的判定，不写入 processingStatus。前端显示 timeout 文案后不再轮询，但数据库里该行仍为 `pending` 或 `processing`。
+
 ### 11.2 落库流程
 
 ```typescript
@@ -1209,9 +1226,9 @@ await prisma.caseAiResult.upsert({
 
 > **目的**：execute-agent 开始写代码前，必须先对照手机端线性流程图（见产品手册），排查现有前端修改点，输出排查清单。**这一步只排查不写代码。**
 >
-> **触发条件**：Round 0 审计通过后、Round 1 开始前。
-> **产出物**：一份前端修改点排查文档（存 `doc/executionlog/`），列出每个页面的现有代码位置、需要改什么、哪些可复用、哪些需新增。
-> **门禁**：排查清单交用户确认后，才能进入 Round 1-5 的前端开发。
+> ~~**触发条件**：Round 0 审计通过后、Round 1 开始前。~~
+> **状态**：✅ 已完成（2026-07-05）。排查清单存 `doc/executionlog/round-ui0-frontend-audit.md`，6 项结论已回填至 §14.5.4。
+> **门禁**：排查清单已交用户确认，Round 1-5 前端开发门禁已解除。
 
 ### 14.5.1 排查范围（7 个维度）
 
@@ -1604,7 +1621,6 @@ DROP TABLE IF EXISTS TextbookTopic;
 9. ✅ **异步整理选项确认**：v1 做异步整理，保存后允许继续拍，题目汇总显示整理状态
 10. ✅ **打印题图缩略图尺寸**：`max-width: 180px; max-height: 120px; object-fit: contain;`
 11. ✅ **轮询间隔**：3 秒起步，最多 60 秒，超时提示"稍后在题目汇总里看"
-12. ✅ **Round UI-0 前端修改点排查**：排查清单已完成，6 项结论已回填（排查结论 1-6）
 
 ---
 
