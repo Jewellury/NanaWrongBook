@@ -145,6 +145,42 @@ export async function tagCaseManually(
   return res.json();
 }
 
+// ─── Case AI 整理（Round 4 新增）─────────────────────
+
+export interface CaseProcessResult {
+  status: 'pending' | 'success' | 'failed' | 'timeout';
+  audioStatus: string;
+  questionSummary: string | null;
+  textbookTopic: { id: string; name: string; confidence: number } | null;
+  feedback: string | null;
+  possibleMistakeReason: string | null;
+  nextActionSuggestion: string | null;
+  transcript: string | null;
+  error: string | null;
+}
+
+/**
+ * 触发 AI 整理
+ * POST /api/nana/cases/:id/process
+ */
+export async function triggerCaseProcess(caseId: string): Promise<CaseProcessResult> {
+  const res = await fetch(`${NANA_BASE}/cases/${caseId}/process`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`triggerCaseProcess 失败: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * 查询整理状态（轮询用）
+ * GET /api/nana/cases/:id/process
+ */
+export async function getCaseProcessStatus(caseId: string): Promise<CaseProcessResult> {
+  const res = await fetch(`${NANA_BASE}/cases/${caseId}/process`);
+  if (!res.ok) throw new Error(`getCaseProcessStatus 失败: ${res.status}`);
+  return res.json();
+}
+
 /**
  * 获取知识地图数据
  * GET /api/diagnosis/map?studentId=xxx[&mainlineId=xxx]

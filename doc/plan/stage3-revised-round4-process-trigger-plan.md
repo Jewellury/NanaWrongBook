@@ -303,3 +303,31 @@ AI 结果卡展示的文案来自 /process 返回的 `questionSummary`、`feedba
 - AiResultCard 组件：新文件，`git revert` 即可
 - 采集页修改：`git revert` 回退到 Round 3 状态
 - 无 schema 变更，无 migration，无数据迁移风险
+
+---
+
+## 9. 用户验收提醒（execute-agent 必须遵守）
+
+### 9.1 保存 case 本身不能被 AI 阻塞
+
+- `createCase` 成功后就立即显示"题已收好"
+- `/process` 慢、失败、超时，都不能让用户以为保存失败
+- process 的任何错误状态都不能回退 saveState
+
+### 9.2 轮询要有明确停止条件
+
+- `status === "success"` 或 `status === "failed"` → 停止轮询
+- 60 秒总超时 → 停止轮询，设为 error
+- 组件 unmount 时清除 interval + timeout（`useEffect` cleanup），避免页面离开后继续 setState
+
+### 9.3 AI 卡片措辞守边界
+
+- 不写"诊断完成""识别出了完整题目""解析/答案"
+- 用"AI 摘要""可能属于""可能的方向""下一步可以"
+- 失败时说"没整理成功，可以再试一次"，不说"错误"
+
+### 9.4 测试别打真实豆包
+
+- 10 个测试全部 mock /process 或 mock API client
+- CI 不能依赖 VOLCENGINE_API_KEY
+- 测试不发起任何真实 HTTP 请求到 AI provider

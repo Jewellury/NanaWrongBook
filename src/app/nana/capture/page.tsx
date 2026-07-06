@@ -5,33 +5,44 @@
  * 1. 拍照（QuestionImageCapture：调起相机/相册 → 压缩成 ≤1MB Base64）
  * 2. 可选录音（VoiceRecorder：getUserMedia + MediaRecorder，60s 上限，不转写）
  * 3. 点"收好这道题" → 组装 artifacts → createCase 存库
- * 4. 成功 → "已收好 · 识别稍后接入" + 两个去向（去知识地图 / 再拍一道）（S1-2）
+ * 4. 成功 → "已收好" + 自动触发 AI 整理（Round 4）
  *    失败 → "没存成功，再试一次"（保留数据可重试，铁律 6 不静默）
+ * 5. AI 整理中 → 显示"正在帮你整理…"；完成 → 展示 AI 结果卡；失败 → "没整理成功，可以再试一次"
  *
- * 状态机（§7.6）：
+ * 状态机（§7.6 + Round 4）：
  * - photoState = "empty" | "photoTaken"
  * - saveState  = "idle" | "saving" | "saved" | "error"
+ * - processState = "idle" | "processing" | "done" | "error"
  * - 门禁：无照片禁保存
+ * - 保存成功不被 AI 阻塞（§9.1）：createCase 成功即显示"已收好"
  *
- * 措辞合规（OPS §4，E1/E2）：
+ * 措辞合规（OPS §4，E1/E2 + §9.3）：
  * - 全页无"诊断/已诊断/薄弱/得分/掌握"
- * - "帮你整理"tab 占位"先把材料收好，等多拍几道再一起看规律"，本轮不调 LightFeedback
+ * - AI 卡片用"AI 摘要""可能属于""可能的方向""下一步可以"
+ * - 失败时"没整理成功，可以再试一次"，不说"错误"
  */
 
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Tag } from "lucide-react";
 import { QuestionImageCapture } from "@/components/nana/capture/question-image-capture";
 import { VoiceRecorder } from "@/components/nana/capture/voice-recorder";
 import { TranscriptionPanel } from "@/components/nana/capture/transcription-panel";
-import { createCase, type ArtifactInput } from "@/lib/nana/nana-api-client";
+import { AiResultCard } from "@/components/nana/capture/ai-result-card";
+import {
+  createCase,
+  triggerCaseProcess,
+  getCaseProcessStatus,
+  type ArtifactInput,
+  type CaseProcessResult,
+} from "@/lib/nana/nana-api-client";
 
 // ─── 常量 ─────────────────────────────────────
 const TOTAL_PAYLOAD_LIMIT = 3 * 1024 * 1024; // 单次保存总 payload 3MB 上限（前端预检）
-// Stage 1 诚实措辞（OPS §4）：无真识别，说"识别稍后接入"，不说"正在识别/已诊断"
-const SUCCESS_MSG = "已收好 · 识别稍后接入";
+// Round 4：保存成功即显示"已收好"，AI 整理独立展示（不阻塞保存提示）
+const SUCCESS_MSG = "已收好";
 const FAILURE_MSG = "没存成功，再试一次";
 
 // ─── Tab 定义 ─────────────────────────────────
@@ -92,6 +103,14 @@ export default function CapturePage() {
   // 不再自动 1.4s 重置——用户需要时间点去向按钮（S1-2）
   // 浮动卡状态：保存成功后弹出固定底部卡片，确保小屏可见
   const [toastOpen, setToastOpen] = useState(false);
+
+  // AI 整理状态（Round 4）
+  const [processState, setProcessState] = useState<"idle" | "processing" | "done" | "error">("idle");
+  const [processResult, setProcessResult] = useState<CaseProcessResult | null>(null);
+  const [savedCaseId, setSavedCaseId] = useState<string | null>(null);
+  // 轮询 cleanup ref（防止 unmount 后继续 setState）
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photoTaken = imageBase64 !== null;
 
@@ -182,18 +201,81 @@ export default function CapturePage() {
     setSaveMsg(null);
     try {
       const artifacts = await buildArtifacts();
-      await createCase(artifacts);
-      // 成功：停留到用户选去向（S1-2：去知识地图 / 再拍一道）
-      // 不再自动 1.4s 重置——显示去向按钮等用户点击
+      const caseRecord = await createCase(artifacts);
+      // 成功：立即显示"已收好"（§9.1：保存不被 AI 阻塞）
       setSaveState("saved");
       setToastOpen(true);
       setCaptureCount((prev) => prev + 1);
+      setSavedCaseId(caseRecord.id);
+
+      // Round 4：触发 AI 整理（不阻塞保存成功提示）
+      setProcessState("processing");
+      try {
+        const result = await triggerCaseProcess(caseRecord.id);
+        setProcessResult(result);
+        setProcessState(result.status === "success" ? "done" : "error");
+      } catch {
+        // process 触发失败不阻塞保存——用户可手动重试
+        setProcessState("error");
+      }
     } catch {
       // 失败：显式报错，保留数据可重试（铁律 6）
       setSaveState("error");
       setSaveMsg(FAILURE_MSG);
     }
   }, [imageBase64, isRecording, estimatedPayloadBytes, buildArtifacts]);
+
+  // ─── AI 整理轮询（Round 4 §9.2）──────────────
+  // 触发后如果 POST 已返回但状态不是终态，或 POST 超时，用轮询兜底
+  // 停止条件：success / failed / 60 秒超时 / 组件 unmount
+  useEffect(() => {
+    if (processState !== "processing" || !savedCaseId) return;
+
+    // 如果 processResult 已有终态，不需要轮询
+    if (processResult && (processResult.status === "success" || processResult.status === "failed")) {
+      return;
+    }
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const result = await getCaseProcessStatus(savedCaseId);
+        if (result.status === "success" || result.status === "failed") {
+          setProcessResult(result);
+          setProcessState(result.status === "success" ? "done" : "error");
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+        }
+      } catch {
+        // 轮询失败不立即报错，继续轮询
+      }
+    }, 3000);
+
+    // 60 秒总超时（§9.2）
+    pollTimeoutRef.current = setTimeout(() => {
+      setProcessState("error");
+      if (pollRef.current) clearInterval(pollRef.current);
+    }, 60000);
+
+    // cleanup（§9.2：组件 unmount 时停止，避免离开后继续 setState）
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, [processState, savedCaseId, processResult]);
+
+  // ─── 重试 AI 整理 ──────────────────────────
+  const handleRetryProcess = useCallback(async () => {
+    if (!savedCaseId) return;
+    setProcessState("processing");
+    setProcessResult(null);
+    try {
+      const result = await triggerCaseProcess(savedCaseId);
+      setProcessResult(result);
+      setProcessState(result.status === "success" ? "done" : "error");
+    } catch {
+      setProcessState("error");
+    }
+  }, [savedCaseId]);
 
   // ─── 切 tab（录音中禁止切走，修复评审 P1）──
   const handleTabChange = useCallback((tab: TabId) => {
@@ -209,9 +291,13 @@ export default function CapturePage() {
     setSaveState("idle");
     setSaveMsg(null);
     setCurrentTab("voice");
+    // Round 4：重置 process 状态（防御性，正常流程 handleRetake 时 processState 应为 idle）
+    setProcessState("idle");
+    setProcessResult(null);
+    setSavedCaseId(null);
   }, [isRecording, resetAudioAndRecorder]);
 
-  // ─── 保存成功后"再拍一道"：重置采集状态（原 1.4s 自动重置改为手动，S1-2）──
+  // ─── 保存成功后"再拍一道"：重置采集状态 + AI 整理状态（Round 4）──
   const handleTakeAnother = useCallback(() => {
     setImageBase64(null);
     resetAudioAndRecorder();
@@ -219,6 +305,10 @@ export default function CapturePage() {
     setSaveMsg(null);
     setToastOpen(false);
     setCurrentTab("voice");
+    // Round 4：重置 process 状态
+    setProcessState("idle");
+    setProcessResult(null);
+    setSavedCaseId(null);
   }, [resetAudioAndRecorder]);
 
   // ─── 关闭浮动卡，回退显示文档流按钮区 ──
@@ -448,12 +538,43 @@ export default function CapturePage() {
             className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up rounded-t-2xl bg-[#FFFDF9] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-8px_40px_rgba(90,80,66,0.22)]"
           >
             {/* 成功确认 */}
-            <div className="mb-4 flex items-center gap-2 rounded-xl bg-[#EAF2EC] px-4 py-2.5 text-[14px] text-[#3F6B4C]">
+            <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#EAF2EC] px-4 py-2.5 text-[14px] text-[#3F6B4C]">
               <span className="size-5 rounded-full bg-[#5E8868] text-center text-[12px] font-bold leading-5 text-white">
                 ✓
               </span>
-              已收好 · 识别稍后接入
+              已收好
             </div>
+
+            {/* AI 整理状态区（Round 4） */}
+            {processState === "processing" && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#F5F1EA] px-4 py-3">
+                <span className="flex gap-[3px]">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="inline-block size-[5px] animate-pulse rounded-full bg-[#B4ADA3]"
+                      style={{ animationDelay: `${i * 0.3}s` }}
+                    />
+                  ))}
+                </span>
+                <span className="text-[13px] text-[#8C857B]">正在帮你整理这道题…</span>
+              </div>
+            )}
+
+            {processState === "done" && processResult && (
+              <div className="mb-3 max-h-[40vh] overflow-y-auto rounded-xl bg-[#FAFAF7] p-3">
+                <AiResultCard result={processResult} />
+              </div>
+            )}
+
+            {processState === "error" && (
+              <div className="mb-3 rounded-xl bg-[#FAFAF7] p-3">
+                <AiResultCard
+                  result={processResult ?? { status: "failed", audioStatus: "skipped", questionSummary: null, textbookTopic: null, feedback: null, possibleMistakeReason: null, nextActionSuggestion: null, transcript: null, error: null }}
+                  onRetry={handleRetryProcess}
+                />
+              </div>
+            )}
 
             {/* 主按钮：给这道题挂个知识点 */}
             <Link
