@@ -18,6 +18,7 @@
 | OD-003 | Ops Debt | E2E 补"最近拍过入口按钮"路径 | P2 | 近 2 轮 | open | E2E 测试覆盖该路径 |
 | OD-004 | Ops Debt | 上游 5 个测试在 `.env.test` 下失败隔离 | P2 | 近 2 轮 | open | 开独立计划 upstream-test-env-isolation 处理 |
 | RS-001 | Research/Spike | OCR v2 可行性 Spike（替代 PB-001） | P2 | 近 2 轮 | open | Spike 完成 + 报告 + 决策是否进入路线图 |
+| TD-006 | Tech Debt | 手动改课本分类时写入口径统一（CaseTextbookTopicTag + CaseAiResult.textbookTopicId） | P2 | Round 4 手动编辑课本分类时 | open | 实现手动编辑课本分类 API 时，以 `CaseTextbookTopicTag` 为汇总页权威来源；同步维护 `CaseAiResult.textbookTopicId` 并设置 `textbookTopicEdited=true`；二者在同一事务中更新。**审计来源**：Round 3 审计发现（`doc/auditlog/stage3-revised-round3-summary-audit.md` §2.2） |
 
 ---
 
@@ -102,4 +103,4 @@ open → stale（5 轮未触碰）→ 下一轮 plan 二择一：保留 / cancel
 
 ---
 
-> 最后更新：2026-07-05 | 初始版本来源：`doc/auditlog/audit-doc-backlog-governance-2026-07-05.md`
+> 最后更新：2026-07-06 | 新增 TD-006（Round 3 审计 P2 架构隐患：手动改课本分类写入口径统一）

@@ -447,3 +447,38 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 - **事务原子性**：`persistAiResult` 全部 DB 操作包在 `prisma.$transaction` 中，任一步失败回滚
 - **旧标签清理**：每次 /process 重跑时，先 delete 旧 vlm 标签再 upsert 新的，避免残留；manual 标签不受影响
 - **文件编辑工具避坑**：大段含中文/$transaction/模板字符串的代码禁止 string_replace，改用 .patch + git apply
+
+---
+
+## 2026-07-06 · Stage 3 v3-revised：AI 错题卡片集成（Round 3）
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-06 | Round 3: 题目汇总 API | ✅ | GET /api/nana/cases/summary 按 TextbookTopic 分组 + 跨用户隔离 + 不返回 base64 |
+| 07-06 | Round 3: 列表扩展 | ✅ | GET /api/nana/cases 扩展 aiSummary/textbookChapter/processStatus 字段 |
+| 07-06 | Round 3: 三 tab 外壳 | ✅ | 知识地图页改为 汇总(默认) | 图谱 | 列表 三 tab |
+| 07-06 | Round 3: 集成测试 | ✅ | 14 集成测试全绿 + 18 回归测试无回归 |
+| 07-06 | Round 3: 审计 | ✅ | 通过（附 5 个 P2 建议，不阻塞） |
+
+### Commit 清单
+
+| Commit | 类型 | 说明 |
+|--------|------|------|
+| `ebd056a` | feat | stage3-r3: 题目汇总 API + 列表扩展 + 三 tab 外壳 + 14 集成测试 |
+
+### 审计结果
+
+- **审计报告**：`doc/auditlog/stage3-revised-round3-summary-audit.md`
+- **总体判定**：✅ 通过（5 个 P2 不阻塞）
+- **验收标准 6/6 全部通过**：跨用户隔离、不返回 base64、三态映射、未分类分组、三 tab 默认汇总、build+测试通过
+- **关键发现**：P2 架构隐患 TD-006——summary/list 读 `CaseTextbookTopicTag` 表，process 编辑保护保护的是 `CaseAiResult.textbookTopicId` 字段。当前无手动改课本分类 API 不会触发，已登记 BACKLOG 作为 Round 4 前置约束
+
+### 新增 BACKLOG 条目
+
+- **TD-006**：手动改课本分类时写入口径统一（P2，目标窗口：Round 4 手动编辑课本分类时）
+
+### 下一步
+
+Round 4 建议保持窄范围：只做"拍题保存后触发整理 / 查询整理状态 / 展示 AI 结果卡"。Plan 里必须显式带上 TD-006 约束。
