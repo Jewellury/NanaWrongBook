@@ -45,6 +45,7 @@ export async function GET() {
 
   try {
     // 归属过滤（G1）：只查自己的 case；不 select content，避免列表爆体积
+    // Round 3 扩展：关联 aiResult + textbookTopicTags 返回轻量 AI 字段
     const cases = await prisma.case.findMany({
       where: { studentId: session.user.id },
       orderBy: { createdAt: 'desc' },
@@ -53,6 +54,24 @@ export async function GET() {
         id: true,
         createdAt: true,
         artifacts: { select: { type: true } },
+        // Round 3 新增：AI 结果轻量字段
+        aiResult: {
+          select: {
+            questionSummary: true,
+            processingStatus: true,
+          },
+        },
+        // Round 3 新增：取最高置信课本分类
+        textbookTopicTags: {
+          select: {
+            confidence: true,
+            textbookTopic: {
+              select: { chapter: true },
+            },
+          },
+          orderBy: { confidence: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -60,6 +79,16 @@ export async function GET() {
       const types = new Set(c.artifacts.map((a) => a.type));
       const hasImage = types.has('question_image');
       const hasAudio = types.has('audio_note');
+
+      // processStatus 映射
+      let processStatus: "pending" | "success" | "failed" = "pending";
+      if (c.aiResult) {
+        const ps = c.aiResult.processingStatus;
+        if (ps === "success") processStatus = "success";
+        else if (ps === "failed" || ps === "timeout") processStatus = "failed";
+        else processStatus = "pending";
+      }
+
       return {
         id: c.id,
         createdAt: c.createdAt.toISOString(),
@@ -69,6 +98,10 @@ export async function GET() {
         tagCount: 0,
         tagStatus: 'untagged' as const,
         transcriptReady: false,
+        // ── Round 3 新增 ──
+        aiSummary: c.aiResult?.questionSummary ?? null,
+        textbookChapter: c.textbookTopicTags[0]?.textbookTopic?.chapter ?? null,
+        processStatus,
       };
     });
 

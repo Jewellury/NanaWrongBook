@@ -61,6 +61,10 @@ export interface CaseListItem {
   tagCount: number;          // Stage 1 恒 0
   tagStatus: 'untagged' | 'tagged' | 'pending';  // Stage 1 恒 untagged
   transcriptReady: boolean;  // Stage 1 恒 false
+  // ── Round 3 新增 ──
+  aiSummary: string | null;
+  textbookChapter: string | null;
+  processStatus: 'pending' | 'success' | 'failed';
 }
 
 /**
@@ -72,6 +76,32 @@ export interface CaseListItem {
 export async function listMyCases(): Promise<{ cases: CaseListItem[]; total: number }> {
   const res = await fetch(`${NANA_BASE}/cases`);
   if (!res.ok) throw new Error(`listMyCases 失败: ${res.status}`);
+  return res.json();
+}
+
+// ─── 题目汇总（Round 3 新增）────────────────────────────
+
+export interface CaseSummaryItem {
+  id: string;
+  createdAt: string;
+  hasImage: boolean;
+  processStatus: 'pending' | 'success' | 'failed';
+  aiSummary: string | null;
+  textbookChapter: string | null;
+}
+
+export interface CaseSummaryGroup {
+  topic: { id: string; name: string; chapter: string; section: string } | null;
+  cases: CaseSummaryItem[];
+}
+
+/**
+ * 题目汇总（按 TextbookTopic 分组）
+ * GET /api/nana/cases/summary（带 session 归属过滤）
+ */
+export async function getCaseSummary(): Promise<{ groups: CaseSummaryGroup[]; total: number }> {
+  const res = await fetch(`${NANA_BASE}/cases/summary`);
+  if (!res.ok) throw new Error(`getCaseSummary 失败: ${res.status}`);
   return res.json();
 }
 
