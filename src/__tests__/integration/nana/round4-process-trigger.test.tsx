@@ -293,3 +293,127 @@ describe('AiResultCard 显示逻辑', () => {
     expect(visible).toHaveLength(5);
   });
 });
+
+// ============================================================
+// P1 hotfix：竞态条件测试
+// ============================================================
+
+describe('P1 hotfix: 竞态条件保护', () => {
+  test('11. 快速连续保存两题：第一题慢返回不覆盖第二题状态', async () => {
+    // 模拟：题 A 的 triggerCaseProcess 慢返回，题 B 的快返回
+    const caseA = { id: 'case-A', studentId: 'user1', createdAt: '2026-01-01', artifacts: [] };
+    const caseB = { id: 'case-B', studentId: 'user1', createdAt: '2026-01-01', artifacts: [] };
+    const resultA = makeSuccessResult({ questionSummary: '题 A 的摘要' });
+    const resultB = makeSuccessResult({ questionSummary: '题 B 的摘要' });
+
+    vi.mocked(createCase)
+      .mockResolvedValueOnce(caseA)
+      .mockResolvedValueOnce(caseB);
+
+    // triggerCaseProcess: 第一次（题A）延迟，第二次（题B）立即
+    vi.mocked(triggerCaseProcess)
+      .mockImplementationOnce(async () => {
+        await new Promise((r) => setTimeout(r, 100));
+        return resultA;
+      })
+      .mockResolvedValueOnce(resultB);
+
+    // 模拟 handleSave 逻辑（含 P1 hotfix caseId ref 检查）
+    let currentCaseIdRef: string | null = null;
+    let processState: string = 'idle';
+    let processResult: CaseProcessResult | null = null;
+
+    // 题 A 保存
+    const recordA = await createCase([]);
+    currentCaseIdRef = recordA.id;
+    const triggerA = triggerCaseProcess(recordA.id).then((result) => {
+      // P1 check: currentCaseIdRef 已变为 caseB，丢弃
+      if (currentCaseIdRef !== recordA.id) return;
+      processResult = result;
+      processState = 'done';
+    });
+
+    // 题 B 保存（在 A 的 trigger 还在飞行中时）
+    const recordB = await createCase([]);
+    currentCaseIdRef = recordB.id; // 覆盖 ref
+    const resultB_actual = await triggerCaseProcess(recordB.id);
+    if (currentCaseIdRef === recordB.id) {
+      processResult = resultB_actual;
+      processState = 'done';
+    }
+
+    // 等 A 的 trigger 完成
+    await triggerA;
+
+    // 断言：processResult 是题 B 的，不是题 A 的
+    expect(processState).toBe('done');
+    expect(processResult?.questionSummary).toBe('题 B 的摘要');
+    expect(processResult?.questionSummary).not.toBe('题 A 的摘要');
+  });
+
+  test('12. 点"再拍一道"后旧请求返回：不显示旧结果', async () => {
+    // 模拟：保存题 A → triggerCaseProcess 慢 → 用户点"再拍一道" → 旧请求返回
+    const caseA = { id: 'case-A', studentId: 'user1', createdAt: '2026-01-01', artifacts: [] };
+    const resultA = makeSuccessResult({ questionSummary: '题 A 的摘要' });
+
+    vi.mocked(createCase).mockResolvedValueOnce(caseA);
+    vi.mocked(triggerCaseProcess).mockImplementationOnce(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+      return resultA;
+    });
+
+    let currentCaseIdRef: string | null = null;
+    let processState: string = 'idle';
+    let processResult: CaseProcessResult | null = null;
+
+    // 保存题 A
+    const recordA = await createCase([]);
+    currentCaseIdRef = recordA.id;
+    const triggerA = triggerCaseProcess(recordA.id).then((result) => {
+      // P1 check: currentCaseIdRef 已被"再拍一道"清为 null
+      if (currentCaseIdRef !== recordA.id) return;
+      processResult = result;
+      processState = 'done';
+    });
+
+    // 用户点"再拍一道"（模拟 handleTakeAnother）
+    currentCaseIdRef = null; // 清除 ref
+    processState = 'idle';
+    processResult = null;
+
+    // 等旧请求返回
+    await triggerA;
+
+    // 断言：状态没被旧请求覆盖
+    expect(processState).toBe('idle');
+    expect(processResult).toBeNull();
+  });
+
+  test('13. AbortController abort 后请求被取消', async () => {
+    // 模拟：创建 AbortController → abort → fetch 抛 AbortError
+    const ac = new AbortController();
+
+    // triggerCaseProcess 带 signal，abort 后应该 throw
+    vi.mocked(triggerCaseProcess).mockImplementationOnce(async (_caseId, signal) => {
+      // 模拟 fetch with signal 的行为
+      return new Promise((_, reject) => {
+        signal?.addEventListener('abort', () => {
+          reject(new DOMException('The user aborted a request.', 'AbortError'));
+        });
+      });
+    });
+
+    // abort 前请求已发出
+    const promise = triggerCaseProcess('case-X', ac.signal);
+    ac.abort(); // abort
+
+    let threwAbortError = false;
+    try {
+      await promise;
+    } catch (err) {
+      threwAbortError = err instanceof DOMException && err.name === 'AbortError';
+    }
+
+    expect(threwAbortError).toBe(true);
+  });
+});

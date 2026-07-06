@@ -282,7 +282,7 @@ const handleTakeAnother = useCallback(() => {
 
 ### 6.5 措辞合规
 
-AI 结果卡展示的文案来自 /process 返回的 `questionSummary`、`feedback`、`possibleMistakeReason`、`nextActionSuggestion`。这些字段由 `case-analyzer.ts` 的 mock 生成。需确认 mock 文案不含违禁词。如果 mock 文案有问题，在本轮直接修 mock（属于 Round 1 范围的微调，不是新功能）。
+AI 结果卡展示的文案来自 /process 返回的 `questionSummary`、`feedback`、`possibleMistakeReason`、`nextActionSuggestion`。这些字段由 `case-analyzer.ts` 调用真实 LLM 生成（需 `VOLCENGINE_API_KEY`）。`case-analyzer.ts` 无 mock 模式——测试通过 `vi.mock` API client 实现，不依赖真实 LLM。如果 LLM 返回文案含违禁词，需在 `case-analyzer.ts` 的 prompt 中加强约束或做后处理过滤。
 
 ---
 

@@ -162,10 +162,12 @@ export interface CaseProcessResult {
 /**
  * 触发 AI 整理
  * POST /api/nana/cases/:id/process
+ * @param signal — AbortSignal，用于组件 unmount 或"再拍一道"时取消请求
  */
-export async function triggerCaseProcess(caseId: string): Promise<CaseProcessResult> {
+export async function triggerCaseProcess(caseId: string, signal?: AbortSignal): Promise<CaseProcessResult> {
   const res = await fetch(`${NANA_BASE}/cases/${caseId}/process`, {
     method: 'POST',
+    signal,
   });
   if (!res.ok) throw new Error(`triggerCaseProcess 失败: ${res.status}`);
   return res.json();
@@ -174,9 +176,10 @@ export async function triggerCaseProcess(caseId: string): Promise<CaseProcessRes
 /**
  * 查询整理状态（轮询用）
  * GET /api/nana/cases/:id/process
+ * @param signal — AbortSignal，用于组件 unmount 或"再拍一道"时取消请求
  */
-export async function getCaseProcessStatus(caseId: string): Promise<CaseProcessResult> {
-  const res = await fetch(`${NANA_BASE}/cases/${caseId}/process`);
+export async function getCaseProcessStatus(caseId: string, signal?: AbortSignal): Promise<CaseProcessResult> {
+  const res = await fetch(`${NANA_BASE}/cases/${caseId}/process`, { signal });
   if (!res.ok) throw new Error(`getCaseProcessStatus 失败: ${res.status}`);
   return res.json();
 }

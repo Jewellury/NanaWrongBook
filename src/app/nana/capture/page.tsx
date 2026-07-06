@@ -111,6 +111,11 @@ export default function CapturePage() {
   // 轮询 cleanup ref（防止 unmount 后继续 setState）
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // P1 hotfix：当前正在处理的 caseId ref，用于竞态保护
+  // POST/GET 返回时检查 currentCaseIdRef.current === 触发时的 caseId，不一致则丢弃
+  const currentCaseIdRef = useRef<string | null>(null);
+  // P2-a hotfix：AbortController，组件 unmount 或"再拍一道"时 abort 所有飞行中请求
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const photoTaken = imageBase64 !== null;
 
@@ -209,12 +214,22 @@ export default function CapturePage() {
       setSavedCaseId(caseRecord.id);
 
       // Round 4：触发 AI 整理（不阻塞保存成功提示）
+      // P1 hotfix：记录当前 caseId + 创建 AbortController
+      currentCaseIdRef.current = caseRecord.id;
+      abortControllerRef.current?.abort(); // abort 旧的飞行请求
+      const ac = new AbortController();
+      abortControllerRef.current = ac;
       setProcessState("processing");
       try {
-        const result = await triggerCaseProcess(caseRecord.id);
+        const result = await triggerCaseProcess(caseRecord.id, ac.signal);
+        // P1 hotfix：caseId 不一致则丢弃（用户已"再拍一道"）
+        if (currentCaseIdRef.current !== caseRecord.id) return;
         setProcessResult(result);
         setProcessState(result.status === "success" ? "done" : "error");
-      } catch {
+      } catch (err) {
+        // abort 引起的 AbortError 不更新状态
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (currentCaseIdRef.current !== caseRecord.id) return;
         // process 触发失败不阻塞保存——用户可手动重试
         setProcessState("error");
       }
@@ -236,9 +251,14 @@ export default function CapturePage() {
       return;
     }
 
+    const ac = abortControllerRef.current ?? new AbortController();
+    abortControllerRef.current = ac;
+
     pollRef.current = setInterval(async () => {
       try {
-        const result = await getCaseProcessStatus(savedCaseId);
+        const result = await getCaseProcessStatus(savedCaseId, ac.signal);
+        // P1 hotfix：caseId 不一致则丢弃
+        if (currentCaseIdRef.current !== savedCaseId) return;
         if (result.status === "success" || result.status === "failed") {
           setProcessResult(result);
           setProcessState(result.status === "success" ? "done" : "error");
@@ -257,22 +277,33 @@ export default function CapturePage() {
     }, 60000);
 
     // cleanup（§9.2：组件 unmount 时停止，避免离开后继续 setState）
+    // P2-a hotfix：同时 abort 飞行中的 fetch
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      ac.abort();
     };
   }, [processState, savedCaseId, processResult]);
 
   // ─── 重试 AI 整理 ──────────────────────────
   const handleRetryProcess = useCallback(async () => {
     if (!savedCaseId) return;
+    // P1 hotfix：重新设置 caseId + AbortController
+    currentCaseIdRef.current = savedCaseId;
+    abortControllerRef.current?.abort();
+    const ac = new AbortController();
+    abortControllerRef.current = ac;
     setProcessState("processing");
     setProcessResult(null);
     try {
-      const result = await triggerCaseProcess(savedCaseId);
+      const result = await triggerCaseProcess(savedCaseId, ac.signal);
+      // P1 hotfix：caseId 不一致则丢弃
+      if (currentCaseIdRef.current !== savedCaseId) return;
       setProcessResult(result);
       setProcessState(result.status === "success" ? "done" : "error");
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (currentCaseIdRef.current !== savedCaseId) return;
       setProcessState("error");
     }
   }, [savedCaseId]);
@@ -292,6 +323,9 @@ export default function CapturePage() {
     setSaveMsg(null);
     setCurrentTab("voice");
     // Round 4：重置 process 状态（防御性，正常流程 handleRetake 时 processState 应为 idle）
+    // P1/P2-a hotfix：abort 飞行请求 + 清除 caseId ref
+    abortControllerRef.current?.abort();
+    currentCaseIdRef.current = null;
     setProcessState("idle");
     setProcessResult(null);
     setSavedCaseId(null);
@@ -306,6 +340,9 @@ export default function CapturePage() {
     setToastOpen(false);
     setCurrentTab("voice");
     // Round 4：重置 process 状态
+    // P1/P2-a hotfix：abort 飞行请求 + 清除 caseId ref，防止旧请求回来覆盖新状态
+    abortControllerRef.current?.abort();
+    currentCaseIdRef.current = null;
     setProcessState("idle");
     setProcessResult(null);
     setSavedCaseId(null);

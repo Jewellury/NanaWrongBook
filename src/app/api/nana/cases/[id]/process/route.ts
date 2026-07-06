@@ -362,11 +362,11 @@ export async function POST(
             name: persistedAiResult.textbookTopic?.name || "",
             confidence: persistedAiResult.textbookTopicConfidence,
           }
-        : undefined,
+        : null,
       feedback: persistedAiResult.initialFeedback,
       possibleMistakeReason: persistedAiResult.possibleMistakeReason,
       nextActionSuggestion: persistedAiResult.nextActionSuggestion,
-      transcript: persistedAiResult.transcript || undefined,
+      transcript: persistedAiResult.transcript || null,
       tags,
       textbookTags,
     });
@@ -416,6 +416,13 @@ export async function GET(
       return NextResponse.json({
         status: "pending",
         audioStatus: "skipped",
+        questionSummary: null,
+        textbookTopic: null,
+        feedback: null,
+        possibleMistakeReason: null,
+        nextActionSuggestion: null,
+        transcript: null,
+        error: null,
       });
     }
 
@@ -429,12 +436,12 @@ export async function GET(
             name: aiResult.textbookTopic.name,
             confidence: aiResult.textbookTopicConfidence,
           }
-        : undefined,
+        : null,
       feedback: aiResult.initialFeedback,
       possibleMistakeReason: aiResult.possibleMistakeReason,
       nextActionSuggestion: aiResult.nextActionSuggestion,
-      transcript: aiResult.transcript || undefined,
-      error: aiResult.error || undefined,
+      transcript: aiResult.transcript || null,
+      error: aiResult.error || null,
     });
   } catch (error) {
     logger.error({ error }, "GET /process 异常");
