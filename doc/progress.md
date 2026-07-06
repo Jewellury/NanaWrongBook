@@ -482,3 +482,45 @@ KST-lite gap 只传播一层 dependents，M4 补递归。
 ### 下一步
 
 Round 4 建议保持窄范围：只做"拍题保存后触发整理 / 查询整理状态 / 展示 AI 结果卡"。Plan 里必须显式带上 TD-006 约束。
+
+---
+
+## 2026-07-06 · Stage 3 v3-revised Round 4：拍题触发整理 + AI 结果卡
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-06 | Round 4 计划 | ✅ | 用户确认范围 + 4 条验收提醒写入计划 §9 |
+| 07-06 | API 客户端扩展 | ✅ | triggerCaseProcess + getCaseProcessStatus + CaseProcessResult 类型 |
+| 07-06 | AI 结果卡组件 | ✅ | AiResultCard：5 字段空值隐藏 + 失败重试 |
+| 07-06 | 采集页接入 | ✅ | 保存→触发→轮询→展示，保存不被 AI 阻塞 |
+| 07-06 | 集成测试 | ✅ | 10 个测试全部 mock，10/10 通过 |
+| 07-06 | 构建验证 | ✅ | npm run build + 回归测试全绿 |
+| 07-06 | 审计 | ⚠️ 有条件通过 | 1 个 P1（竞态条件）+ 4 个 P2 |
+
+### v1 闭环成型
+
+Round 4 完成后，v1 最小 AI 闭环已成型：**拍题 → 保存 → AI 整理 → 卡片反馈 → 汇总页可见**
+
+### Commit 清单
+
+| Commit | 类型 | 说明 |
+|--------|------|------|
+| `55bb7c4` | feat | stage3-r4: 拍题触发AI整理 + 轮询状态 + AI结果卡 + 10集成测试 |
+
+### 审计结果
+
+- **审计报告**：`doc/auditlog/stage3-revised-round4-process-trigger-audit.md`
+- **总体判定**：⚠️ 有条件通过
+- **P1**：竞态条件——快速连拍两道题时前一道 AI 结果可能覆盖后一道状态。当前 mock 秒回不触发，接真实 LLM 前必须修
+- **P2-a**：POST 请求无 AbortController，组件 unmount 后 setState on unmounted
+- **P2-b**：测试缺"再拍一道重置"用例，手写函数模拟组件逻辑非测真实组件
+- **P2-c**：API 返回 undefined 但类型声明 null（运行时安全）
+- **P2-d**：计划 §6.5 描述不准确（说有 mock 但实际无）
+
+### 下一步
+
+1. 接真实 LLM 前修复 P1 竞态条件（AbortController 或 caseId ref 检查）
+2. 可选：补装 @testing-library/react + 补"再拍一道重置"测试
+3. v1 闭环已成型，可考虑：真实生产 smoke、dev 合入 main 部署、打印页、手动编辑分类

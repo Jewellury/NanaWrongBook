@@ -7,70 +7,62 @@
 
 > 最后更新: 2026-07-06
 
-## ✅ Stage 3 v3-revised Round 0-3 已完成并审计通过
+## ✅ Stage 3 v3-revised Round 0-4 已完成
+
+### v1 闭环已成型
+
+Round 4 审计完成（⚠️ 有条件通过），v1 最小 AI 闭环已成型：
+**拍题 → 保存 → AI 整理 → 卡片反馈 → 汇总页可见**
 
 ### 历史回顾
-
-Stage 3 AI 错题卡片集成 Round 0-3 全部完成，审计通过 ✅。
 
 - Round 0：4 张新表 schema + migration + seed
 - Round 1：一体化 Case Analyzer lib（case-analyzer.ts）+ 33 mock 单测
 - Round 2：/process API（POST + GET）+ 18 集成测试
 - Round 2 P1 修复：CaseKnowledgeTag 清理 + 事务包裹 + 测试数据修复
 - Round 3：题目汇总 API + 列表扩展 + 三 tab 外壳 + 14 集成测试
+- Round 4：拍题触发整理 + 轮询状态 + AI 结果卡 + 10 集成测试
 
 详见：
-- 计划 → [plan/stage3-ai-integration-plan-v3-revised.md](plan/stage3-ai-integration-plan-v3-revised.md) / [plan/stage3-revised-round3-plan.md](plan/stage3-revised-round3-plan.md)
-- 审计报告 → [Round 2 复审](auditlog/stage3-revised-round2-p1-fix-reaudit.md) / [Round 3](auditlog/stage3-revised-round3-summary-audit.md)
+- 计划 → [Round 4](plan/stage3-revised-round4-process-trigger-plan.md)
+- 审计报告 → [Round 4](auditlog/stage3-revised-round4-process-trigger-audit.md)
 
 ### 当前状态
 
 - **当前分支**: dev
-- **dev 最新提交**: `ebd056a`（feat stage3-r3）
+- **dev 最新提交**: `55bb7c4`（feat stage3-r4）
 - **origin/dev**: 同步
 - **main 最新提交**: 待合入
 
+### Round 4 审计结论
+
+**⚠️ 有条件通过**：1 个 P1 + 4 个 P2
+
+- **P1（接真实 LLM 前必须修）**：竞态条件——快速连拍两道题时前一道 AI 结果可能覆盖后一道状态
+- **P2-a**：POST 请求无 AbortController
+- **P2-b**：测试缺"再拍一道重置"用例
+- **P2-c**：API 返回 undefined 但类型声明 null
+- **P2-d**：计划 §6.5 描述不准确
+
 ---
 
-## ⏳ 待启动：Stage 3 Round 4 — 拍题保存后触发整理 + AI 结果卡
+## ⏳ 下一步可选方向
 
-### 用户拍板的范围（窄范围）
-
-**做**：
-1. 拍题保存后触发 AI 整理（采集页 → /process 自动触发或手动触发）
-2. 查询整理状态（轮询 /process GET）
-3. 展示 AI 结果卡（采集页或汇总页展示 AI 摘要 + 课本分类 + 轻反馈）
-
-**不做**（暂不混入）：
-- 打印页
-- 完整编辑课本分类
-- 真实生产 smoke
-- 重复题识别
-
-### Round 4 前置约束（必须显式带入 plan）
-
-> **TD-006（P2 架构隐患）**：手动改课本分类时，必须以 `CaseTextbookTopicTag` 为汇总页权威来源；如同步维护 `CaseAiResult.textbookTopicId`，二者必须在同一事务中更新，并设置 `textbookTopicEdited=true`，避免汇总页和 AI 卡片显示不一致。
->
-> 审计来源：[Round 3 审计报告 §2.2](auditlog/stage3-revised-round3-summary-audit.md)
-> BACKLOG 条目：[TD-006](BACKLOG.md)
-
-### 启动条件
-
-1. 用户确认启动 Round 4 → 进入 /plan
-2. dev 合入 main + push origin main
-3. CI 绿灯
-4. 备份生产 SQLite
-5. 部署到腾讯云（可选，看用户是否要先部署 Round 0-3 成果）
+1. **修复 P1 竞态条件**（接真实 LLM 前必做）
+2. **真实生产 smoke**（配 VOLCENGINE_API_KEY 跑真实 AI）
+3. **dev 合入 main + 部署**（v1 闭环已成型，可考虑部署）
+4. **打印页**（错题打印 PDF）
+5. **手动编辑课本分类**（需处理 TD-006）
 
 ---
 
 ## ⚠️ 已知限制（持续有效）
 
 - KST-lite gap 只传播一层 dependents，M4 补递归
-- 不调 LLM：无 AI 判分/Newman 追问/解析生成（Stage 3 进行中）
+- 当前 case-analyzer.ts 需 VOLCENGINE_API_KEY，无 mock 模式
 - 单主线诊断（决策 D-9 延续）
-- 采集壳当前用 mock 数据，不接真实 ASR/VLM（Stage 3 接通中）
 - 二进制 artifact 以 Base64 内联 SQLite（迁移阈值：case > 100 或 dev.db > 50MB）
+- P1 竞态条件：快速连拍时前一道 AI 结果可能覆盖后一道状态（接真实 LLM 前必须修）
 
 ## 🏗️ 设计债（在册）
 
@@ -79,4 +71,5 @@ Stage 3 AI 错题卡片集成 Round 0-3 全部完成，审计通过 ✅。
 3. **light-feedback magic string `__preliminary__`** — Stage 3 接通真实 API 时处理
 4. **feedback API 未校验 case 存在性** — Stage 3 接通真实 API 时处理
 5. **二进制 artifact 以 Base64 内联 SQLite** — ~33% 体积开销，case 多了拖慢查询/备份
-6. **TD-006 手动改课本分类写入口径统一** — Round 4 实现手动编辑课本分类时处理
+6. **TD-006 手动改课本分类写入口径统一** — 实现手动编辑课本分类时处理
+7. **P1 竞态条件** — handleSave/handleRetryProcess 中 triggerCaseProcess 无 caseId 一致性检查（接真实 LLM 前修）
