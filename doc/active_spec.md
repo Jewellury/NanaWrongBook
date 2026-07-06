@@ -7,12 +7,12 @@
 
 > 最后更新: 2026-07-06
 
-## ✅ Stage 3 v3-revised Round 0-4 已完成
+## ✅ Stage 3 v3-revised Round 0-4 已完成并收口
 
-### v1 闭环已成型
+### v1 闭环已成型且竞态安全
 
-Round 4 审计完成（⚠️ 有条件通过），v1 最小 AI 闭环已成型：
-**拍题 → 保存 → AI 整理 → 卡片反馈 → 汇总页可见**
+Round 4 主体 + Hotfix 全部完成，复审通过 ✅。
+v1 最小 AI 闭环：**拍题 → 保存 → AI 整理 → 卡片反馈 → 汇总页可见**
 
 ### 历史回顾
 
@@ -22,37 +22,39 @@ Round 4 审计完成（⚠️ 有条件通过），v1 最小 AI 闭环已成型�
 - Round 2 P1 修复：CaseKnowledgeTag 清理 + 事务包裹 + 测试数据修复
 - Round 3：题目汇总 API + 列表扩展 + 三 tab 外壳 + 14 集成测试
 - Round 4：拍题触发整理 + 轮询状态 + AI 结果卡 + 10 集成测试
+- Round 4 Hotfix：P1 竞态保护 + P2-a AbortController + P2-c 类型对齐 + P2-d 文档更正 + 3 新测试
 
 详见：
-- 计划 → [Round 4](plan/stage3-revised-round4-process-trigger-plan.md)
-- 审计报告 → [Round 4](auditlog/stage3-revised-round4-process-trigger-audit.md)
+- Round 4 计划 → [plan](plan/stage3-revised-round4-process-trigger-plan.md)
+- Round 4 审计 → [audit](auditlog/stage3-revised-round4-process-trigger-audit.md)
+- Hotfix 复审 → [reaudit](auditlog/stage3-revised-round4-hotfix-reaudit.md)
 
 ### 当前状态
 
 - **当前分支**: dev
-- **dev 最新提交**: `55bb7c4`（feat stage3-r4）
+- **dev 最新提交**: `918a592`（fix stage3-r4-hotfix）
 - **origin/dev**: 同步
 - **main 最新提交**: 待合入
 
-### Round 4 审计结论
-
-**⚠️ 有条件通过**：1 个 P1 + 4 个 P2
-
-- **P1（接真实 LLM 前必须修）**：竞态条件——快速连拍两道题时前一道 AI 结果可能覆盖后一道状态
-- **P2-a**：POST 请求无 AbortController
-- **P2-b**：测试缺"再拍一道重置"用例
-- **P2-c**：API 返回 undefined 但类型声明 null
-- **P2-d**：计划 §6.5 描述不准确
-
 ---
 
-## ⏳ 下一步可选方向
+## ⏳ 下一步：真实 provider smoke
 
-1. **修复 P1 竞态条件**（接真实 LLM 前必做）
-2. **真实生产 smoke**（配 VOLCENGINE_API_KEY 跑真实 AI）
-3. **dev 合入 main + 部署**（v1 闭环已成型，可考虑部署）
-4. **打印页**（错题打印 PDF）
-5. **手动编辑课本分类**（需处理 TD-006）
+用户倾向优先做真实 provider smoke，验证真实 LLM 接上后的表现。这是 v1 闭环最后也是最大的不确定性。
+
+### 需要验证的关键点
+
+1. 真实 LLM 返回的 7 字段 JSON 是否能通过 Zod 校验
+2. 文案是否合规（无"诊断/薄弱/掌握/得分"等越界词）
+3. 真实延迟下轮询和 UI 表现是否正常（5-15 秒等待）
+4. 竞态保护在真实延迟下是否有效
+5. 音频转写（如有）是否正常
+
+### 其他可选方向（smoke 之后）
+
+- dev 合入 main + 部署到腾讯云
+- 打印页
+- 手动编辑课本分类（需处理 TD-006）
 
 ---
 
@@ -62,7 +64,6 @@ Round 4 审计完成（⚠️ 有条件通过），v1 最小 AI 闭环已成型�
 - 当前 case-analyzer.ts 需 VOLCENGINE_API_KEY，无 mock 模式
 - 单主线诊断（决策 D-9 延续）
 - 二进制 artifact 以 Base64 内联 SQLite（迁移阈值：case > 100 或 dev.db > 50MB）
-- P1 竞态条件：快速连拍时前一道 AI 结果可能覆盖后一道状态（接真实 LLM 前必须修）
 
 ## 🏗️ 设计债（在册）
 
@@ -72,4 +73,3 @@ Round 4 审计完成（⚠️ 有条件通过），v1 最小 AI 闭环已成型�
 4. **feedback API 未校验 case 存在性** — Stage 3 接通真实 API 时处理
 5. **二进制 artifact 以 Base64 内联 SQLite** — ~33% 体积开销，case 多了拖慢查询/备份
 6. **TD-006 手动改课本分类写入口径统一** — 实现手动编辑课本分类时处理
-7. **P1 竞态条件** — handleSave/handleRetryProcess 中 triggerCaseProcess 无 caseId 一致性检查（接真实 LLM 前修）

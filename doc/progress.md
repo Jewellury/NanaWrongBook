@@ -524,3 +524,37 @@ Round 4 完成后，v1 最小 AI 闭环已成型：**拍题 → 保存 → AI �
 1. 接真实 LLM 前修复 P1 竞态条件（AbortController 或 caseId ref 检查）
 2. 可选：补装 @testing-library/react + 补"再拍一道重置"测试
 3. v1 闭环已成型，可考虑：真实生产 smoke、dev 合入 main 部署、打印页、手动编辑分类
+
+---
+
+## 2026-07-06 · Stage 3 Round 4 Hotfix：P1 竞态保护 + P2 修复
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-06 | P1 竞态修复 | ✅ | currentCaseIdRef + 所有 resolve 路径检查 |
+| 07-06 | P2-a AbortController | ✅ | POST/GET 都传 signal，abort 时取消 fetch |
+| 07-06 | P2-c 类型对齐 | ✅ | API 返回 null 而非 undefined，GET pending 补全字段 |
+| 07-06 | P2-d 文档更正 | ✅ | 计划 §6.5 描述更正 |
+| 07-06 | 补测试 | ✅ | +3 测试：竞态/再拍一道/abort，共 13/13 通过 |
+| 07-06 | 复审 | ✅ 通过 | 5 个重点全部通过，无问题 |
+
+### Commit 清单
+
+| Commit | 类型 | 说明 |
+|--------|------|------|
+| `918a592` | fix | stage3-r4-hotfix: P1竞态保护 + P2-a AbortController + P2-c类型对齐 + P2-d文档更正 + 3新测试 |
+
+### 复审结果
+
+- **复审报告**：`doc/auditlog/stage3-revised-round4-hotfix-reaudit.md`
+- **总体判定**：✅ 通过
+- **5 个重点全部通过**：caseId ref 检查覆盖所有路径、abort+清空 ref 在所有离开路径、signal 传进 fetch、null 字段与类型一致、3 个测试覆盖竞态/再拍一道/abort
+
+### Round 4 正式收口
+
+Round 4 闭环完成：
+- Round 4 主体（`55bb7c4`）+ Hotfix（`918a592`）
+- v1 最小 AI 闭环已成型且竞态安全
+- **下一步**：真实 provider smoke（用户倾向优先验证真实 LLM 表现）
