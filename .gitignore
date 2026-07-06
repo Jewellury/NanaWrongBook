@@ -75,6 +75,9 @@ upload_test_output*.txt
 # VLM vision samples (handheld photos, not committed)
 /doc/research/vision-samples/handheld/
 
+# Provider smoke JSON report (contains model raw output, not committed)
+/doc/research/provider-smoke-report.json
+
 # Personal study materials (AI engineer exam, isolated from project)
 /study/
 .claude/
