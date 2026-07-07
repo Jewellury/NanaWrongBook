@@ -6,16 +6,16 @@
 > 决策台账 → [DECISIONS.md](DECISIONS.md)
 > 完整待办/技术债台账 → [BACKLOG.md](BACKLOG.md)
 
-Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产出)
+Last updated: 2026-07-07 | Updated by: execute-agent (Stage 3 部署 r2 完成)
 
 ---
 
 ## Freshness Check（冷启动防陈旧）
 
-- Latest completed milestone: **P0 阶段总纲 + 开发计划产出**（2026-06-27，审计 ✅ 通过）
-- Latest commit: `5f8cea3` — `docs(plan): 第 1 阶段执行计划——采集基础壳（4 commits）`
-- Current branch: `dev`（main 已同步到 M3c）
-- Is current fresh: ⚠️ 已进入第 1 阶段开发——采集基础壳。详见下方当前活跃任务
+- Latest completed milestone: **Stage 3 部署 r2 — Dockerfile/entrypoint seed 自动化 + CI 双绿 + 生产部署**（2026-07-07，验证 ✅ 通过）
+- Latest commit: `fabe2de` — `fix docker: 移动 seed_graph_batch1.ts 到 prisma/（修复 .dockerignore 排除 doc/ 导致 esbuild 无法解析 import）`
+- Current branch: `dev`（main 已同步到 fabe2de，服务器已部署）
+- Is current fresh: ✅ Stage 3 v1 闭环已部署到生产环境，seed 数据验证通过
 
 ---
 
@@ -89,33 +89,53 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 
 ---
 
-## 当前活跃任务：CI 镜像部署——已完成 ✅
+## 当前活跃任务：Stage 3 部署 r2 — seed 自动化 + CI 双绿 + 生产部署 ✅
 
-**目标**：从本地隧道切换到 CI 镜像构建 + 腾讯云香港服务器部署。**已全部完成**。
-**执行方案**：`doc/plan/ci-image-deployment-plan.md`
-**部署指南**：`doc/guide/deployment-guide.md`
-**执行日志**：`doc/executionlog/tencent-cloud-deployment-log.md`
+**目标**：审计 Dockerfile/entrypoint 的 seed 顺序和失败策略，修复 CI，合 main 部署，只读验证。**已全部完成**。
 
-### 已上线
+### 部署信息
 | 组件 | 状态 | 详情 |
 |------|:----:|------|
 | 服务器 119.28.42.208 | ✅ 运行中 | Ubuntu 22.04, Docker 29.6.1 |
-| wrong-notebook 容器 | ✅ 运行中 | `ghcr.io/jewellury/nanawrongbook:latest` |
+| wrong-notebook 容器 | ✅ 运行中 | `ghcr.io/jewellury/nanawrongbook:latest`（commit fabe2de）|
 | caddy 容器 | ✅ 运行中 | HTTPS 证书已签发 |
-| 域名 nana.nanatop.xyz | ✅ 可用 | DNS A 记录 → 119.28.42.208 |
-| GitHub Actions CI | ✅ 通过 | push main → build + test + push GHCR |
-| 镜像仓库 GHCR | ✅ 有镜像 | `sha-<短sha>` + 时间戳 + `latest` |
-| 自动备份 crontab | ✅ 已安装 | 每日 2:00, 保留 14 天 |
+| 域名 nana.nanatop.xyz | ✅ 可用 | curl 返回 /login 重定向 |
+| GitHub Actions CI | ✅ 双绿 | ci.yml + build-and-push.yml 均通过 |
+| 镜像仓库 GHCR | ✅ 有镜像 | `sha-fabe2de` + `latest` |
+| VOLCENGINE 环境变量 | ✅ 已配置 | API_KEY + BASE_URL + LITE_ENDPOINT + PRO_ENDPOINT |
 
-### 修复记录
-| 问题 | 修复 |
-|------|------|
-| `bcryptjs` standalone 缺失 | `next.config.ts` 加 `outputFileTracingIncludes` |
-| `outputFileTracingIncludes` 类型错 | Next.js 16 已移出 experimental，放顶层 |
-| 腾讯云防火墙缺 443 入站 | 手机移动数据访问恢复正常 |
+### Seed 数据验证（entrypoint 日志）
+| 表 | 预期 | 实际 | 状态 |
+|---|---|---|---|
+| KnowledgeNode | ≥48 | 48 | ✅ |
+| KnowledgeEdge | ≥36 | 36 | ✅ |
+| TextbookTopic | 16 | 16 | ✅ |
+| TextbookNodeMapping | 48 | 48 | ✅ |
+| Mainline | >0 | 已 seed | ✅ |
+| Item | >0 | 已 seed | ✅ |
+| Admin seed | 成功 | completed | ✅ |
+
+### CI 修复记录（3 轮迭代）
+| 问题 | 修复 | Commit |
+|------|------|--------|
+| case-classify 测试与 v2 白名单不同步 | 更新断言：manual/vlm 合法，asr/rule/pending 非法 | `3065cf2` |
+| CI 环境缺 TextbookTopic seed | ci.yml + docker-compose.test.yml 补 seed 命令 | `3438a22` |
+| .dockerignore 排除 doc/ 导致 esbuild 找不到 import | 移动 seed_graph_batch1.ts 到 prisma/，更新 import 路径 | `fabe2de` |
+
+### Dockerfile/entrypoint 审计结论
+6 条硬约束全部通过：
+1. ✅ Build 阶段只预编译不执行 seed（esbuild --bundle）
+2. ✅ Runner 阶段 entrypoint fail-fast 执行 migrate + seed_graph + seed_textbook_topics
+3. ✅ seed 脚本幂等（全部 upsert，无 DELETE/DROP）
+4. ✅ seed 脚本有数量校验（不满足抛 Error）
+5. ✅ Admin seed + tag rebuild 为 non-fatal（\|\| echo 容错）
+6. ✅ .env.test.example 补全 VOLCENGINE 占位
 
 ### 下一步
-进入正常开发迭代：修改代码 → push dev → 合 main → CI 自动构建 → 服务器 pull 更新。
+Stage 3 v1 闭环已部署到生产环境。可进入：
+- 真实 LLM provider smoke（豆包 Pro/Lite）
+- 第 2 阶段：知识地图（P1）
+- 或继续拍照素材积累 + 诊断链路验证
 
 ---
 
@@ -163,9 +183,9 @@ Last updated: 2026-06-27 | Updated by: plan-agent (Nana 总纲 + 阶段计划产
 
 ## 下一步
 
-**当前状态**：CI 镜像部署已完成。恢复正常开发迭代。
+**当前状态**：Stage 3 v1 闭环已部署到生产环境（commit fabe2de on main）。seed 数据自动写入验证通过。
 
-**核心流程**：修改代码 → push dev → 合 main → CI 自动构建 → 服务器 `git pull && docker compose pull && up -d`
+**核心流程**：修改代码 → push dev → 合 main → CI 自动构建 → 服务器 `bash scripts/deploy.sh`（自动 pull + 备份 + 重启，entrypoint 自动跑 migrate + seed）
 
 **并行保持**：真题转写复核（D 线）可继续推进。
 - 2024/2025/2026 三年 draft 已产出，待核对数字/符号/公式后入库

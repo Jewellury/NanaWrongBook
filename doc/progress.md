@@ -558,3 +558,81 @@ Round 4 闭环完成：
 - Round 4 主体（`55bb7c4`）+ Hotfix（`918a592`）
 - v1 最小 AI 闭环已成型且竞态安全
 - **下一步**：真实 provider smoke（用户倾向优先验证真实 LLM 表现）
+
+---
+
+## 2026-07-07 · Stage 3 部署 r2：seed 自动化 + CI 修复 + 生产部署
+
+### 已完成
+
+| 时间 | 任务 | 状态 | 说明 |
+|------|------|:--:|------|
+| 07-07 | Dockerfile/entrypoint 审计 | ✅ | 6 条硬约束全部通过，3 处计划偏差均为正向改进 |
+| 07-07 | CI 修复 ①：case-classify 测试 | ✅ | v2 白名单收窄为 manual+vlm，测试断言同步更新 |
+| 07-07 | CI 修复 ②：TextbookTopic seed | ✅ | ci.yml + docker-compose.test.yml 补 seed_textbook_topics.ts |
+| 07-07 | CI 修复 ③：esbuild import 路径 | ✅ | seed_graph_batch1.ts 从 doc/research/ 移到 prisma/，绕过 .dockerignore |
+| 07-07 | CI 双绿 | ✅ | ci.yml + build-and-push.yml 均通过，GHCR 镜像就绪 |
+| 07-07 | 合 main + 部署 | ✅ | commit fabe2de 部署到服务器，entrypoint 自动 migrate + seed |
+| 07-07 | 只读验证 | ✅ | entrypoint 日志确认：48 节点/36 边/16 topics/48 mappings，Web 服务正常 |
+
+### Dockerfile/entrypoint 审计结论
+
+6 条硬约束全部通过：
+1. Build 阶段只预编译不执行 seed（esbuild --bundle --platform=node）
+2. Runner 阶段 entrypoint fail-fast 执行 migrate → seed_graph → seed_textbook_topics
+3. seed 脚本幂等（全部 upsert，无 DELETE/DROP）
+4. seed 脚本有数量校验（不满足抛 Error）
+5. Admin seed + tag rebuild 为 non-fatal（`|| echo` 容错）
+6. .env.test.example 补全 VOLCENGINE 占位
+
+### CI 修复详情（3 轮迭代）
+
+| 轮次 | 问题 | 根因 | 修复 | Commit |
+|------|------|------|------|--------|
+| 1 | case-classify.test.ts 白名单测试失败 | 源码 v2 收窄白名单为 manual+vlm，测试仍检查 5 个 | 更新断言：asr/rule/pending 改为 `toBe(false)` + 非法 source 抛错测试 | `3065cf2` |
+| 2 | TextbookTopic seed 缺失 | ci.yml 和 docker-compose.test.yml 都不跑 seed_textbook_topics.ts | 两处补 `npx tsx prisma/seed_textbook_topics.ts` | `3438a22` |
+| 3 | Docker build esbuild 无法解析 import | .dockerignore L50 排除 doc/，seed_graph.ts 从 `../doc/research/seed_graph_batch1` 导入 | 移动文件到 `prisma/seed_graph_batch1.ts`，更新 import 为 `./seed_graph_batch1` | `fabe2de` |
+
+### Commit 链
+
+`ff1fc79` → `3065cf2` → `3438a22` → `fabe2de`
+
+### 部署验证
+
+| 表 | 预期 | 实际 | 状态 |
+|---|---|---|---|
+| KnowledgeNode | ≥48 | 48 | ✅ |
+| KnowledgeEdge | ≥36 | 36 | ✅ |
+| TextbookTopic | 16 | 16 | ✅ |
+| TextbookNodeMapping | 48 | 48 | ✅ |
+| Mainline | >0 | 已 seed | ✅ |
+| Item | >0 | 已 seed | ✅ |
+| Admin seed | 成功 | completed | ✅ |
+| Web 服务 | 响应 | /login 重定向 | ✅ |
+
+### 经验教训
+
+- **.dockerignore 影响构建上下文**：被 .dockerignore 排除的目录中的文件无法被 esbuild 解析 import，必须将被 import 的数据文件移至未被排除的目录
+- **CI 测试与源码需同步**：源码变更白名单后必须同步更新对应测试断言
+- **CI seed 环境需完整**：新增 seed 脚本后，ci.yml 和 docker-compose.test.yml 都需要同步补上
+
+### 交付物
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `Dockerfile` | 修改 | esbuild 预编译 seed 脚本（build 阶段） |
+| `docker-entrypoint.sh` | 修改 | fail-fast seed 执行（migrate → seed_graph → seed_textbook_topics） |
+| `prisma/seed_graph.ts` | 修改 | import 路径更新 + 日志校验 |
+| `prisma/seed_graph_batch1.ts` | 新增（移动） | 从 doc/research/ 移入，208 行知识图谱种子数据 |
+| `doc/research/seed_graph_batch1.ts` | 删除 | 已移动到 prisma/ |
+| `src/__tests__/unit/nana/case-classify.test.ts` | 修改 | 白名单断言更新为 v2 |
+| `.github/workflows/ci.yml` | 修改 | 补 seed_textbook_topics.ts |
+| `docker-compose.test.yml` | 修改 | 补 seed_textbook_topics.ts |
+| `.env.test.example` | 修改 | 补 VOLCENGINE 占位 |
+
+### 下一步
+
+Stage 3 v1 闭环已部署到生产环境。候选方向：
+- 真实 LLM provider smoke（豆包 Pro/Lite）
+- 第 2 阶段：知识地图（P1）
+- 或继续拍照素材积累 + 诊断链路验证
