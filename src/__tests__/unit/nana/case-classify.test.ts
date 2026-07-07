@@ -72,12 +72,13 @@ describe('classifyCase (Stage 2)', () => {
 // ─── assertValidSource（评审需求 #2）───────────────────
 
 describe('assertValidSource / ALLOWED_SOURCES', () => {
-  test('白名单含 manual/vlm/asr/rule/pending', () => {
+  test('白名单含 manual/vlm（v2 修订：移除 asr/rule/pending）', () => {
     expect(ALLOWED_SOURCES.has('manual')).toBe(true);
     expect(ALLOWED_SOURCES.has('vlm')).toBe(true);
-    expect(ALLOWED_SOURCES.has('asr')).toBe(true);
-    expect(ALLOWED_SOURCES.has('rule')).toBe(true);
-    expect(ALLOWED_SOURCES.has('pending')).toBe(true);
+    // v2 修订：asr/rule/pending 已从白名单移除
+    expect(ALLOWED_SOURCES.has('asr')).toBe(false);
+    expect(ALLOWED_SOURCES.has('rule')).toBe(false);
+    expect(ALLOWED_SOURCES.has('pending')).toBe(false);
   });
 
   test('合法 source 不抛错', () => {
@@ -89,6 +90,9 @@ describe('assertValidSource / ALLOWED_SOURCES', () => {
     expect(() => assertValidSource('evil')).toThrow('非法 tag source');
     expect(() => assertValidSource('')).toThrow('非法 tag source');
     expect(() => assertValidSource('MANUAL')).toThrow('非法 tag source'); // 大小写敏感
+    // v2 修订：asr/rule/pending 已移除白名单
+    expect(() => assertValidSource('asr')).toThrow('非法 tag source');
+    expect(() => assertValidSource('rule')).toThrow('非法 tag source');
   });
 });
 
