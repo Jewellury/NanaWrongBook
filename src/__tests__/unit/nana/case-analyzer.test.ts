@@ -1,15 +1,19 @@
 /**
  * case-analyzer lib · 单元测试
  *
- * mock OpenAI SDK 验证一体化 Case Analyzer 逻辑：
+ * mock OpenAI SDK + audio-transcode 验证一体化 Case Analyzer 逻辑：
  * 1. 成功：正常 JSON → 7 字段解析 + audioStatus = "success"
  * 2. JSON 格式错误：模型返回非法 JSON → throw CaseAnalyzerParseError
  * 3. 清单外 ID：topicId/nodeId 不在白名单 → 过滤掉
  * 4. 低置信候选：confidence < 0.5 → 仍保留（过滤只按白名单，不按置信度）
  * 5. 无音频：未提供 audioBase64 → audioStatus = "skipped"
- * 6. webm/mp4 skipped：不支持格式 → audioStatus = "skipped"
+ * 6. webm/mp4 转码：不支持格式 → 调用 transcodeAudio → 发送 WAV
  * 7. 超时：AbortError → throw CaseAnalyzerTimeoutError
  * 8. 失败：API 4xx/5xx → throw CaseAnalyzerError
+ * 9. feature flag off → audioStatus = "skipped"
+ * 10. 转码失败 → audioStatus = "failed"，图片结果正常返回
+ * 11. 空 transcript → audioStatus = "failed"
+ * 12. m4a/aac 直送 → 不调用 transcodeAudio
  *
  * 此外验证：
  * - markdown 代码块包裹的 JSON 能正确提取
@@ -24,6 +28,11 @@ const { mockChatCompletionsCreate } = vi.hoisted(() => ({
   mockChatCompletionsCreate: vi.fn(),
 }));
 
+// ─── mock audio-transcode ──────────────────────────────
+const { mockTranscodeAudio } = vi.hoisted(() => ({
+  mockTranscodeAudio: vi.fn(),
+}));
+
 vi.mock('openai', () => {
   return {
     default: class MockOpenAI {
@@ -35,6 +44,10 @@ vi.mock('openai', () => {
     },
   };
 });
+
+vi.mock('@/lib/nana/audio-transcode', () => ({
+  transcodeAudio: mockTranscodeAudio,
+}));
 
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
@@ -107,6 +120,15 @@ beforeEach(() => {
   process.env.VOLCENGINE_BASE_URL = 'https://test.example.com/api/v3';
   process.env.LITE_MODEL_NAME = 'test-lite-model';
   process.env.CASE_ANALYZER_TIMEOUT_MS = '5000';
+  // 默认开启 feature flag（大多数测试需要音频处理开启）
+  process.env.NANA_AUDIO_TRANSCRIPT_ENABLED = 'true';
+  // 默认 mock transcode 返回成功
+  mockTranscodeAudio.mockResolvedValue({
+    success: true,
+    wavBase64: 'dHJhbnNjb2RlZC13YXY=',
+    wavSizeKB: 100,
+    transcodeMs: 50,
+  });
 });
 
 afterEach(() => {
@@ -312,32 +334,37 @@ describe('analyzeCase: 无音频', () => {
   });
 });
 
-// ─── 6. webm/mp4 skipped ────────────────────────────────
+// ─── 6. webm/mp4 转码 ────────────────────────────────────
 
-describe('analyzeCase: webm/mp4 skipped', () => {
-  test('webm 格式 → audioStatus = "skipped"（不发送音频）', async () => {
+describe('analyzeCase: webm/mp4 转码', () => {
+  test('webm 格式 → 调用 transcodeAudio → 发送 WAV → audioStatus = "success"', async () => {
     mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
 
     const result = await analyzeCase(
       makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/webm' }),
     );
-    expect(result.audioStatus).toBe('skipped');
 
-    // 验证 API 调用中不包含 input_audio
+    expect(mockTranscodeAudio).toHaveBeenCalledTimes(1);
+    expect(result.audioStatus).toBe('success');
+
+    // 验证 API 调用中包含 input_audio，且 format 为 wav
     const callArg = mockChatCompletionsCreate.mock.calls[0][0];
     const audioContent = callArg.messages[0].content.find(
       (c: { type: string }) => c.type === 'input_audio',
     );
-    expect(audioContent).toBeUndefined();
+    expect(audioContent).toBeDefined();
+    expect(audioContent.input_audio.format).toBe('wav');
   });
 
-  test('mp4 格式 → audioStatus = "skipped"（不发送音频）', async () => {
+  test('mp4 格式 → 调用 transcodeAudio → 发送 WAV', async () => {
     mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
 
     const result = await analyzeCase(
       makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/mp4' }),
     );
-    expect(result.audioStatus).toBe('skipped');
+
+    expect(mockTranscodeAudio).toHaveBeenCalledTimes(1);
+    expect(result.audioStatus).toBe('success');
   });
 });
 
@@ -467,6 +494,182 @@ describe('analyzeCase: API 调用参数', () => {
     const callArg = mockChatCompletionsCreate.mock.calls[0][0];
     expect(callArg.model).toBe('lite-model-assert');
     expect(callArg.model).not.toBe('pro-model-should-not-be-used');
+  });
+});
+
+// ─── 9. feature flag off ────────────────────────────────
+
+describe('analyzeCase: feature flag off', () => {
+  test('NANA_AUDIO_TRANSCRIPT_ENABLED 未设 → audioStatus = "skipped"', async () => {
+    delete process.env.NANA_AUDIO_TRANSCRIPT_ENABLED;
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/wav' }),
+    );
+
+    expect(result.audioStatus).toBe('skipped');
+    expect(mockTranscodeAudio).not.toHaveBeenCalled();
+  });
+
+  test('NANA_AUDIO_TRANSCRIPT_ENABLED = "false" → audioStatus = "skipped"', async () => {
+    process.env.NANA_AUDIO_TRANSCRIPT_ENABLED = 'false';
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/webm' }),
+    );
+
+    expect(result.audioStatus).toBe('skipped');
+    expect(mockTranscodeAudio).not.toHaveBeenCalled();
+  });
+
+  test('flag off + webm → API 调用不包含 input_audio', async () => {
+    delete process.env.NANA_AUDIO_TRANSCRIPT_ENABLED;
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/webm' }),
+    );
+
+    const callArg = mockChatCompletionsCreate.mock.calls[0][0];
+    const audioContent = callArg.messages[0].content.find(
+      (c: { type: string }) => c.type === 'input_audio',
+    );
+    expect(audioContent).toBeUndefined();
+  });
+});
+
+// ─── 10. 转码失败 ────────────────────────────────────────
+
+describe('analyzeCase: 转码失败', () => {
+  test('转码失败 → audioStatus = "failed"，图片结果正常返回', async () => {
+    mockTranscodeAudio.mockResolvedValueOnce({
+      success: false,
+      error: 'ffmpeg 转码失败: not found',
+      transcodeMs: 100,
+    });
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/webm' }),
+    );
+
+    expect(result.audioStatus).toBe('failed');
+    // 图片结果仍然正常返回
+    expect(result.questionSummary).toBe('判断 f(x)=x²-2x 的单调区间');
+    expect(result.textbookTopicCandidates).toHaveLength(1);
+    expect(result.initialFeedback).toBe('你很仔细地分析了这个函数');
+  });
+
+  test('转码失败 → API 调用不包含 input_audio', async () => {
+    mockTranscodeAudio.mockResolvedValueOnce({
+      success: false,
+      error: 'failed',
+      transcodeMs: 50,
+    });
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/webm' }),
+    );
+
+    const callArg = mockChatCompletionsCreate.mock.calls[0][0];
+    const audioContent = callArg.messages[0].content.find(
+      (c: { type: string }) => c.type === 'input_audio',
+    );
+    expect(audioContent).toBeUndefined();
+  });
+});
+
+// ─── 11. 空 transcript → failed ───────────────────────────
+
+describe('analyzeCase: 空 transcript', () => {
+  test('音频已发送但 transcript 为空 → audioStatus = "failed"', async () => {
+    const emptyTranscriptResponse = {
+      ...VALID_JSON_RESPONSE,
+      transcript: '',
+    };
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(emptyTranscriptResponse));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/wav' }),
+    );
+
+    expect(result.audioStatus).toBe('failed');
+    // 图片结果仍然正常
+    expect(result.questionSummary).toBe('判断 f(x)=x²-2x 的单调区间');
+  });
+
+  test('音频已发送但 transcript 只有空格 → audioStatus = "failed"', async () => {
+    const whitespaceTranscript = {
+      ...VALID_JSON_RESPONSE,
+      transcript: '   ',
+    };
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(whitespaceTranscript));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/wav' }),
+    );
+
+    expect(result.audioStatus).toBe('failed');
+  });
+
+  test('未发送音频 + 空 transcript → audioStatus = "skipped"（不标 failed）', async () => {
+    const noAudioResponse = {
+      ...VALID_JSON_RESPONSE,
+      transcript: '',
+    };
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(noAudioResponse));
+
+    const result = await analyzeCase(makeInput());
+
+    // 没有发送音频，空 transcript 是正常的，不是 failed
+    expect(result.audioStatus).toBe('skipped');
+  });
+});
+
+// ─── 12. m4a/aac 直送不转码 ────────────────────────────────
+
+describe('analyzeCase: m4a/aac 直送', () => {
+  test('m4a 格式 → 不调用 transcodeAudio，直接发送', async () => {
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/m4a' }),
+    );
+
+    expect(mockTranscodeAudio).not.toHaveBeenCalled();
+    expect(result.audioStatus).toBe('success');
+
+    // 验证 API 调用中 format 为 m4a（直送）
+    const callArg = mockChatCompletionsCreate.mock.calls[0][0];
+    const audioContent = callArg.messages[0].content.find(
+      (c: { type: string }) => c.type === 'input_audio',
+    );
+    expect(audioContent).toBeDefined();
+    expect(audioContent.input_audio.format).toBe('m4a');
+  });
+
+  test('aac 格式 → 不调用 transcodeAudio', async () => {
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    const result = await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/aac' }),
+    );
+
+    expect(mockTranscodeAudio).not.toHaveBeenCalled();
+    expect(result.audioStatus).toBe('success');
+  });
+
+  test('wav 格式 → 不调用 transcodeAudio', async () => {
+    mockChatCompletionsCreate.mockResolvedValueOnce(mockSuccessResponse(VALID_JSON_RESPONSE));
+
+    await analyzeCase(
+      makeInput({ audioBase64: 'dGVzdA==', audioFormat: 'audio/wav' }),
+    );
+
+    expect(mockTranscodeAudio).not.toHaveBeenCalled();
   });
 });
 

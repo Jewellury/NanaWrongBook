@@ -30,6 +30,7 @@ import {
   CaseAnalyzerTimeoutError,
   type CaseAnalyzerResult,
 } from "@/lib/nana/case-analyzer";
+import { parseAudioMeta } from "@/lib/nana/audio-utils";
 
 const logger = createLogger("api:nana:cases:process");
 
@@ -66,13 +67,11 @@ function extractImageAndAudio(artifacts: ArtifactLike[]): {
         audioBase64 = a.content;
       }
     }
+    // audio_meta：三层兼容解析（分号格式 → JSON → 空对象 fallback）
+    // 仅在 audio_note 的 Data URL 未携带 MIME 时作为 fallback
     if (a.type === "audio_meta" && audioBase64 && !audioFormat) {
-      try {
-        const meta = JSON.parse(a.content);
-        if (meta?.mime) audioFormat = meta.mime;
-      } catch {
-        // ignore
-      }
+      const meta = parseAudioMeta(a.content);
+      if (meta.mime) audioFormat = meta.mime;
     }
   }
 

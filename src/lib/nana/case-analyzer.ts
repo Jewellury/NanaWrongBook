@@ -11,7 +11,10 @@
  * 设计决策（v3-revised）：
  * - 一体化：单次调用替代 v2 的 ASR + VLM 双管线
  * - 双输出：同时返回 textbookTopicCandidates + knowledgeNodeCandidates
- * - 音频降级：webm/mp4 不转码，直接 skipped
+ * - 音频降级：webm/mp4 等 Lite 不支持的格式经 ffmpeg 转码为 WAV
+ * - feature flag：NANA_AUDIO_TRANSCRIPT_ENABLED !== "true" 时跳过转写
+ * - 空 transcript → audioStatus=failed（不标 success）
+ * - 转码失败不 throw，降级为 image-only，audioStatus=failed
  * - 失败 throw CaseAnalyzerError（由调用方 catch，不静默）
  *
  * 参考 v2 残留代码（TD-5）asr-transcribe.ts / vlm-classify.ts 的实现模式，
@@ -22,6 +25,7 @@ import OpenAI from "openai";
 import type { ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
+import { transcodeAudio } from "@/lib/nana/audio-transcode";
 
 const logger = createLogger("lib:nana:case-analyzer");
 
@@ -289,17 +293,59 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
     throw new CaseAnalyzerError("课本章节列表为空");
   }
 
+  // ── Feature flag 检查 ──
+  const audioTranscriptEnabled = process.env.NANA_AUDIO_TRANSCRIPT_ENABLED === "true";
+
   // ── 音频格式检查 ──
   const audioProvided = !!(audioBase64 && audioFormat);
   const audioApiFormat = audioProvided ? getAudioApiFormat(audioFormat!) : null;
-  const audioSkipped = !audioProvided || !audioApiFormat;
 
-  if (audioProvided && !audioApiFormat) {
-    logger.warn(
-      { audioFormat, audioBase64Length: audioBase64?.length },
-      "音频格式不被支持，降级为 skipped（v1 不转码）",
+  // ── 决定发送给 API 的音频数据 ──
+  // 三种情况会发送音频：
+  // 1. 格式被 Lite 直接支持 → 原样发送
+  // 2. 格式不被支持但 feature flag 开启 → 转码后发送
+  // 不发送音频的情况：未提供音频、flag 关闭、转码失败
+  let sendAudioBase64: string | undefined;
+  let sendAudioFormat: string | null = null;
+  let audioTranscodeFailed = false;
+  let transcodeError: string | undefined;
+
+  if (audioProvided && audioTranscriptEnabled) {
+    if (audioApiFormat) {
+      // Lite 直接支持 → 原样发送
+      sendAudioBase64 = audioBase64;
+      sendAudioFormat = audioApiFormat;
+    } else {
+      // 格式不被 Lite 支持（webm/mp4 等）→ 尝试转码
+      logger.info(
+        { audioFormat, audioBase64Length: audioBase64?.length },
+        "音频格式不被 Lite 支持，尝试 ffmpeg 转码",
+      );
+      const transcodeResult = await transcodeAudio(audioBase64!);
+      if (transcodeResult.success && transcodeResult.wavBase64) {
+        sendAudioBase64 = transcodeResult.wavBase64;
+        sendAudioFormat = "wav";
+        logger.info(
+          { wavSizeKB: transcodeResult.wavSizeKB, transcodeMs: transcodeResult.transcodeMs },
+          "音频转码成功，将发送 WAV",
+        );
+      } else {
+        audioTranscodeFailed = true;
+        transcodeError = transcodeResult.error;
+        logger.warn(
+          { audioFormat, error: transcodeError },
+          "音频转码失败，降级为 image-only",
+        );
+      }
+    }
+  } else if (audioProvided && !audioTranscriptEnabled) {
+    logger.info(
+      { audioFormat },
+      "音频转写未启用（NANA_AUDIO_TRANSCRIPT_ENABLED !== true），跳过",
     );
   }
+
+  const audioSkipped = !sendAudioFormat;
 
   // ── 构造 OpenAI client ──
   const apiKey = process.env.VOLCENGINE_API_KEY;
@@ -335,14 +381,14 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
     { type: "image_url", image_url: { url: imageDataUrl } },
   ];
 
-  if (!audioSkipped && audioBase64) {
+  if (!audioSkipped && sendAudioBase64 && sendAudioFormat) {
     contentParts.push({
       type: "input_audio",
       input_audio: {
-        data: audioBase64,
-        // OpenAI SDK 类型只允许 "wav"|"mp3"，但火山方舟豆包实际支持更多格式
+        data: sendAudioBase64,
+        // OpenAI SDK 类型只允许 "wav"|"mp3"，但火山方塞豆包实际支持更多格式
         // （Round 0 预验证确认），用 as any 绕过 SDK 类型限制
-        format: audioApiFormat as any,
+        format: sendAudioFormat as any,
       },
     });
   }
@@ -354,7 +400,8 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
         nodeCount: nodes.length,
         topicCount: textbookTopics.length,
         audioSkipped,
-        audioFormat: audioSkipped ? null : audioApiFormat,
+        audioFormat: audioSkipped ? null : sendAudioFormat,
+        audioTranscodeFailed,
         imageDataUrlLength: imageDataUrl.length,
       },
       "Case Analyzer 调用开始",
@@ -431,11 +478,29 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
       filteredNodeCandidates.push(c);
     }
 
+    // ── 最终 audioStatus 判定 ──
+    // 转码失败 → failed（即使图片结果正常）
+    // 音频已发送但 transcript 为空 → failed（空 transcript 不得标 success）
+    // 音频已发送且 transcript 非空 → success
+    // 音频未发送 → skipped
+    let finalAudioStatus: AudioStatus;
+    if (audioTranscodeFailed) {
+      finalAudioStatus = "failed";
+    } else if (audioSkipped) {
+      finalAudioStatus = "skipped";
+    } else if (!validated.transcript || validated.transcript.trim() === "") {
+      finalAudioStatus = "failed";
+    } else {
+      finalAudioStatus = "success";
+    }
+
     logger.info(
       {
         topicCandidates: filteredTopicCandidates.length,
         nodeCandidates: filteredNodeCandidates.length,
-        audioStatus: audioSkipped ? "skipped" : "success",
+        audioStatus: finalAudioStatus,
+        audioTranscodeFailed,
+        transcriptLength: validated.transcript.length,
       },
       "Case Analyzer 解析完成",
     );
@@ -448,7 +513,7 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
       initialFeedback: validated.initialFeedback,
       possibleMistakeReason: validated.possibleMistakeReason,
       nextActionSuggestion: validated.nextActionSuggestion,
-      audioStatus: audioSkipped ? "skipped" : "success",
+      audioStatus: finalAudioStatus,
       usage: response.usage
         ? {
             promptTokens: response.usage.prompt_tokens,
