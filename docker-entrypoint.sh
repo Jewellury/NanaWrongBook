@@ -42,11 +42,26 @@ if [ -f "$VERSION_FILE" ]; then
     PREVIOUS_VERSION=$(cat "$VERSION_FILE")
 fi
 
-# Run migrations to ensure DB schema is available and up to date.
-echo "[Entrypoint] Running database migrations to sync schema..."
-cd /app && $PRISMA_BIN migrate deploy --schema=./prisma/schema.prisma && {
-    echo "[Entrypoint] Migrations completed successfully."
-} || echo "[Entrypoint] Migration failed or no pending migrations."
+# ---- Fail-fast zone: migration + required seeds ----
+# These steps MUST succeed. If any fails, container refuses to start
+# (prevents "half-available" service where frontend works but AI features silently break).
+
+# 1. Run migrations (fail-fast — seeds depend on new tables)
+echo "[Entrypoint] Running database migrations..."
+cd /app && $PRISMA_BIN migrate deploy --schema=./prisma/schema.prisma
+echo "[Entrypoint] Migrations completed."
+
+# 2. Seed KnowledgeGraph (fail-fast — required for AI classification / map)
+echo "[Entrypoint] Seeding KnowledgeGraph (KnowledgeNode / KnowledgeEdge / Mainline / Item)..."
+cd /app && node ./dist-scripts/prisma/seed_graph.js
+echo "[Entrypoint] KnowledgeGraph seed completed."
+
+# 3. Seed TextbookTopic + TextbookNodeMapping (fail-fast — required for AI textbook tagging)
+echo "[Entrypoint] Seeding TextbookTopic + TextbookNodeMapping..."
+cd /app && node ./dist-scripts/prisma/seed_textbook_topics.js
+echo "[Entrypoint] TextbookTopic seed completed."
+
+# ---- Non-fatal zone: admin user + system tags ----
 
 # Always run seed after migrations to ensure admin user has correct role/isActive
 # (migration may have reset role to default 'user' for existing installs)

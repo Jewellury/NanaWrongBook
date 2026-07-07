@@ -194,14 +194,22 @@ async function main() {
   }
 
   // 核对 DB 实际入库条数
+  const dbNodeCount = await prisma.knowledgeNode.count();
+  const dbEdgeCount = await prisma.knowledgeEdge.count();
   const dbCount = await prisma.item.count();
   console.log('');
   console.log('✅ 种子数据导入完成');
   console.log(`   主线: ${mainlineCount} 条`);
-  console.log(`   节点: ${nodeCount} 个`);
-  console.log(`   边: ${edgeCount} 条（跳过悬空: ${skippedDangling} 条）`);
+  console.log(`   KnowledgeNode: ${nodeCount} 个（DB 实际: ${dbNodeCount} 个）`);
+  console.log(`   KnowledgeEdge: ${edgeCount} 条（跳过悬空: ${skippedDangling} 条）（DB 实际: ${dbEdgeCount} 条）`);
   console.log(`   主线桥: ${bridgeCount} 条`);
   console.log(`   真题 Item: ${itemCount} 道（DB 实际: ${dbCount} 道）`);
+  if (dbNodeCount < 48) {
+    throw new Error(`KnowledgeNode 入库数量异常：期望 ≥48，实际 ${dbNodeCount}`);
+  }
+  if (dbEdgeCount < 36) {
+    throw new Error(`KnowledgeEdge 入库数量异常：期望 ≥36，实际 ${dbEdgeCount}`);
+  }
   if (dbCount !== 101) {
     console.error(`⚠️  Item 入库数量异常：期望 101，实际 ${dbCount}`);
   }

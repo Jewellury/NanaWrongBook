@@ -26,6 +26,11 @@ ENV DATABASE_URL="file:/app/prisma/dev.db"
 # Pre-compile runtime scripts FIRST (needed for tag seeding)
 RUN npx tsc scripts/rebuild-system-tags.ts --outDir dist-scripts --esModuleInterop --resolveJsonModule --skipLibCheck --module commonjs --target ES2020
 
+# Pre-compile seed scripts with esbuild (bundle local imports, externalize node_modules)
+# Build stage ONLY compiles — does NOT execute (no production DATABASE_URL at build time)
+RUN npx esbuild prisma/seed_textbook_topics.ts --bundle --platform=node --packages=external --outfile=dist-scripts/prisma/seed_textbook_topics.js --format=cjs
+RUN npx esbuild prisma/seed_graph.ts --bundle --platform=node --packages=external --outfile=dist-scripts/prisma/seed_graph.js --format=cjs
+
 # Initialize database: generate client, run migrations, seed admin user, seed system tags
 RUN npx prisma generate \
     && npx prisma migrate deploy \
