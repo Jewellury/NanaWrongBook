@@ -5,58 +5,61 @@
 
 ---
 
-> 最后更新: 2026-07-06
+> 最后更新: 2026-07-07
 
-## 当前任务：真实 Provider Smoke 验证
+## 当前任务：Stage 3 生产接入部署
 
 ### 背景
 
-Stage 3 v3-revised Round 0-4 已全部收口，v1 最小 AI 闭环成型且竞态安全。
-现在进入"验证真实 AI 质量"阶段——用 3 张 fixture 图片直接打真实豆包 Lite API，
-在不碰生产、不写数据库的前提下评估返回质量，出报告后决定是否上线。
+Provider Smoke 已完成（Conditional Go）。3 张 fixture 图片全部成功返回有效 JSON，
+0 个幻觉 ID，0 个真实禁用词越界，反馈质量可接受。现在进入生产接入阶段：
+配置服务器环境变量、走 CI 部署流程、真机验收。
+
+**特别声明**：本轮 Go 只覆盖 image-only 场景，语音转写质量需上线后单独验收。
 
 ### 计划文档
 
-[stage3-provider-smoke-plan.md](plan/stage3-provider-smoke-plan.md)
-
-### 已有资产（无需新建）
-
-- 脚本：scripts/stage3-provider-smoke.ts（621 行，完整实现）
-- Fixture：tests/fixtures/nana/cases/ 下 3 张图片（隐私已检查）
-- 依赖：dotenv / jsonrepair / tsx 均已安装
-- 环境变量：.env 中 VOLCENGINE_API_KEY 等已配置
+[stage3-deploy-plan.md](plan/stage3-deploy-plan.md)
 
 ### 执行步骤
 
-1. 补充 .env.example（添加 VOLCENGINE 变量定义）
-2. 运行 npx tsx scripts/stage3-provider-smoke.ts
-3. 审阅 provider-smoke-report.json
-4. 人工撰写 provider-smoke-report.md（含 Go/No-Go 建议）
-5. Git 收口
+1. 补 .env.test.example VOLCENGINE 占位值
+2. 本地 npm.cmd run build 验证
+3. dev 合 main → push origin main（触发 CI）
+4. 等 CI 绿色
+5. SSH 服务器追加 VOLCENGINE 环境变量到 /opt/nana/.env
+6. 服务器执行 bash scripts/deploy.sh
+7. 真机验收（image-only）：手机拍题 → 等 AI → 看结果卡
+8. 语音验收（单独）：拍题+录音 → 看 transcript 质量
+9. Git 收口
 
-### 验证清单
+### 验收标准
 
-- 3 张图片全部成功返回
-- 7 字段 JSON 通过 Zod 校验
-- topicId 全部在 16 个 TextbookTopic 白名单内（0 幻觉）
-- nodeId 全部在 48 个 KnowledgeNode 白名单内（0 幻觉）
-- 无禁用词违规
-- 平均延迟小于 15 秒
-- 反馈质量人工审阅可接受
+- CI 绿色（build + test container + push GHCR）
+- 服务器容器正常运行
+- 手机能访问 nana.nanatop.xyz/nana
+- 拍题后 30-40 秒内出 AI 结果卡
+- 结果卡内容合理（摘要/分类/反馈/下一步建议）
+- 题目汇总页能看到新题
+- 图谱 smoke check：KnowledgeNode ≥ 48
 
 ### 安全约束
 
-- 密钥只放 .env，不写入代码/文档/日志/commit
-- 不写数据库（脚本不 import Prisma）
+- VOLCENGINE_API_KEY 只放服务器 .env，不入 git
+- .env.test.example 只放占位值
+- 部署前必须 backup.sh 备份
 - 不改生产代码
-- 不部署到服务器
+- 语音质量不阻塞 image-only 上线
+
+### 失败回滚
+
+- 容器异常：回滚 NANA_IMAGE 到上一个 sha tag
+- AI 不通：前端走"整理失败"路径，不影响现有功能
+- 数据库：用 /opt/nana/backups/ 恢复
 
 ---
 
-## 历史回顾：Stage 3 v3-revised Round 0-4 已完成
-
-Round 4 主体 + Hotfix 全部完成，复审通过。
-v1 最小 AI 闭环：拍题 - 保存 - AI 整理 - 卡片反馈 - 汇总页可见
+## 历史回顾：Stage 3 v3-revised Round 0-5 已完成
 
 - Round 0：4 张新表 schema + migration + seed
 - Round 1：一体化 Case Analyzer lib + 33 mock 单测
@@ -64,30 +67,36 @@ v1 最小 AI 闭环：拍题 - 保存 - AI 整理 - 卡片反馈 - 汇总页可�
 - Round 3：题目汇总 API + 列表扩展 + 三 tab 外壳 + 14 集成测试
 - Round 4：拍题触发整理 + 轮询状态 + AI 结果卡 + 10 集成测试
 - Round 4 Hotfix：P1 竞态保护 + P2-a AbortController + P2-c 类型对齐 + 3 新测试
+- Round 5 Provider Smoke：3 张 fixture 真实 API 验证，Conditional Go
 
 ### 当前状态
 
 - 当前分支: dev
-- dev 最新提交: 918a592（fix stage3-r4-hotfix）
+- dev 最新提交: 85cb598（docs stage3-smoke）
 - origin/dev: 同步
 - main 最新提交: 待合入
 
 ---
 
-## 后续决策路径（smoke 之后）
+## 后续决策路径
 
-### Go（质量可接受）
-1. 配置生产服务器 .env
-2. dev 合入 main
-3. CI 构建 - 部署腾讯云 - 真机验收
+### 部署成功（真机验收通过）
 
-### Conditional Go（部分需优化）
-1. 调整 case-analyzer.ts prompt
-2. 重新跑 smoke 验证
+1. v1 闭环正式上线
+2. 安排语音验收
+3. 进入正常迭代（打印页、手动编辑课本分类、重复题识别等）
 
-### No-Go（质量不达标）
-1. 评估换模型或调整架构
-2. v1 闭环暂不上线
+### 部署失败
+
+1. 回滚镜像到部署前
+2. 修复后重新走 CI → 部署流程
+3. 不在服务器热修
+
+### 语音质量不达标
+
+1. image-only 继续可用
+2. 评估音频格式支持 / 前端转码 / 换模型
+3. 不阻塞 image-only 场景
 
 ---
 
@@ -97,6 +106,7 @@ v1 最小 AI 闭环：拍题 - 保存 - AI 整理 - 卡片反馈 - 汇总页可�
 - 当前 case-analyzer.ts 需 VOLCENGINE_API_KEY，无 mock 模式
 - 单主线诊断（决策 D-9 延续）
 - 二进制 artifact 以 Base64 内联 SQLite（迁移阈值：case > 100 或 dev.db > 50MB）
+- **语音转写质量未验证**（上线后单独验收）
 
 ## 设计债（在册）
 
