@@ -209,11 +209,15 @@ docker logs --tail 80 wrong-notebook
 
 # 7. 图谱 smoke check（防 2026-07-02 图谱缺失事故复发）
 #    生产库必须有种子图谱数据，否则知识地图空白、标签面板不可用
-sqlite3 /opt/nana/data/dev.db "SELECT COUNT(*) FROM KnowledgeNode;"
-#    期望 ≥ 48。若为 0 → 立即停止验收、报警：
-#    根因通常是重新部署丢失图谱种子（Dockerfile 只 seed admin 不 seed graph）。
-#    修复：在 wrong-notebook 容器内跑 seed_graph.ts（esbuild 打包成 bundle.js → docker cp → node 执行）。
-#    详见 doc/00_CURRENT.md 设计债 #5。
+#
+#    ⚠️ 容器内没有 sqlite3（node:22-alpine 精简镜像），不能用 docker exec ... sqlite3。
+#    服务器宿主上可以用：sqlite3 /opt/nana/data/dev.db "..."
+#    但推荐优先看 entrypoint 日志（seed 脚本已打印 DB 实际 count）：
+docker logs --tail 40 wrong-notebook 2>&1 | grep -E "seed|KnowledgeNode|KnowledgeEdge|TextbookTopic|ERROR"
+#    期望日志含：KnowledgeNode: 48 个（DB 实际: 48 个）
+#    若日志显示 seed 失败或 count=0 → 立即停止验收、报警。
+#    entrypoint 现已自动执行 migrate + seed_graph + seed_textbook_topics（fail-fast），
+#    不再需要手动 esbuild bundle 修复。
 ```
 
 ---
@@ -372,9 +376,12 @@ docker ps --filter "name=wrong-notebook" --format "{{.Status}}"
 docker ps --filter "name=caddy" --format "{{.Status}}"
 
 # 3. 图谱数据存在（防 2026-07-02 图谱缺失事故）
-sqlite3 /opt/nana/data/dev.db "SELECT COUNT(*) FROM KnowledgeNode;"
-# 期望 ≥ 48。若为 0 立即报警，停止验收。
-# 修复：在 wrong-notebook 容器内跑 seed_graph.ts（详见回滚指南 §4）
+#    ⚠️ 容器内没有 sqlite3，优先看 entrypoint 日志：
+docker logs --tail 40 wrong-notebook 2>&1 | grep -E "seed|KnowledgeNode|TextbookTopic|ERROR"
+#    期望日志含：KnowledgeNode: 48 个（DB 实际: 48 个）、TextbookTopic: 16 条
+#    也可在服务器宿主上跑：sqlite3 /opt/nana/data/dev.db "SELECT COUNT(*) FROM KnowledgeNode;"
+#    期望 ≥ 48。若为 0 立即报警，停止验收。
+#    entrypoint 现已自动 seed，不再需要手动 esbuild bundle 修复。
 
 # 4. 最近部署日志无 ERROR
 docker logs --tail 30 wrong-notebook 2>&1 | grep -i "error" || echo "无 ERROR 日志"
