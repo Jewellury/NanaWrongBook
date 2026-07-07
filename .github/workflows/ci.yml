@@ -62,6 +62,7 @@ jobs:
           mkdir -p data/test
           npx prisma db push
           npx tsx prisma/seed_graph.ts
+          npx tsx prisma/seed_textbook_topics.ts
 
       - name: Run integration tests
         run: npm run test:integration
@@ -185,4 +186,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
+          cache-to: type=gha,mode=max
           cache-to: type=gha,mode=max

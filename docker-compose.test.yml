@@ -27,6 +27,7 @@ services:
         npx prisma migrate deploy &&
         echo '=== 灌入种子数据 ===' &&
         npm run seed &&
+        npx tsx prisma/seed_textbook_topics.ts &&
         echo '=== 运行全部测试 ===' &&
         npm run test:all &&
         echo '=== 全部通过 ✅ ==='
