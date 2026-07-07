@@ -7,52 +7,71 @@
 
 > 最后更新: 2026-07-07
 
-## 当前任务：Stage 3 生产接入部署
+## 当前任务：Stage 3 生产接入部署 (r2)
 
 ### 背景
 
 Provider Smoke 已完成（Conditional Go）。3 张 fixture 图片全部成功返回有效 JSON，
-0 个幻觉 ID，0 个真实禁用词越界，反馈质量可接受。现在进入生产接入阶段：
-配置服务器环境变量、走 CI 部署流程、真机验收。
+0 个幻觉 ID，0 个真实禁用词越界，反馈质量可接受。现在进入生产接入阶段。
+
+**r2 关键补充**：部署前发现生产库 TextbookTopic/TextbookNodeMapping seed 不会自动灌入
+（与 2026-07-02 KnowledgeNode=0 事故同类风险）。r2 计划新增 Dockerfile/entrypoint
+seed 自动化修复 + 部署后只读验证步骤。
 
 **特别声明**：本轮 Go 只覆盖 image-only 场景，语音转写质量需上线后单独验收。
 
 ### 计划文档
 
-[stage3-deploy-plan.md](plan/stage3-deploy-plan.md)
+[stage3-deploy-plan.md](plan/stage3-deploy-plan.md) (r2)
 
 ### 执行步骤
 
-1. 补 .env.test.example VOLCENGINE 占位值
-2. 本地 npm.cmd run build 验证
-3. dev 合 main → push origin main（触发 CI）
-4. 等 CI 绿色
-5. SSH 服务器追加 VOLCENGINE 环境变量到 /opt/nana/.env
-6. 服务器执行 bash scripts/deploy.sh
-7. 真机验收（image-only）：手机拍题 → 等 AI → 看结果卡
-8. 语音验收（单独）：拍题+录音 → 看 transcript 质量
-9. Git 收口
+1. **修复 Dockerfile + entrypoint seed 自动化**（🔴 致命）
+   - 预编译 seed_textbook_topics.ts + seed_graph.ts
+   - entrypoint 运行 seed（幂等）
+2. 补 .env.test.example VOLCENGINE 占位值
+3. 本地 npm.cmd run build 验证
+4. dev 合 main → push origin main（触发 CI）
+5. 等 CI 绿色
+6. SSH 服务器追加 VOLCENGINE 环境变量到 /opt/nana/.env
+7. 服务器执行 bash scripts/deploy.sh
+8. **Migration + Seed 只读验证**（🔴 不可跳过）
+   - TextbookTopic = 16
+   - TextbookNodeMapping = 48
+   - KnowledgeNode ≥ 48
+   - KnowledgeEdge ≥ 36
+   - CaseAiResult 表存在
+   - CaseTextbookTopicTag 表存在
+   - 不通过不得真机验收，按补 seed 流程处理
+9. 真机验收（image-only）：手机拍题 → 等 AI → 看结果卡
+10. 语音验收（单独）：拍题+录音 → 看 transcript 质量
+11. Git 收口
 
 ### 验收标准
 
 - CI 绿色（build + test container + push GHCR）
 - 服务器容器正常运行
+- **Stage 3 migration 已应用**
+- **TextbookTopic = 16, TextbookNodeMapping = 48**
+- **KnowledgeNode ≥ 48, KnowledgeEdge ≥ 36**
+- **CaseAiResult / CaseTextbookTopicTag 表存在**
 - 手机能访问 nana.nanatop.xyz/nana
 - 拍题后 30-40 秒内出 AI 结果卡
 - 结果卡内容合理（摘要/分类/反馈/下一步建议）
 - 题目汇总页能看到新题
-- 图谱 smoke check：KnowledgeNode ≥ 48
 
 ### 安全约束
 
 - VOLCENGINE_API_KEY 只放服务器 .env，不入 git
 - .env.test.example 只放占位值
 - 部署前必须 backup.sh 备份
-- 不改生产代码
+- 不改生产业务代码（只改 Dockerfile/entrypoint/.env.test.example）
+- **部署后必须验证 seed 行数，不通过不得真机验收**
 - 语音质量不阻塞 image-only 上线
 
 ### 失败回滚
 
+- Seed 缺失：按补 seed 流程（容器内 docker exec node seed.js），不跳过
 - 容器异常：回滚 NANA_IMAGE 到上一个 sha tag
 - AI 不通：前端走"整理失败"路径，不影响现有功能
 - 数据库：用 /opt/nana/backups/ 恢复
@@ -72,8 +91,8 @@ Provider Smoke 已完成（Conditional Go）。3 张 fixture 图片全部成功�
 ### 当前状态
 
 - 当前分支: dev
-- dev 最新提交: 85cb598（docs stage3-smoke）
-- origin/dev: 同步
+- dev 最新提交: 512fbbc（docs stage3-deploy r1）
+- origin/dev: 领先 4 个 commit 未 push
 - main 最新提交: 待合入
 
 ---
@@ -116,3 +135,4 @@ Provider Smoke 已完成（Conditional Go）。3 张 fixture 图片全部成功�
 4. feedback API 未校验 case 存在性 — Stage 3 接通真实 API 时处理
 5. 二进制 artifact 以 Base64 内联 SQLite — 33% 体积开销
 6. TD-006 手动改课本分类写入口径统一 — 实现手动编辑课本分类时处理
+7. **Seed 自动化缺口** — Dockerfile/entrypoint 不自动跑 seed_textbook_topics/seed_graph，r2 计划修复
