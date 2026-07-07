@@ -17,7 +17,7 @@ import {
   bridges,
   videoMapSample,
   mainlineWeight,
-} from '../doc/research/seed_graph_batch1';
+} from './seed_graph_batch1';
 
 const prisma = new PrismaClient();
 
