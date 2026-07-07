@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "project": "nana",
+    "cycle": "weekly",
+    "script_version": "1.0.0",
+    "rules_version": "1.0.0",
+    "run_time": "2026-07-07 04:24:36 UTC",
+    "dry_run": true
+  },
+  "summary": {
+    "items_checked": 27,
+    "total_findings": 12,
+    "by_severity": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 12,
+      "P3": 0
+    },
+    "risk_level": "MEDIUM"
+  },
+  "findings": [
+    {
+      "rule_id": "RC-002",
+      "item_path": "CLAUDE.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: c54774406c23f7bb... Current: 6d8911c952055d3d...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-002",
+      "item_path": "doc/00_CURRENT.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: cf859edf7c27f37a... Current: 83f60a1e649e921d...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-002",
+      "item_path": "doc/DECISIONS.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: 77507417373e7e15... Current: a0e15a209ab62dd5...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-002",
+      "item_path": "doc/INDEX.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: 0c27da927f05586b... Current: a2d23ab000f20ebc...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-002",
+      "item_path": "doc/active_spec.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: aa4a5699c30613c1... Current: 14e3f8207346474e...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-002",
+      "item_path": "doc/progress.md",
+      "severity": "P2",
+      "description": "Content changed (sha256 differs from last_reviewed)",
+      "evidence": "Stored sha256: 1fe5df03b3b0b591... Current: ce819bc7c9a0c575...",
+      "suggested_action": "review_needed",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "CLAUDE.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-05T23:02:13.649523+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "doc/00_CURRENT.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-05T05:08:31.511221+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "doc/DECISIONS.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-05T03:07:26.957226+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "doc/INDEX.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-05T05:08:31.101587+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "doc/active_spec.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-07T02:54:49.721911+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    },
+    {
+      "rule_id": "RC-005",
+      "item_path": "doc/progress.md",
+      "severity": "P2",
+      "description": "File modified after last_reviewed (2026-07-05)",
+      "evidence": "File mtime: 2026-07-06T08:49:20.576958+00:00",
+      "suggested_action": "rewrite",
+      "suggested_action_priority": "medium"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "CLAUDE.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "doc/00_CURRENT.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "doc/DECISIONS.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "doc/INDEX.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "doc/active_spec.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "review_needed",
+      "item": "doc/progress.md",
+      "rule": "RC-002"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "CLAUDE.md",
+      "rule": "RC-005"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "doc/00_CURRENT.md",
+      "rule": "RC-005"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "doc/DECISIONS.md",
+      "rule": "RC-005"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "doc/INDEX.md",
+      "rule": "RC-005"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "doc/active_spec.md",
+      "rule": "RC-005"
+    },
+    {
+      "priority": "medium",
+      "action": "rewrite",
+      "item": "doc/progress.md",
+      "rule": "RC-005"
+    }
+  ]
+}
