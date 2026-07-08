@@ -143,3 +143,54 @@ export function needsTranscode(mime: string | undefined | null): boolean {
   if (!mime) return true;
   return !LITE_NATIVE_MIME_TYPES.has(mime.toLowerCase());
 }
+
+// ─── 豆包 Lite 音频格式映射（单一数据源）─────────────────
+
+/**
+ * 豆包 Lite input_audio.format 支持的格式标签。
+ *
+ * 注意：Round 0 预验证只实测了 WAV 确认可用、webm/mp4 确认拒绝。
+ * mp3/flac/ogg/m4a/aac 是官方文档列出但未全部实测，
+ * 真实手机音频场景可能遇到“看起来支持，其实失败”。
+ * v1 暂全部允许，失败时由调用方 catch 走 failed 状态。
+ *
+ * 来源：Round 0 预验证脚本 + asr-transcribe.ts（TD-5）参考
+ */
+export const SUPPORTED_AUDIO_FORMATS = new Set([
+  "wav",     // ✅ 实测可用
+  "mp3",     // ⚠️ 未实测
+  "flac",    // ⚠️ 未实测
+  "ogg",     // ⚠️ 未实测
+  "m4a",     // ⚠️ 未实测
+  "aac",     // ⚠️ 未实测
+]);
+
+/**
+ * MIME → 豆包 format 标签映射。
+ * 只有映射后格式在 SUPPORTED_AUDIO_FORMATS 中的才被接受。
+ * webm 和 mp4 不映射（Round 0 验证不支持，需转码）。
+ */
+export const MIME_TO_FORMAT: Record<string, string> = {
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/mp3": "mp3",
+  "audio/mpeg": "mp3",
+  "audio/flac": "flac",
+  "audio/ogg": "ogg",
+  "audio/m4a": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+};
+
+/**
+ * 获取豆包支持的 format 标签。
+ * 不支持的 mime 返回 null（调用方据此判断是否需要转码）。
+ */
+export function getAudioApiFormat(mime: string): string | null {
+  const format = MIME_TO_FORMAT[mime.toLowerCase()];
+  if (format && SUPPORTED_AUDIO_FORMATS.has(format)) {
+    return format;
+  }
+  return null;
+}

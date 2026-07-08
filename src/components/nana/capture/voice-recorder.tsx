@@ -388,7 +388,7 @@ export function VoiceRecorder({ onAudioReady, onRecordingStateChange }: VoiceRec
         <span className="font-medium">我听完了</span>
       </div>
       <p className="text-[13.5px] text-[#8C857B]">
-        录音收好了，转写稍后接入
+        录音收好了，收题时会自动整理
       </p>
       <p className="text-[12.5px] text-[#B4ADA3]">
         已录音 {elapsed} 秒

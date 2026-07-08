@@ -18,7 +18,7 @@
 
 "use client";
 
-import { Sparkles, BookMarked, Lightbulb, ArrowRight, RotateCcw } from "lucide-react";
+import { Sparkles, BookMarked, Lightbulb, ArrowRight, RotateCcw, Mic } from "lucide-react";
 import type { CaseProcessResult } from "@/lib/nana/nana-api-client";
 
 interface AiResultCardProps {
@@ -63,6 +63,29 @@ function SuccessContent({ result }: { result: CaseProcessResult }) {
           <p className="mt-1 text-[14px] leading-[1.7] text-[#403A33]">
             {result.questionSummary}
           </p>
+        </div>
+      )}
+
+      {/* 转写文字 / 音频状态 */}
+      {result.audioStatus && result.audioStatus !== "skipped" && (
+        <div>
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#8C857B]">
+            <Mic className="size-3 text-[#5E8868]" />
+            我说了
+          </div>
+          {result.audioStatus === "success" && result.transcript ? (
+            <p className="mt-1 text-[14px] leading-[1.7] text-[#403A33]">
+              {result.transcript}
+            </p>
+          ) : result.audioStatus === "failed" ? (
+            <p className="mt-1 text-[13px] leading-[1.7] text-[#8C857B]">
+              语音没转成功，题已经整理好了
+            </p>
+          ) : result.audioStatus === "timeout" ? (
+            <p className="mt-1 text-[13px] leading-[1.7] text-[#8C857B]">
+              语音转写超时了，题已经整理好了
+            </p>
+          ) : null}
         </div>
       )}
 

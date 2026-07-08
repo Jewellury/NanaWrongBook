@@ -34,8 +34,34 @@ export function TranscriptionPanel({ text, onChange, editable = false }: Transcr
     }
   }, [onChange]);
 
-  // ─── 只读占位（本轮：无 ASR）──────────────
+  // ─── 只读态（整理后展示转写 / 整理前显示引导）──────
   if (!editable) {
+    // 有转写文本 → 展示转写内容
+    if (text && text.trim()) {
+      return (
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="flex items-center gap-2 text-[#5E8868]">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#5E8868"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            <span className="text-[14px] font-medium">我说了</span>
+          </div>
+          <p className="text-[14.5px] leading-[1.85] text-[#403A33]">
+            {text}
+          </p>
+        </div>
+      );
+    }
+    // 无转写文本 → 引导文案
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-2">
         <div className="flex items-center gap-2 text-[#5E8868]">
@@ -51,10 +77,10 @@ export function TranscriptionPanel({ text, onChange, editable = false }: Transcr
           >
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          <span className="text-[14px] font-medium">录音已经收好</span>
+          <span className="text-[14px] font-medium">先录一段音</span>
         </div>
         <p className="text-center text-[13.5px] leading-[1.85] text-[#8C857B]">
-          转写稍后接入，{text || "这道题的话先放在心里。"}
+          整理后会在这里看到你说的话。
         </p>
       </div>
     );

@@ -38,6 +38,7 @@ import {
   type ArtifactInput,
   type CaseProcessResult,
 } from "@/lib/nana/nana-api-client";
+import { PLACEHOLDER_TRANSCRIPT } from "@/lib/nana/transcript-utils";
 
 // ─── 常量 ─────────────────────────────────────
 const TOTAL_PAYLOAD_LIMIT = 3 * 1024 * 1024; // 单次保存总 payload 3MB 上限（前端预检）
@@ -170,7 +171,7 @@ export default function CapturePage() {
       });
       seq += 1;
     }
-    artifacts.push({ type: "transcript", content: "尚未转写", seq });
+    artifacts.push({ type: "transcript", content: PLACEHOLDER_TRANSCRIPT, seq });
     return artifacts;
   }, [imageBase64, audioBlob, audioMeta]);
 
@@ -450,7 +451,10 @@ export default function CapturePage() {
         )}
 
         {currentTab === "transcript" && (
-          <TranscriptionPanel text="尚未转写" onChange={() => {}} />
+          <TranscriptionPanel
+            text={processResult?.transcript || ""}
+            editable={false}
+          />
         )}
 
         {currentTab === "feedback" && (

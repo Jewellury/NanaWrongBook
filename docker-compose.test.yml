@@ -18,7 +18,9 @@ services:
     command: >
       sh -c "
         echo '=== 安装编译依赖（better-sqlite3 需要）===' &&
-        apk add --no-cache python3 make g++ libc6-compat openssl &&
+        apk add --no-cache python3 make g++ libc6-compat openssl ffmpeg &&
+        echo '=== 验证 ffmpeg ===' &&
+        ffmpeg -version &&
         echo '=== 安装依赖 ===' &&
         npm ci &&
         echo '=== 生成 Prisma Client ===' &&
