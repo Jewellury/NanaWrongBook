@@ -140,6 +140,7 @@ async function persistAiResult(
       possibleMistakeReason: result.possibleMistakeReason,
       nextActionSuggestion: result.nextActionSuggestion,
       audioStatus: result.audioStatus,
+      error: result.audioErrorReason || null,
       processingStatus: "success",
       tokenUsage: result.usage ? JSON.stringify(result.usage) : null,
     },
@@ -158,6 +159,7 @@ async function persistAiResult(
       possibleMistakeReason: result.possibleMistakeReason,
       nextActionSuggestion: result.nextActionSuggestion,
       audioStatus: result.audioStatus,
+      error: result.audioErrorReason || null,
       processingStatus: "success",
       tokenUsage: result.usage ? JSON.stringify(result.usage) : null,
     },
@@ -302,6 +304,7 @@ export async function POST(
     }
 
     const audioProvided = !!(audioBase64 && audioFormat);
+    const audioTranscriptEnabled = process.env.NANA_AUDIO_TRANSCRIPT_ENABLED === "true";
 
     let result: CaseAnalyzerResult;
     try {
@@ -313,7 +316,9 @@ export async function POST(
         textbookTopics,
       });
     } catch (err) {
-      const audioStatus = deriveAudioStatus(audioProvided, audioProvided, err);
+      // 第二参数：音频是否实际参与了处理（provided && flag on）
+      // flag off 时音频未发送，API 失败不应把 audioStatus 标为 failed
+      const audioStatus = deriveAudioStatus(audioProvided, audioProvided && audioTranscriptEnabled, err);
       const errorMsg =
         err instanceof CaseAnalyzerTimeoutError
           ? "AI 整理超时"

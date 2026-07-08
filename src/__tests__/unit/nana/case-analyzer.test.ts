@@ -556,6 +556,7 @@ describe('analyzeCase: 转码失败', () => {
     );
 
     expect(result.audioStatus).toBe('failed');
+    expect(result.audioErrorReason).toContain('ffmpeg');
     // 图片结果仍然正常返回
     expect(result.questionSummary).toBe('判断 f(x)=x²-2x 的单调区间');
     expect(result.textbookTopicCandidates).toHaveLength(1);
@@ -597,6 +598,7 @@ describe('analyzeCase: 空 transcript', () => {
     );
 
     expect(result.audioStatus).toBe('failed');
+    expect(result.audioErrorReason).toBe('音频已发送但 Lite 返回空 transcript');
     // 图片结果仍然正常
     expect(result.questionSummary).toBe('判断 f(x)=x²-2x 的单调区间');
   });
@@ -613,6 +615,7 @@ describe('analyzeCase: 空 transcript', () => {
     );
 
     expect(result.audioStatus).toBe('failed');
+    expect(result.audioErrorReason).toBe('音频已发送但 Lite 返回空 transcript');
   });
 
   test('未发送音频 + 空 transcript → audioStatus = "skipped"（不标 failed）', async () => {
@@ -701,5 +704,12 @@ describe('deriveAudioStatus', () => {
   test('普通 Error → "failed"', () => {
     const err = new Error('network');
     expect(deriveAudioStatus(true, true, err)).toBe('failed');
+  });
+
+  test('有音频但 flag off（audioFormatSupported=false）+ API 错误 → "skipped"', () => {
+    // 场景：用户提供了音频，但 NANA_AUDIO_TRANSCRIPT_ENABLED 未开启
+    // API 调用失败时，音频并未参与处理，不应标 failed
+    const err = new CaseAnalyzerError('API 500');
+    expect(deriveAudioStatus(true, false, err)).toBe('skipped');
   });
 });

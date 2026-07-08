@@ -68,6 +68,8 @@ export interface CaseAnalyzerResult {
   nextActionSuggestion: string;
   /** 音频处理状态（成功时为 skipped 或 success；失败/超时由调用方通过 deriveAudioStatus 推导） */
   audioStatus: AudioStatus;
+  /** 音频失败原因（转码失败、空 transcript 等），用于持久化到 DB error 字段方便排查 */
+  audioErrorReason?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
@@ -484,12 +486,15 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
     // 音频已发送且 transcript 非空 → success
     // 音频未发送 → skipped
     let finalAudioStatus: AudioStatus;
+    let audioErrorReason: string | undefined;
     if (audioTranscodeFailed) {
       finalAudioStatus = "failed";
+      audioErrorReason = transcodeError;
     } else if (audioSkipped) {
       finalAudioStatus = "skipped";
     } else if (!validated.transcript || validated.transcript.trim() === "") {
       finalAudioStatus = "failed";
+      audioErrorReason = "音频已发送但 Lite 返回空 transcript";
     } else {
       finalAudioStatus = "success";
     }
@@ -514,6 +519,7 @@ export async function analyzeCase(input: CaseAnalyzerInput): Promise<CaseAnalyze
       possibleMistakeReason: validated.possibleMistakeReason,
       nextActionSuggestion: validated.nextActionSuggestion,
       audioStatus: finalAudioStatus,
+      audioErrorReason,
       usage: response.usage
         ? {
             promptTokens: response.usage.prompt_tokens,
