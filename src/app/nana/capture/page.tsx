@@ -458,7 +458,7 @@ export default function CapturePage() {
         )}
 
         {currentTab === "feedback" && (
-          // 本轮不调 LightFeedback（transcript 恒为"尚未转写"，调接口无意义，§7.4）
+          // LightFeedback 暂未接入（transcript 整理后才有意义，§7.4）
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-2">
             <p className="text-center text-[14.5px] leading-[1.85] text-[#8C857B]">
               先把材料收好，等多拍几道再一起看规律。

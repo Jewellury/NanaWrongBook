@@ -31,6 +31,7 @@ import {
   type CaseAnalyzerResult,
 } from "@/lib/nana/case-analyzer";
 import { parseAudioMeta } from "@/lib/nana/audio-utils";
+import { isPlaceholderTranscript } from "@/lib/nana/transcript-utils";
 
 const logger = createLogger("api:nana:cases:process");
 
@@ -165,17 +166,24 @@ async function persistAiResult(
     },
   });
 
-    // 3. transcript 回写 Artifact
+    // 3. transcript 回写 Artifact（人 > AI 铁律：只有占位文本才覆盖）
   if (result.transcript) {
     const existingTranscript = await tx.artifact.findFirst({
       where: { caseId, type: "transcript" },
-      select: { id: true },
+      select: { id: true, content: true },
     });
     if (existingTranscript) {
-      await tx.artifact.update({
-        where: { id: existingTranscript.id },
-        data: { content: result.transcript },
-      });
+      if (isPlaceholderTranscript(existingTranscript.content)) {
+        await tx.artifact.update({
+          where: { id: existingTranscript.id },
+          data: { content: result.transcript },
+        });
+      } else {
+        logger.info(
+          { caseId },
+          "transcript artifact 非占位文本，跳过覆盖（人 > AI）",
+        );
+      }
     } else {
       await tx.artifact.create({
         data: { caseId, type: "transcript", content: result.transcript, seq: 0 },

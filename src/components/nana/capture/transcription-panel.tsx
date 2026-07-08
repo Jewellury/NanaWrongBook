@@ -2,8 +2,8 @@
  * TranscriptionPanel — 逐字稿展示面板
  *
  * "我的话" tab 的内容区：
- * - editable=false（默认，本轮）：只读占位（无 ASR，转写稍后接入）
- * - editable=true（未来第 5 阶段接通 ASR 后）：每行可点击编辑（contentEditable）
+ * - editable=false（默认）：只读态，展示转写结果或引导文案
+ * - editable=true（未来）：每行可点击编辑（contentEditable）
  *
  * Props:
  * - text: 逐字稿全文（行之间用 \n 分隔）
@@ -11,7 +11,7 @@
  * - editable?: 是否可编辑，默认 false
  *
  * 措辞合规（P4）：
- * - 只读态："转写稍后接入，录音已经收好。" ✓（不假装已转写）
+ * - 只读态：有转写展示转写文本，无转写显示引导文案
  */
 
 "use client";
