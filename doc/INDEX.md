@@ -126,6 +126,7 @@
 | ✅ | [reference/codex_long_term_memory.md](reference/codex_long_term_memory.md) | Codex 长期记忆入口 |
 | ✅ | [reference/codex_memory_decisions/](reference/codex_memory_decisions/) | Codex 记忆决策记录目录 |
 | ✅ | [reference/codex_memory_decisions/2026-07-01_ci-image-deployment-and-real-capture-gates.md](reference/codex_memory_decisions/2026-07-01_ci-image-deployment-and-real-capture-gates.md) | Codex 记忆决策：CI 镜像部署 + Phase 1.5 真实采集门禁 |
+| 🟡 | [reference/codex_memory_decisions/2026-07-12_child-centered-closed-loop-testing.md](reference/codex_memory_decisions/2026-07-12_child-centered-closed-loop-testing.md) | Codex 记忆决策：孩子视角最小闭环与五层自动化测试；验收契约待最终确认 |
 | ✅ | [reference/installed-skills-catalog.md](reference/installed-skills-catalog.md) | 已安装 Skill 清单（2026-06-19） |
 | ✅ | [reference/fof-semantic-mvp-dual-runtime-audit-notes.md](reference/fof-semantic-mvp-dual-runtime-audit-notes.md) | fof-semantic 双运行时审计笔记 |
 | ✅ | [reference/docker-troubleshooting-guide.md](reference/docker-troubleshooting-guide.md) | Docker Desktop 故障排查指南（Fast Startup + 修复流程 + CI 策略更新） |
@@ -257,5 +258,5 @@
 
 ---
 
-> 最后更新：2026-07-05 | 维护者：人类 + Claude + Codex + 三代理
-> 本次更新：产品手册 + v3-revised 计划推演修订（r4）——前端修改点排查（Round UI-0）、AI 初步诊断说法清零、题目汇总信息重排、打印页信息弱化、OCR v2 候选
+> 最后更新：2026-07-12 | 维护者：人类 + Claude + Codex + 三代理
+> 本次更新：新增 Codex 记忆决策——孩子视角最小闭环、五层自动化测试与待确认的验收契约前置门禁
