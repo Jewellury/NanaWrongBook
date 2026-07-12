@@ -120,6 +120,16 @@ Secrets 配置完成后，按以下步骤验证：
 
 ## 8. 下一步
 
-- [ ] 用户配置 GitHub Secrets（3 个）
+- [x] 用户配置 GitHub Secrets（3 个）
 - [ ] 发测试 PR 验证 workflow 正常运行
 - [ ] 验证通过后考虑添加 `.opencodereview/rule.json` 项目级审查规则
+
+---
+
+## 9. 验证记录
+
+### 2026-07-12 测试 PR 验证
+
+- 测试分支: `test/ocr-review`
+- 测试改动: 本文件追加验证记录小节
+- 目标: 触发 `AI Code Review (OCR)` workflow，确认 PR 评论区出现 AI 审查意见
