@@ -1,10 +1,32 @@
-# Nana 测试框架 · 开发计划
+# Nana 测试框架 · 开发计划 (r2)
 
 > 关联规格: `doc/product/nana-product-behavior-manual-v1.md`（产品行为手册）
 > 关联 backlog: TD-006（手动改课本分类写入口径统一）、OD-003（E2E 补真实入口路径）
 > 关联参考: `doc/reference/TECH_PLAN_v2.md`（技术方案）、`doc/reference/OPS_handbook.md`（运营手册）
-> 计划日期: 2026-07-12
+> 计划日期: 2026-07-12（r2 修订: 2026-07-12，整合评审反馈）
 > 预计影响: `e2e/`、`playwright.config.ts`、`.github/workflows/`、`tests/fixtures/`、`scripts/`、`doc/`
+
+---
+
+## r2 修订摘要
+
+| 评审问题 | r1 错误 | r2 修正 |
+|---------|---------|---------|
+| 核心假设 | TextbookTopic 和 KnowledgeNode "二选一" | 改为**双层契约**：孩子操作层=TextbookTopic，系统验证层=KnowledgeNode，两层都测 |
+| Mock 方案 | `page.route()` 拦截 /process，后端不执行 | 改为**本地假 Provider 服务器**，`VOLCENGINE_BASE_URL` 指向它，真实 /process 代码完整执行 |
+| R1 依赖 | 声称无依赖但含手动改分类（依赖 TD-006） | 拆为 R1a（无依赖）/ R1b（依赖 TD-006）/ R1c（依赖打印页） |
+| 性能门禁 | 绝对耗时立即硬门禁 | R1 只采集不阻塞；积累 20 次后用滚动基线 +30% 告警；硬门禁仅保留功能性断言 |
+| 数据治理 | "删除 Case 或删除用户"未决策 | 固定专用测试账号 + 记录 Case ID + afterAll 精确删除；DELETE API 审计通过前不启用 nightly 写测试 |
+| processingStatus | 写在 Case 上 | 修正：`processingStatus` 在 `CaseAiResult` 上，`Case` 无此字段 |
+| StudentNodeState.status | 断言 `status != 'mastered'` | 修正：合法值为 `stable/uncertain/gap/untested`，无 `mastered`；断言无新增记录或 stable 数量不变 |
+| 环境变量 | `VOLCENGINE_LITE_ENDPOINT` | 修正：项目实际使用 `LITE_ENDPOINT_ID` |
+| Provider Smoke env | 给 runner 注入豆包 Key 改变生产容器 | 修正：生产服务用自己的 .env，Smoke workflow 只需 URL + 测试账号 |
+| 7 字段非空 | 要求全部非空 | 修正：`possibleMistakeReason` 允许为空，空时隐藏区块 |
+| 虚拟麦克风 | 自己改写 MediaRecorder | 改为 Chromium `--use-fake-device-for-media-stream` + 真实 WAV 文件 |
+| 视频/trace | 全局 `video: on`、`trace: on` | 分层策略：截图始终保留；trace `retain-on-failure`；video 仅失败或 Provider/AI 评审时保留；artifact 14 天 + 大小上限 |
+| Fixture 多样性 | 3 张全偏函数题 | 补充集合、不等式、三角函数等不同章节脱敏题图 |
+| 数据规模 | 只测 1-3 题 | 新增 30 题汇总页数据规模场景 |
+| AI 评审 | 只"扮演孩子" | 必须引用具体截图/步骤/指标；人工校准 10 次；只用专用测试账号+脱敏题图；始终是建议非门禁 |
 
 ---
 
@@ -14,51 +36,74 @@
 
 给 Nana 建一套**分层的自动化测试框架**，不写 20 条散乱 E2E，而是按五层组织：
 
-1. **确定性 CI 闭环**——用假 AI 响应 + 临时数据库，每次 push 自动跑一条最小黄金路径（拍题→录音→保存→AI整理→汇总→图谱→打印预览），确保功能每一步都走得通、数据落库正确。
-2. **性能与毛刺采集**——在同一条路径上采集按钮反馈耗时、页面加载、控制台错误、网络耗时、截图、视频、trace，设可调基线门槛。
-3. **真实 Provider Smoke**——用专用测试账号 + 真实豆包 API，验证识图/转写/分类/反馈的真实质量，初期告警不门禁。
-4. **AI 孩子视角评审**——固定扮演"数学基础较弱、第一次使用的高中生"，看截图序列 + 指标，按统一量表输出 JSON 判断。
+1. **确定性 CI 闭环**——启动本地假 Provider 服务器替代豆包 API，浏览器仍请求真实 `/process` 路由，真实代码完成转码、解析、事务和落库。每次 push 自动跑黄金路径，验证功能走通 + 数据落库。
+2. **性能与毛刺采集**——在同一条路径上采集按钮反馈耗时、页面加载、控制台错误、网络耗时、截图。R1 只采集不阻塞；积累 20 次后用滚动基线 +30% 偏差告警；硬门禁仅保留功能性断言。
+3. **真实 Provider Smoke**——用固定专用测试账号 + 真实豆包 API，验证识图/转写/分类/反馈的真实质量。初期手动触发，稳定后每周 2-3 次。DELETE API 审计通过前不启用 nightly 写测试。
+4. **AI 体验评审**——AI 按固定量表找问题，必须引用具体截图、步骤和指标。初期由人工抽查 10 次校准一致性。始终是建议，不成为发布硬门禁。
 5. **真机抽检清单**——相机/麦克风权限、iOS Safari、微信浏览器、实际打印，每次大版本发版前 5 分钟抽检。
 
 ### 为什么要做
 
-现在 CI E2E 只覆盖了"上传题图→保存→知识地图→展开原图"，而且用 `?openCases=1` 绕过了真实入口点击。生产 Smoke 只测登录、首页和知识地图可打开。**录音、AI 整理结果卡、题目汇总按章节分组、图谱琥珀证据 vs 绿色掌握区分、打印预览**这些核心路径完全没有自动化覆盖。
+现在 CI E2E 只覆盖了"上传题图→保存→知识地图→展开原图"，而且用 `?openCases=1` 绕过了真实入口点击。生产 Smoke 只测登录、首页和知识地图可打开。**录音、AI 整理结果卡、题目汇总按章节分组、图谱琥珀证据、打印预览**这些核心路径完全没有自动化覆盖。
 
 孩子用的每一个环节都有可能出问题：按钮点了没反应、AI 整理等太久以为卡住、分类分错、打印出来裁切重叠。我们需要一套框架，不仅测"能不能走通"，还测"孩子用着顺不顺手"。
 
-### 关键假设
+### 核心假设：双层分类契约（已确认）
 
-**我们最终要测试的是"孩子看到的课本分类"（TextbookTopic），不是目前内部 48 个系统知识点（KnowledgeNode）。** 若这个假设不成立，手动挂载和打印测试的数据契约都要重写。
+**不是"TextbookTopic 和 KnowledgeNode 二选一"，而是双层契约：**
+
+```
+孩子操作层：TextbookTopic
+  手动分类、汇总分组、打印分组
+              ↓ 映射
+系统验证层：KnowledgeNode
+  AI 系统标签、知识地图琥珀证据
+  不写 StudentNodeState，不变绿色
+```
+
+确认：
+- 孩子只能看到并修改课本章节分类 TextbookTopic。
+- 自动化还要验证它映射到正确的 KnowledgeNode，让地图产生琥珀证据。
+- 两层都测，但不能让孩子直接面对内部 48 节点。
 
 ---
 
-## 2. 前置依赖：两个产品功能补齐
+## 2. 前置依赖与分轮拆分
 
-> ⚠️ 完整闭环门禁依赖以下两个功能先实现。第一轮测试框架可以先做"现有路径 + 性能采集 + 虚拟麦克风 + AI 证据包"，不受阻塞。
+### 2.1 依赖一：TD-006 — TextbookTopic 写入口径统一
 
-### 2.1 依赖一：TextbookTopic 作为孩子侧权威分类来源
-
-- **现状**：`CaseAiResult.textbookTopicId` 和 `CaseTextbookTopicTag` 双写，手动改分类时写入口径不统一（BACKLOG TD-006）
+- **现状**：`CaseAiResult.textbookTopicId` 和 `CaseTextbookTopicTag` 双写，手动改分类时写入口径不统一
 - **需要做到**：孩子手动修改的是 TextbookTopic，汇总页以 `CaseTextbookTopicTag`（source=manual 优先）为权威来源
 - **阻塞的测试**：手动改分类验证、汇总页按章节分组验证、打印页按章节分组验证
-- **计划引用**：本计划的技术附录 §6.4 定义了测试数据契约，假设 TD-006 已解决
+- **归属轮次**：R1b
 
 ### 2.2 依赖二：Nana 专用打印预览页 `/nana/print-preview`
 
-- **现状**：现有 `/print-preview` 属于上游 wrong-notebook 功能，调 `/api/error-items/list`，不调 `/api/nana/cases`，不按课本章节分组
-- **需要做到**：新增 `/nana/print-preview` 路由，按 TextbookTopic 章节分组，每题含小题图 + AI 摘要 + AI 想对你说 + 下一步，不打印技术字段
+- **现状**：现有 `/print-preview` 属于上游 wrong-notebook 功能，调 `/api/error-items/list`，不调 `/api/nana/cases`
+- **需要做到**：新增 `/nana/print-preview` 路由，按 TextbookTopic 章节分组
 - **阻塞的测试**：打印预览页验证、PDF 生成验证
-- **产品行为手册**：§13.7 已定义完整信息架构和 CSS Print Media 规则
+- **归属轮次**：R1c
 
-### 2.3 不受阻塞的第一轮可做项
+### 2.3 依赖三：DELETE API — Case 删除接口
 
-| 可做项 | 说明 |
-|--------|------|
-| 现有路径增强 | 去掉 `?openCases=1` 绕过，测真实入口点击 |
-| 性能采集框架 | Playwright 截图/视频/trace/网络/控制台/性能数据 |
-| 虚拟麦克风录音 | Playwright `page.evaluate` 注入 fake MediaRecorder |
-| AI 证据包格式定义 | 截图序列 + 指标 JSON + 控制台错误的结构化输出 |
-| 假豆包响应 mock | `vi.mock` 或 route intercept 返回固定 AI 结果 |
+- **现状**：`src/app/api/nana/cases/` 下无 DELETE handler
+- **需要做到**：新增 `DELETE /api/nana/cases/:id`，带归属校验（只能删自己的 Case），级联删除 Artifact + CaseAiResult + Tags
+- **阻塞的测试**：Provider Smoke 自动清理
+- **归属轮次**：R4 前置；DELETE API 需单独计划、审计和用户确认
+- **过渡策略**：DELETE API 上线前，Provider Smoke 保持手动触发，不开启 nightly 写测试
+
+### 2.4 分轮拆分
+
+| 轮次 | 范围 | 依赖 | 预计工时 |
+|------|------|------|----------|
+| **R1a（立即可做）** | 证据采集基础设施 + 假 Provider 服务器 + 虚拟麦克风 + 黄金路径（不含手动改分类/打印） + 去掉 `?openCases=1` + 真机清单 + 补充多章节 fixture | 无 | 3-4 天 |
+| **R1b（依赖 TD-006）** | 手动改分类验证 + 汇总页按章节分组验证 | TD-006 解决 | 0.5 天 |
+| **R1c（依赖打印页）** | 打印预览验证 + PDF 生成验证 | `/nana/print-preview` 实现 | 0.5 天 |
+| **R1d（数据规模）** | 30 题汇总页性能场景 | R1a 完成 | 0.5 天 |
+| **R4（依赖 DELETE API）** | 真实 Provider Smoke + 自动清理 | 专用测试账号 + DELETE API 审计通过 + secrets 配置 | 1.5 天 |
+| **R5（依赖 R4）** | AI 评审 + 人工校准 | R4 证据包 + AI 评审 adapter | 1.5 天 |
+
+> **建议**：R1a 立即启动。R1b/R1c 等产品功能补齐后接上。R1d 在 R1a 稳定后做。R4/R5 等 DELETE API 审计通过后推进。
 
 ---
 
@@ -69,127 +114,320 @@
 > 目标：Playwright 每次跑测试都自动保存"体验证据包"，AI 不需要重新操作页面，只需审阅。
 
 - [ ] 任务 1.1：创建 `e2e/helpers/evidence-collector.ts`——统一的证据采集工具类
-  - 每步自动截图（`page.screenshot`）
-  - 全程视频录制（Playwright `video: 'on'`）
-  - trace 保存（`trace: 'on'`，已有配置升级为 `'retain-on-failure'` → `'on'`）
+  - 每步手动截图（`page.screenshot`），始终保留
   - 网络请求耗时采集（`page.on('requestfinished')`）
   - 控制台错误/警告采集（`page.on('console')` + `page.on('pageerror')`）
   - 页面性能数据（`page.evaluate(() => performance.getEntries())`）
   - 输出结构化 JSON：`{ step, timestamp, screenshotPath, networkTimings, consoleErrors, perfMetrics }`
 
-- [ ] 任务 1.2：升级 `playwright.config.ts`——全局开启证据采集
-  - `use.screenshot: 'only-on-failure'` → 改为每步手动截图 + 失败自动截图
-  - `use.video: 'on'`
-  - `use.trace: 'on'`（CI 中保留所有 trace，本地 `'retain-on-failure'`）
+- [ ] 任务 1.2：升级 `playwright.config.ts`——分层证据采集策略
+  - `use.screenshot: 'only-on-failure'`（自动截图仅失败时；每步手动截图在 spec 中做）
+  - `use.trace: 'retain-on-failure'`（不在 CI 中全局开 `on`，避免拖慢和堆积）
+  - `use.video: 'retain-on-failure'`（普通 CI 只在失败时保留；Provider Smoke / AI 评审任务单独覆写为 `'on'`）
   - 新增 reporter：除 `html` 外，增加 `json` reporter 输出结构化结果
-  - 新增 `use.actionTimeout` 和 `use.navigationTimeout` 基线值
+  - 新增 `use.actionTimeout: 10_000` 和 `use.navigationTimeout: 15_000`
+  - artifact 保留 14 天，设单次大小上限（`retention-days: 14`）
 
-- [ ] 任务 1.3：创建 `e2e/helpers/performance-baseline.ts`——性能门槛定义和断言工具
-  - 定义可调基线常量（见 §4.2 性能门槛表）
-  - `assertButtonFeedback(page, buttonSelector, maxMs)`——点击到出现 pressed/loading 反馈
-  - `assertNavigationTiming(page, maxMs)`——页面加载耗时
-  - `assertNoConsoleErrors(page)`——零未处理控制台错误
-  - `assertNoFailedRequests(page)`——零失败请求
-  - `assertNoHorizontalOverflow(page)`——零横向溢出
-  - `assertNoButtonOverlap(page)`——零按钮文字重叠（视觉检测辅助）
+- [ ] 任务 1.3：创建 `e2e/helpers/performance-collector.ts`——性能采集（非门禁）工具
+  - 定义采集指标常量（见 §4.2 性能采集表）
+  - `measureButtonFeedback(page, buttonSelector)`——点击到出现 pressed/loading 反馈，返回耗时
+  - `measureNavigation(page)`——页面加载耗时
+  - `collectConsoleErrors(page)`——收集未处理控制台错误
+  - `collectFailedRequests(page)`——收集失败网络请求
+  - `checkHorizontalOverflow(page)`——检测横向溢出
+  - `checkButtonOverlap(page)`——检测按钮文字重叠（视觉检测辅助）
+  - **R1 阶段：只采集记录，不因绝对耗时阻塞**
+  - 硬门禁断言（始终阻塞）：无点击反馈、保存超时、关键 API 失败、横向溢出、未处理异常
 
 - [ ] 任务 1.4：创建 `e2e/helpers/report-generator.ts`——AI 证据包生成器
   - 测试结束后聚合所有截图、指标、控制台日志为单个 JSON
   - 输出目录：`test-results/evidence-pack/`
   - 包含：截图序列（按步骤排序）、性能指标汇总、控制台错误列表、网络请求耗时表、数据库验证结果
+  - 设大小上限：单次证据包不超过 50MB（截图压缩到 JPEG quality 80）
 
 ### 第二部分：确定性 CI 闭环
 
-> 目标：用假豆包响应 + 临时数据库，每次 push 自动跑黄金路径，验证功能走通 + 数据落库。
+> 目标：用本地假 Provider 服务器替代豆包 API，浏览器请求真实 /process，真实代码完成转码、解析、事务和落库。每次 push 自动跑黄金路径，验证功能走通 + 数据落库。
 
-- [ ] 任务 2.1：创建 `e2e/helpers/mock-provider.ts`——假豆包响应拦截器
-  - `page.route('**/api/nana/cases/*/process', ...)` 拦截 /process 请求
-  - 返回固定的 7 字段结构化 JSON（复用 `process-api.test.ts` 的 MOCK_RESULT 结构）
-  - 支持三种 fixture 对应三种响应：
+- [ ] 任务 2.1：创建 `e2e/helpers/fake-provider-server.ts`——本地假豆包 Provider
+  - 启动一个本地 HTTP 服务器，模拟 OpenAI 兼容接口（`/chat/completions`）
+  - 根据 fixture 文件名返回固定的 7 字段结构化 JSON
+  - 响应延迟可控（默认 <100ms，可模拟慢响应）
+  - 支持 three fixture 响应：
     - `clear-printed` → 正常成功路径（高置信、完整字段）
     - `with-handwriting` → 手写干扰路径（转写有内容、分类有候选）
     - `tilted-partial` → 低置信降级路径（置信度 <0.5、未分类、诚实降级）
+  - **关键**：浏览器仍请求真实 `/api/nana/cases/:id/process`，真实 route handler 执行，真实 `case-analyzer.ts` 调用假 Provider URL，真实 Prisma 事务落库
 
-- [ ] 任务 2.2：创建 `e2e/helpers/virtual-microphone.ts`——虚拟麦克风注入
-  - `page.addInitScript` 注入 fake `navigator.mediaDevices.getUserMedia`
-  - 返回固定音频流（从 `tests/fixtures/nana/audio/20260707_194923.m4a` 读取或生成静音 webm）
-  - fake `MediaRecorder`：收集 chunk → 合成 Blob → 触发 onstop
-  - 确保 VoiceRecorder 组件完整走完 idle → requesting → recording → completed 四态
-  - **不能跳过录音组件**：必须真实触发 `getUserMedia` 和 `MediaRecorder`
+  ```typescript
+  // e2e/helpers/fake-provider-server.ts（伪代码）
+  import http from 'http';
+
+  const MOCK_RESPONSES: Record<string, string> = {
+    'clear-printed': JSON.stringify({ /* 7 字段 */ }),
+    'with-handwriting': JSON.stringify({ /* 7 字段 */ }),
+    'tilted-partial': JSON.stringify({ /* 7 字段 */ }),
+  };
+
+  export function startFakeProvider(port = 3999): http.Server {
+    return http.createServer((req, res) => {
+      // 模拟 OpenAI /chat/completions 响应
+      // 从请求 body 中提取图片标识（或用 header 传递 fixture 名）
+      // 返回对应 mock JSON 包裹在 OpenAI chat completion 格式中
+    });
+  }
+  ```
+
+  - CI 启动方式：`webServer.command` 中先启动假 Provider，再启动 Next.js
+  - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
+
+- [ ] 任务 2.2：创建 `e2e/helpers/virtual-microphone.ts`——虚拟麦克风（Chromium 原生方案）
+  - **优先使用 Chromium 官方 fake-media 参数**，不自己改写 MediaRecorder
+  - Playwright launch options 增加 Chromium flags：
+    - `--use-fake-device-for-media-stream`（使用虚拟音频/视频设备）
+    - `--use-fake-ui-for-media-stream`（自动授权，不弹权限对话框）
+  - 准备一段脱敏的数学口述 WAV 文件放入 `tests/fixtures/nana/audio/`
+  - 让浏览器真实录制成 webm，再经过 ffmpeg 和 /process 完整音频链路
+  - 这样能验证完整音频链路（录音→转码→转写），而不是只验证录音按钮状态
+  - **如果 Chromium fake-media 在 headless 中不工作**：降级为 `page.addInitScript` 注入 fake `getUserMedia` 返回预制 Blob，但仍不替换 `MediaRecorder`，让真实 `MediaRecorder` 处理 fake stream
+
+  ```typescript
+  // playwright.config.ts 中的 project 配置
+  {
+    name: 'mobile-chrome',
+    testDir: './e2e/ci',
+    use: {
+      ...devices['Pixel 7'],
+      // 虚拟麦克风：Chromium 原生 fake media
+      launchOptions: {
+        args: [
+          '--use-fake-device-for-media-stream',
+          '--use-fake-ui-for-media-stream',
+        ],
+      },
+    },
+  }
+  ```
 
 - [ ] 任务 2.3：创建 `e2e/helpers/db-verifier.ts`——数据库验证工具
   - 直接连接测试 SQLite 数据库（`prisma` client，`DATABASE_URL` 指向 e2e.db）
-  - 验证 Case 创建、CaseAiResult 字段、CaseTextbookTopicTag 挂载、Artifact 写入
-  - 验证 `processingStatus` 流转：pending → success/failed
-  - 验证 `audioStatus`：pending → success/skipped/failed
-  - 验证 `textbookTopicEdited` 标记
+  - 验证 Case 创建（`Case.id`、`Case.studentId`、`Case.createdAt`）
+  - 验证 CaseAiResult 字段（**`processingStatus` 在 CaseAiResult 上，不在 Case 上**）
+  - 验证 CaseTextbookTopicTag 挂载
+  - 验证 CaseKnowledgeTag 挂载（系统层 KnowledgeNode 验证）
+  - 验证 Artifact 写入（question_image + audio_note）
+  - 验证 `textbookTopicEdited` 标记（R1b，依赖 TD-006）
+  - **验证 StudentNodeState 无新增记录**（v1 不点亮节点）
+    - 合法值为 `stable/uncertain/gap/untested`，无 `mastered`
+    - 断言方式：记录测试前 StudentNodeState 数量，测试后数量不变
 
-- [ ] 任务 2.4：编写黄金闭环最小路径 spec——`e2e/ci/nana-golden-path.spec.ts`
+  ```typescript
+  // 修正后的数据库验证
+  async function verifyCaseCreated(caseId: string) {
+    const case_ = await prisma.case.findUnique({ where: { id: caseId } });
+    expect(case_).toBeTruthy();
+    expect(case_!.studentId).toBeTruthy();
+    // Case 没有 processingStatus 字段——它在 CaseAiResult 上
+  }
+
+  async function verifyAiResult(caseId: string, expected: MockResult) {
+    const aiResult = await prisma.caseAiResult.findUnique({ where: { caseId } });
+    expect(aiResult).toBeTruthy();
+    expect(aiResult!.processingStatus).toBe('success'); // ← 在 CaseAiResult 上
+    expect(aiResult!.questionSummary).toBe(expected.questionSummary);
+    // possibleMistakeReason 允许为空
+    if (expected.possibleMistakeReason) {
+      expect(aiResult!.possibleMistakeReason).toBe(expected.possibleMistakeReason);
+    } else {
+      expect(aiResult!.possibleMistakeReason).toBeNull();
+    }
+  }
+
+  async function verifyNoStudentNodeStateChange(studentId: string, beforeCount: number) {
+    // v1 不点亮节点 —— StudentNodeState 不应有新增
+    // 合法值: stable|uncertain|gap|untested，无 mastered
+    const afterCount = await prisma.studentNodeState.count({
+      where: { studentId },
+    });
+    expect(afterCount).toBe(beforeCount);
+  }
+
+  async function verifyKnowledgeNodeTag(caseId: string, source: string, nodeId: string) {
+    // 系统验证层：KnowledgeNode 标签存在
+    const tag = await prisma.caseKnowledgeTag.findFirst({
+      where: { caseId, source, nodeId },
+    });
+    expect(tag).toBeTruthy();
+  }
+
+  async function verifyTextbookTopicTag(caseId: string, source: string, topicId: string) {
+    // 孩子操作层：TextbookTopic 标签存在
+    const tag = await prisma.caseTextbookTopicTag.findFirst({
+      where: { caseId, source, textbookTopicId: topicId },
+    });
+    expect(tag).toBeTruthy();
+  }
+  ```
+
+- [ ] 任务 2.4：编写黄金闭环最小路径 spec（R1a）——`e2e/ci/nana-golden-path.spec.ts`
   - 登录测试账号（注册临时用户，复用现有模式）
   - 上传真实手拍题图 `clear-printed.jpg`
-  - 通过虚拟麦克风完成录音（不能跳过）
+  - 通过虚拟麦克风完成录音（Chromium fake-media，不能跳过）
   - 点击"收好这道题"
-  - **性能断言**：2 秒内看到"已收好"
-  - **性能断言**：AI 整理状态 ≤500ms 出现
-  - 等待假豆包返回（mock，<1s），验证转写、AI 摘要、课本分类、轻反馈、可能方向、下一步建议
-  - 手动调整一个课本章节分类
-  - 进入题目汇总，确认题目归入正确章节
-  - 进入图谱，确认只有"收过题"琥珀证据，不变成绿色掌握
-  - **DB 验证**：Case + CaseAiResult + Tags + Artifact 全部正确落库
+  - **硬门禁断言**：2 秒内看到"已收好"（保存超时 = 阻塞）
+  - **硬门禁断言**：AI 整理状态出现（无反馈 = 阻塞）
+  - **性能采集（不阻塞）**：记录按钮反馈耗时、整理状态出现耗时
+  - 等待假 Provider 返回（<100ms），验证 AI 结果卡：
+    - transcript 非空（有录音时）
+    - questionSummary 非空
+    - textbookTopicId 在种子范围（孩子操作层验证）
+    - knowledgeNodeCandidates 在种子范围（系统验证层验证）
+    - initialFeedback 非空
+    - **possibleMistakeReason 可空**（空时隐藏区块，不报错）
+    - nextActionSuggestion 非空
+  - 进入题目汇总，确认题目归入正确章节（自动分类，非手动改）
+  - 进入图谱，确认有琥珀色"收过题"证据
+  - **DB 验证（双层）**：
+    - Case + CaseAiResult + CaseTextbookTopicTag + CaseKnowledgeTag + Artifact 全部正确落库
+    - CaseAiResult.processingStatus = 'success'
+    - StudentNodeState 无新增记录（v1 不点亮）
   - **证据采集**：每步截图 + 性能指标 + 控制台错误 + 网络耗时
 
-- [ ] 任务 2.5：编写三题批量路径 spec——`e2e/ci/nana-batch-path.spec.ts`（夜间/发布前触发）
+- [ ] 任务 2.5：编写三题批量路径 spec（R1a，不含手动改分类/打印）——`e2e/ci/nana-batch-path.spec.ts`
   - 三张 fixture 依次走黄金路径：
     - `clear-printed.jpg`：正常成功路径
     - `with-handwriting.jpg` + 录音：验证手写干扰和转写
     - `tilted-partial.jpg`：验证低置信、未分类及诚实降级
-  - 验证三题在汇总页正确分组
+  - 验证三题在汇总页正确分组（自动分类）
   - 验证图谱中有三个琥珀证据点
-  - 打开打印预览，确认按课本章节分组（依赖 `/nana/print-preview` 实现）
-  - 生成打印 PDF，检查没有裁切、重叠、孤立章节标题和技术字段
+  - **R1b 补充**：手动改分类验证（依赖 TD-006）
+  - **R1c 补充**：打印预览验证（依赖 `/nana/print-preview`）
 
 - [ ] 任务 2.6：升级现有 `nana-main-flow.spec.ts`——去掉 `?openCases=1` 绕过
   - 改为通过真实 UI 入口点击进入"最近拍过的题"浮层
   - 保留作为快速冒烟测试（不跑完整黄金路径）
 
-- [ ] 任务 2.7：CI 工作流集成
-  - `ci.yml` 的 `e2e-test` job 增加 mock provider 环境变量
-  - 黄金路径每次 push 跑（快速，mock AI <1s）
+- [ ] 任务 2.7：补充多章节 fixture 题图
+  - 现有 3 张全偏函数题，无法证明"按不同课本章节整理错题集"真的有用
+  - 至少补充：集合题、不等式题、三角函数题等不同章节的脱敏题图
+  - 每张需目视确认无隐私信息（复用 `scripts/prepare-e2e-fixtures.ts` 流程）
+  - 对应的假 Provider mock 响应也需要覆盖新章节的 topicId/nodeId
+
+- [ ] 任务 2.8：30 题数据规模场景 spec（R1d）——`e2e/ci/nana-scale-test.spec.ts`
+  - 通过数据库直接灌入 30 道 Case + CaseAiResult（不同章节分布）
+  - 打开题目汇总页，验证：
+    - 首屏可操作时间（采集，不阻塞）
+    - 按章节分组正确
+    - 滚动流畅性（无明显卡顿）
+    - 无横向溢出（硬门禁）
+  - 打开图谱，验证 30 个琥珀证据点渲染性能
+  - **目的**：当前毛刺和慢的问题，很可能在题量增加后才暴露
+
+- [ ] 任务 2.9：CI 工作流集成
+  - `ci.yml` 的 `e2e-test` job 增加假 Provider 启动步骤
+  - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
+  - 黄金路径每次 push 跑
   - 批量路径只在 nightly schedule 或 release tag 时跑
-  - 证据包作为 artifact 上传（保留 30 天）
+  - 证据包作为 artifact 上传（保留 14 天）
 
 ### 第三部分：真实 Provider Smoke
 
-> 目标：用专用测试账号 + 真实豆包 API，验证识图/转写/分类/反馈的真实质量。初期告警不门禁，稳定后升级为门禁。
+> 目标：用固定专用测试账号 + 真实豆包 API，验证识图/转写/分类/反馈的真实质量。
+> **关键**：Provider Smoke 在 GitHub runner 上运行，目标是已部署的生产 URL。生产服务使用服务器自己的 .env（含 VOLCENGINE_API_KEY 等），Smoke workflow 只需 URL + 测试账号凭证。
 
 - [ ] 任务 3.1：创建 `e2e/smoke/nana-provider-smoke.spec.ts`——真实 Provider 写操作 Smoke
-  - 复用 smoke 凭证（`E2E_SMOKE_EMAIL` / `E2E_SMOKE_PASSWORD`）
+  - 复用固定专用测试账号（`E2E_SMOKE_EMAIL` / `E2E_SMOKE_PASSWORD`）
   - 上传 `clear-printed.jpg`（单题，不跑批量）
-  - 真实录音（虚拟麦克风喂入 `20260707_194923.m4a`）
+  - 真实录音（Chromium fake-media 喂入脱敏 WAV）
   - 等待真实豆包返回（≤60s 正常，45-60s 警告，>60s 失败）
-  - 验证 7 字段全部有值且非空（不验证具体内容，只验证结构完整性）
-  - 验证 topicId 在 16 个种子章节范围内
-  - 验证 nodeId 在 48 个系统节点范围内
+  - 验证 7 字段结构完整性（**possibleMistakeReason 允许为空**）：
+    - transcript 非空（有录音时）
+    - questionSummary 非空
+    - textbookTopicId 在 16 个种子章节范围内（或为 null 表示未分类）
+    - knowledgeNodeCandidates 在 48 个系统节点范围内
+    - initialFeedback 非空
+    - possibleMistakeReason 可空
+    - nextActionSuggestion 非空
   - 验证 audioStatus = success（真实转写成功）
-  - **性能采集**：记录真实 AI 耗时，与基线对比
+  - **性能采集**：记录真实 AI 耗时
   - 证据包上传为 artifact，供 AI 评审
+  - **数据清理**：afterAll 记录本次创建的 Case ID，通过经过归属校验的 DELETE API 精确删除
+  - **过渡策略**：DELETE API 审计通过前，Smoke 保持手动触发（`workflow_dispatch`），不开启 nightly 写测试
 
 - [ ] 任务 3.2：创建 `.github/workflows/provider-smoke.yml`——Provider Smoke 工作流
-  - 触发：`workflow_dispatch`（手动）+ nightly schedule（每天凌晨 3 点）
-  - 需要 secrets：`E2E_SMOKE_EMAIL`、`E2E_SMOKE_PASSWORD`、`E2E_BASE_URL`、`VOLCENGINE_API_KEY`、`VOLCENGINE_BASE_URL`、`VOLCENGINE_LITE_ENDPOINT`
+  - 触发：`workflow_dispatch`（手动）
+  - **不设 nightly schedule**（DELETE API 审计通过后再加）
+  - 稳定后改为每周 2-3 次手动触发或 schedule
+  - 需要 secrets：`E2E_SMOKE_EMAIL`、`E2E_SMOKE_PASSWORD`、`E2E_BASE_URL`
+  - **不需要** `VOLCENGINE_API_KEY` 等——生产服务用自己的 .env
   - 生成证据包 artifact
   - 失败时发 issue（不阻塞 main 合并，初期只告警）
 
-- [ ] 任务 3.3：Smoke 后自动清理测试数据
-  - 调用 `DELETE /api/nana/cases/:id` 删除 Smoke 创建的 Case
-  - 或注册临时用户 + 测试后删除用户级联数据
-  - 确保生产数据库不被测试数据污染
+  ```yaml
+  # .github/workflows/provider-smoke.yml
+  name: Provider Smoke Test
+  on:
+    workflow_dispatch:
+      inputs:
+        reason:
+          description: '触发原因'
+          required: false
+          default: 'manual'
+    # schedule:
+    #   - cron: '0 19 * * 1,4'  # TODO: DELETE API 审计通过后启用，每周二周五
 
-### 第四部分：AI 孩子视角评审
+  jobs:
+    provider-smoke:
+      runs-on: ubuntu-latest
+      timeout-minutes: 15
+      env:
+        E2E_MODE: smoke
+        E2E_SMOKE_EMAIL: ${{ secrets.E2E_SMOKE_EMAIL }}
+        E2E_SMOKE_PASSWORD: ${{ secrets.E2E_SMOKE_PASSWORD }}
+        E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-node@v4
+          with:
+            node-version: '22'
+            cache: 'npm'
+        - run: npm ci
+        - run: npx playwright install --with-deps chromium
+        - name: Run Provider Smoke
+          run: npx playwright test --project=smoke e2e/smoke/nana-provider-smoke.spec.ts
+        - name: Upload Evidence Pack
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: provider-evidence-pack
+            path: test-results/
+            retention-days: 14
+        - name: Create Issue on Failure
+          if: failure()
+          uses: actions/create-issue@v1
+          with:
+            title: 'Provider Smoke 失败'
+            body: '请查看 evidence-pack artifact 中的截图和指标'
+  ```
 
-> 目标：AI 固定扮演"数学基础较弱、第一次使用的高中生"，看截图序列 + 指标，按统一量表输出 JSON。AI 只负责语义和体验判断，接口状态/时间/数据库/布局溢出由程序硬断言。
+- [ ] 任务 3.3：DELETE API 计划（独立计划，不在此实现）
+  - 新增 `DELETE /api/nana/cases/:id`，带归属校验 + 级联删除
+  - 需单独计划、审计和用户确认
+  - 上线前：Provider Smoke 保持手动触发，不开启 nightly 写测试
+  - 上线后：Smoke afterAll 记录 Case ID → 精确删除 → 启用 schedule
 
-- [ ] 任务 4.1：创建 `e2e/helpers/ai-review-prompt.ts`——AI 评审提示词和量表
+### 第四部分：AI 体验评审
+
+> 目标：AI 按固定量表找问题，必须引用具体截图、步骤和指标。初期由人工抽查校准。始终是建议，不成为发布硬门禁。
+
+- [ ] 任务 4.1：创建 `e2e/helpers/ai-review-adapter.ts`——AI 评审 adapter（不绑定具体模型）
+  - 定义评审输入接口：`{ screenshots: string[], metrics: PerfMetrics, consoleErrors: string[], steps: StepInfo[] }`
+  - 定义评审输出接口：`{ scores: ScoreItem[], totalScore: number, summary: string }`
+  - 定义 adapter 接口：`review(input: ReviewInput): Promise<ReviewOutput>`
+  - **R1/R5 初期不绑定具体模型**：先定义 adapter 和人工审阅证据包的流程
+  - 后续可实现 DeepSeek adapter / Claude adapter 等
+
+- [ ] 任务 4.2：创建 `e2e/helpers/ai-review-prompt.ts`——AI 评审提示词和量表
   - 角色设定："你是一个数学基础较弱、第一次使用这个 App 的高中生"
   - 统一量表（10 项，每项 0-2 分）：
     1. 是否知道下一步点哪里
@@ -202,21 +440,28 @@
     8. 汇总页是否方便快速扫题
     9. 打印结果是否真的适合周末复习
     10. 整体第一印象是否愿意继续用
-  - 输出格式：标准 JSON `{ item, score, reason }`
+  - **强制要求**：每项评分必须引用具体截图编号、步骤名称和指标数据
+  - 输出格式：标准 JSON `{ item, score, reason, screenshotRef, stepRef, metricRef }`
+  - **隐私保护**：只允许使用专用测试账号和脱敏题图的截图，避免把真实孩子数据发给第三方模型
 
-- [ ] 任务 4.2：创建 `scripts/ai-review-runner.ts`——AI 评审执行脚本
+- [ ] 任务 4.3：创建 `scripts/ai-review-runner.ts`——AI 评审执行脚本
   - 读取证据包 JSON（截图路径 + 性能指标 + 控制台错误）
-  - 将截图序列 + 量表 prompt 发给 AI 模型
-  - **使用不同于豆包 Lite 的模型**做评审（建议 Claude 或 DeepSeek），避免自己给自己打分
+  - 将截图序列 + 量表 prompt 发给 AI 模型（通过 adapter 接口）
+  - **使用不同于豆包 Lite 的模型**做评审，避免自己给自己打分
   - 输出评审报告到 `test-results/ai-review/report.json`
   - 聚合分数 + 高亮低分项 + 附原始截图引用
 
-- [ ] 任务 4.3：CI 集成 AI 评审（可选，初期手动触发）
+- [ ] 任务 4.4：人工校准流程
+  - 初期由人工抽查 10 次 AI 评审结果
+  - 对比 AI 评分与人工评分的一致性
+  - 校准 prompt 直到一致性达标（建议 ≥80% 项分差 ≤1）
+  - 校准通过后 AI 评分可作为参考，但**始终是建议，不成为发布硬门禁**
+
+- [ ] 任务 4.5：CI 集成 AI 评审（校准通过后）
   - 在 Provider Smoke 工作流后增加 `ai-review` job
   - 依赖 provider-smoke 的证据包 artifact
-  - 需要 AI 评审模型的 API Key（如 `DEEPSEEK_API_KEY`）
   - 评审报告上传为 artifact
-  - 初期不阻塞发布，只生成报告供人工审阅
+  - 不阻塞发布
 
 ### 第五部分：真机抽检清单
 
@@ -241,48 +486,70 @@
 ### 4.1 功能闭环验收
 
 - [ ] CI 每次 push 自动跑黄金路径，退出码 0
-- [ ] 黄金路径覆盖：登录→拍题→录音→保存→AI整理→手动改分类→汇总→图谱→打印预览
-- [ ] 每步有截图、视频、trace、网络耗时、控制台错误记录
-- [ ] 数据库验证：Case + CaseAiResult + Tags + Artifact 全部正确落库
+- [ ] 黄金路径覆盖：登录→拍题→录音→保存→AI整理→汇总→图谱
+- [ ] **假 Provider 不绕过后端**：真实 /process 路由执行，真实 case-analyzer.ts 调用假 Provider URL，真实 Prisma 事务落库
+- [ ] 每步有截图、网络耗时、控制台错误记录
+- [ ] 数据库验证（双层）：
+  - Case + CaseAiResult + CaseTextbookTopicTag + CaseKnowledgeTag + Artifact 全部正确落库
+  - CaseAiResult.processingStatus = 'success'（在 CaseAiResult 上，不在 Case 上）
+  - StudentNodeState 无新增记录（合法值 stable/uncertain/gap/untested，无 mastered）
 - [ ] 去掉 `?openCases=1` 绕过，通过真实 UI 入口进入
-- [ ] 虚拟麦克风真实触发 `getUserMedia` + `MediaRecorder`，不跳过录音组件
+- [ ] 虚拟麦克风使用 Chromium fake-media 参数，真实录制成 webm，经过 ffmpeg 和 /process
 - [ ] 三题批量路径在 nightly/release 时跑通
+- [ ] 30 题数据规模场景验证汇总页和图谱性能
 
-### 4.2 性能门槛验收（可调基线）
+### 4.2 性能采集与门禁策略
 
-| 指标 | 基线 | 警告 | 失败 |
-|------|------|------|------|
-| 按钮点击到 pressed/loading 反馈 | ≤100ms | 100-200ms | >200ms |
-| 上传后题图预览出现 | ≤1.5s | 1.5-3s | >3s |
-| 保存后"已收好"出现 | ≤2s | 2-4s | >4s |
-| AI 整理状态出现 | ≤500ms | 500-1000ms | >1000ms |
-| 真 AI 完成（mock 路径） | ≤1s | — | >2s |
-| 真 AI 完成（真实 Provider） | ≤45s | 45-60s | >60s |
-| 题目汇总首屏可操作（模拟 4G） | ≤2.5s | 2.5-4s | >4s |
-| 全流程控制台未处理错误 | 0 | — | ≥1 |
-| 全流程失败网络请求 | 0 | — | ≥1 |
-| 全流程横向溢出 | 0 | — | ≥1 |
-| 全流程按钮文字重叠 | 0 | — | ≥1 |
+#### R1 阶段：只采集，不因绝对耗时阻塞
 
-- [ ] 性能基线常量定义在 `performance-baseline.ts`，可在 `.env.e2e` 中覆盖
-- [ ] CI 中性能超基线 → 测试失败（阻塞发布）
-- [ ] 性能数据写入证据包 JSON，供 AI 评审参考
+| 指标 | 采集值 | 硬门禁？ |
+|------|:------:|:--------:|
+| 按钮点击到 pressed/loading 反馈 | 记录 | 是（无反馈=阻塞） |
+| 上传后题图预览出现 | 记录 | 否（仅采集） |
+| 保存后"已收好"出现 | 记录 | 是（>10s=阻塞） |
+| AI 整理状态出现 | 记录 | 是（无反馈=阻塞） |
+| 假 Provider 完成 | 记录 | 否（<2s 期望） |
+| 题目汇总首屏可操作 | 记录 | 否（仅采集） |
+| 全流程控制台未处理错误 | 0 | 是（≥1=阻塞） |
+| 全流程失败网络请求 | 0 | 是（≥1=阻塞） |
+| 全流程横向溢出 | 0 | 是（≥1=阻塞） |
+
+#### 积累 20 次后的门禁升级策略
+
+1. 计算 20 次有效运行的中位数、P90 和波动系数
+2. 设定滚动基线 = 最近 20 次的中位数
+3. **告警**（不阻塞）：单次耗时 > 滚动基线 × 1.3
+4. **硬门禁**（阻塞）：仅保留功能性断言——无点击反馈、保存超时、关键 API 失败、横向溢出、未处理异常
+5. 真实 Provider 60 秒上限继续保留，但属于 Smoke，不属于普通 CI 性能门禁
+
+#### 性能数据存储
+
+- [ ] 性能采集数据写入证据包 JSON
+- [ ] 每次运行的性能数据追加到 `test-results/perf-history.jsonl`（用于计算滚动基线）
+- [ ] 积累 20 次后自动计算基线并更新 `e2e/helpers/performance-baseline.ts`
 
 ### 4.3 真实 Provider Smoke 验收
 
 - [ ] 手动触发 Provider Smoke，真实豆包返回 7 字段
-- [ ] topicId 在种子范围内、nodeId 在种子范围内
+- [ ] topicId 在种子范围内（或 null 表示未分类）
+- [ ] nodeId 在种子范围内
 - [ ] audioStatus = success（真实转写）
+- [ ] possibleMistakeReason 可空（不要求全部非空）
 - [ ] 真实 AI 耗时记录在证据包中
 - [ ] 失败时自动创建 GitHub Issue
 - [ ] 初期不阻塞 main 合并
+- [ ] **DELETE API 上线前**：Smoke 保持手动触发，不开启 nightly 写测试
+- [ ] **DELETE API 上线后**：afterAll 精确删除本次 Case，启用 schedule
 
 ### 4.4 AI 评审验收
 
 - [ ] 评审报告 JSON 包含 10 项量表评分 + 原因
-- [ ] 评审使用不同于豆包 Lite 的模型
+- [ ] **每项评分必须引用具体截图编号、步骤名称和指标数据**
+- [ ] 评审使用不同于豆包 Lite 的模型（通过 adapter 接口）
 - [ ] 评审报告引用截图路径（可追溯）
-- [ ] 初期不阻塞发布
+- [ ] 只使用专用测试账号和脱敏题图的截图
+- [ ] 人工校准 10 次后一致性达标（≥80% 项分差 ≤1）
+- [ ] **始终是建议，不成为发布硬门禁**
 
 ### 4.5 真机抽检验收
 
@@ -302,20 +569,22 @@
 
 | 风险 | 影响 | 缓解 |
 |------|------|------|
-| TD-006 未解决（TextbookTopic 写入口径不统一） | 手动改分类测试、汇总页分组测试、打印页分组测试无法正确验证 | 第一轮不做这些测试；先做现有路径 + 性能采集；TD-006 解决后补上 |
-| `/nana/print-preview` 未实现 | 打印预览验证无法做 | 第一轮不做打印测试；打印页实现后补上 |
-| 假设"测试 TextbookTopic 而非 KnowledgeNode"不成立 | 手动挂载和打印测试的数据契约全部重写 | 在计划中明确标注假设；用户确认后再进入执行 |
+| TD-006 未解决 | 手动改分类测试、汇总页分组测试无法正确验证 | R1a 不做这些测试；R1b 等 TD-006 解决后补上 |
+| `/nana/print-preview` 未实现 | 打印预览验证无法做 | R1a 不做打印测试；R1c 等打印页实现后补上 |
+| DELETE API 未实现 | Provider Smoke 无法自动清理 | 过渡策略：Smoke 保持手动触发，不开启 nightly 写测试；DELETE API 上线后启用 |
 
 ### 5.2 技术风险
 
 | 风险 | 影响 | 缓解 |
 |------|------|------|
-| Playwright 虚拟麦克风在 CI（headless）中不工作 | 录音测试无法自动化 | 用 `page.addInitScript` 注入 fake `getUserMedia` + fake `MediaRecorder`，不依赖真实音频设备 |
-| 假豆包 mock 与真实 API 响应结构不一致 | CI 闭环通过但真实 Provider 失败 | mock 结构严格对齐 `CaseAnalyzerResult` 接口；Provider Smoke 验证真实结构 |
-| 性能基线在不同 CI runner 上波动大 | 性能断言不稳定 | 基线设为可调（`.env.e2e` 覆盖）；CI runner 固定 `ubuntu-latest`；先跑 10 次取 P90 |
-| 截图/视频/trace 占用大量 CI 存储空间 | CI 超存储限额 | artifact 保留 30 天；trace 只在失败时保留（本地）/CI 中用 `'on'` 但压缩 |
-| AI 评审模型输出不稳定 | 评审结果不可复现 | 固定 temperature=0；prompt 中强制 JSON 输出；解析失败时标"评审失败"不阻塞 |
-| 真实 Provider Smoke 污染生产数据库 | 生产数据被测试 Case 污染 | 注册临时用户 + 测试后删除用户级联数据；或用专用测试账号 + 定期清理 |
+| Chromium fake-media 在 headless CI 中不工作 | 录音测试无法自动化 | 降级为 `page.addInitScript` 注入 fake `getUserMedia` 返回预制 Blob，但不替换 `MediaRecorder` |
+| 假 Provider 与真实豆包 API 响应格式不一致 | CI 闭环通过但真实 Provider 失败 | 假 Provider 严格模拟 OpenAI chat completion 格式；Provider Smoke 验证真实格式 |
+| GitHub runner 性能波动大 | 绝对耗时断言不稳定 | R1 只采集不阻塞；积累 20 次后用滚动基线 +30% 偏差告警；硬门禁仅保留功能性断言 |
+| 截图/视频/trace 占用大量 CI 存储空间 | CI 超存储限额 | 分层策略：截图始终保留（JPEG 压缩）；trace `retain-on-failure`；video 仅失败或 Provider/AI 评审时保留；artifact 14 天 + 50MB 上限 |
+| AI 评审模型输出不稳定 | 评审结果不可复现 | 固定 temperature=0；prompt 中强制 JSON 输出 + 引用截图；解析失败时标"评审失败"不阻塞；人工校准 10 次 |
+| 真实 Provider Smoke 污染生产数据库 | 生产数据被测试 Case 污染 | 固定专用测试账号 + 记录 Case ID + afterAll 精确删除；DELETE API 审计通过前不启用 nightly 写测试 |
+| 现有 fixture 全偏函数题 | 无法验证多章节分组 | 补充集合、不等式、三角函数等不同章节脱敏题图 |
+| 只测 1-3 题无法暴露性能问题 | 题量增加后才暴露的毛刺被遗漏 | 新增 30 题数据规模场景 |
 
 ### 5.3 上游文件冲突风险
 
@@ -326,19 +595,28 @@
 | `e2e/ci/nana-main-flow.spec.ts` | 修改（已有文件） | 低——去掉 `?openCases=1` 绕过 |
 | 新增 `e2e/helpers/*` | 新增 | 无冲突 |
 | 新增 `e2e/ci/nana-golden-path.spec.ts` | 新增 | 无冲突 |
+| 新增 `e2e/ci/nana-batch-path.spec.ts` | 新增 | 无冲突 |
+| 新增 `e2e/ci/nana-scale-test.spec.ts` | 新增 | 无冲突 |
 | 新增 `e2e/smoke/nana-provider-smoke.spec.ts` | 新增 | 无冲突 |
 | 新增 `.github/workflows/provider-smoke.yml` | 新增 | 无冲突 |
 | 新增 `scripts/ai-review-runner.ts` | 新增 | 无冲突 |
+| 新增 `scripts/generate-checklist.ts` | 新增 | 无冲突 |
 | 新增 `doc/checklist/real-device-checklist.md` | 新增 | 无冲突 |
+| 新增 `tests/fixtures/nana/audio/*.wav` | 新增 | 无冲突 |
+| 新增 `tests/fixtures/nana/cases/*.jpg` | 新增 | 无冲突 |
 
 ### 5.4 注意事项
 
 1. **不写 20 条散乱 E2E**：所有测试组织在 5 个 spec 文件中，每个 spec 对应一个层级
-2. **程序硬断言 vs AI 语义判断分离**：接口状态、时间、数据库结果、布局溢出由程序硬断言；AI 只做语义和体验判断
-3. **AI 评审不能自己给自己打分**：使用不同于豆包 Lite 的模型（建议 DeepSeek 或 Claude）
-4. **证据包是核心产出**：AI 不需要重新操作页面，只需审阅一次完整"体验证据包"
-5. **虚拟麦克风不能跳过录音组件**：必须真实触发 `getUserMedia` 和 `MediaRecorder`，走完四态
-6. **三张 fixture 的三种路径要区分**：正常成功、手写干扰+转写、低置信+诚实降级
+2. **程序硬断言 vs AI 语义判断分离**：接口状态、数据库结果、布局溢出由程序硬断言；AI 只做语义和体验判断
+3. **AI 评审不能自己给自己打分**：使用不同于豆包 Lite 的模型（通过 adapter 接口）
+4. **AI 评审始终是建议**：不成为发布硬门禁
+5. **证据包是核心产出**：AI 不需要重新操作页面，只需审阅一次完整"体验证据包"
+6. **虚拟麦克风不跳过录音组件**：使用 Chromium fake-media 参数 + 真实 WAV，让浏览器真实录制成 webm，经过完整音频链路
+7. **假 Provider 不绕过后端**：`VOLCENGINE_BASE_URL` 指向本地假服务器，真实 /process 代码完整执行
+8. **双层分类契约**：孩子侧 TextbookTopic + 系统侧 KnowledgeNode，两层都测
+9. **性能门禁分阶段**：R1 只采集不阻塞；积累 20 次后滚动基线 +30% 告警；硬门禁仅功能性断言
+10. **生产 Smoke 数据治理**：固定专用测试账号 + 精确删除；DELETE API 审计通过前不启用 nightly 写测试
 
 ---
 
@@ -346,165 +624,190 @@
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `e2e/helpers/evidence-collector.ts` | 新增 | 统一证据采集工具类（截图/视频/trace/网络/控制台/性能） |
-| `e2e/helpers/performance-baseline.ts` | 新增 | 性能门槛常量 + 断言工具函数 |
-| `e2e/helpers/mock-provider.ts` | 新增 | 假豆包响应拦截器（route intercept） |
-| `e2e/helpers/virtual-microphone.ts` | 新增 | 虚拟麦克风注入（fake getUserMedia + MediaRecorder） |
-| `e2e/helpers/db-verifier.ts` | 新增 | 数据库验证工具（Prisma client 直连 e2e.db） |
+| `e2e/helpers/evidence-collector.ts` | 新增 | 统一证据采集工具类（截图/网络/控制台/性能） |
+| `e2e/helpers/performance-collector.ts` | 新增 | 性能采集工具（R1 只采集不阻塞 + 硬门禁功能性断言） |
+| `e2e/helpers/fake-provider-server.ts` | 新增 | 本地假豆包 Provider 服务器（OpenAI 兼容接口） |
+| `e2e/helpers/virtual-microphone.ts` | 新增 | 虚拟麦克风配置（Chromium fake-media 参数 + WAV 文件） |
+| `e2e/helpers/db-verifier.ts` | 新增 | 数据库验证工具（Prisma client 直连 e2e.db，双层验证） |
 | `e2e/helpers/report-generator.ts` | 新增 | AI 证据包生成器（聚合截图+指标+日志为 JSON） |
+| `e2e/helpers/ai-review-adapter.ts` | 新增 | AI 评审 adapter 接口（不绑定具体模型） |
 | `e2e/helpers/ai-review-prompt.ts` | 新增 | AI 评审提示词 + 统一量表定义 |
-| `e2e/ci/nana-golden-path.spec.ts` | 新增 | 黄金闭环最小路径（单题，mock AI） |
-| `e2e/ci/nana-batch-path.spec.ts` | 新增 | 三题批量路径（nightly/release 触发） |
+| `e2e/ci/nana-golden-path.spec.ts` | 新增 | 黄金闭环最小路径（单题，假 Provider，R1a） |
+| `e2e/ci/nana-batch-path.spec.ts` | 新增 | 三题批量路径（nightly/release 触发，R1a + R1b + R1c） |
+| `e2e/ci/nana-scale-test.spec.ts` | 新增 | 30 题数据规模场景（R1d） |
 | `e2e/ci/nana-main-flow.spec.ts` | 修改 | 去掉 `?openCases=1` 绕过，改用真实入口点击 |
 | `e2e/smoke/nana-provider-smoke.spec.ts` | 新增 | 真实 Provider 写操作 Smoke |
-| `playwright.config.ts` | 修改 | 全局开启视频/trace/json reporter + 性能基线 |
-| `.github/workflows/ci.yml` | 修改 | e2e-test job 增加 mock 环境变量 + 证据包上传 |
-| `.github/workflows/provider-smoke.yml` | 新增 | Provider Smoke 工作流（nightly + manual） |
+| `playwright.config.ts` | 修改 | 分层证据采集策略 + json reporter + Chromium fake-media flags |
+| `.github/workflows/ci.yml` | 修改 | e2e-test job 增加假 Provider 启动 + 环境变量 + 证据包上传 |
+| `.github/workflows/provider-smoke.yml` | 新增 | Provider Smoke 工作流（手动触发，DELETE API 审计后加 schedule） |
 | `scripts/ai-review-runner.ts` | 新增 | AI 评审执行脚本（读证据包 → 发模型 → 输出报告） |
 | `scripts/generate-checklist.ts` | 新增 | 真机抽检清单自动生成脚本 |
 | `doc/checklist/real-device-checklist.md` | 新增 | 真机抽检清单（4 项检查） |
-| `.env.e2e.example` | 新增 | E2E 环境变量模板（性能基线覆盖 + smoke 凭证占位） |
+| `tests/fixtures/nana/audio/math-voice-sample.wav` | 新增 | 脱敏数学口述 WAV 文件（虚拟麦克风用） |
+| `tests/fixtures/nana/cases/set-theory.jpg` | 新增 | 集合题脱敏题图（多章节覆盖） |
+| `tests/fixtures/nana/cases/inequality.jpg` | 新增 | 不等式题脱敏题图（多章节覆盖） |
+| `tests/fixtures/nana/cases/trigonometry.jpg` | 新增 | 三角函数题脱敏题图（多章节覆盖） |
+| `.env.e2e.example` | 新增 | E2E 环境变量模板（假 Provider 配置 + smoke 凭证占位） |
 
 ---
 
 ## 7. 技术附录
 
-### 7.1 黄金闭环路径详细步骤
+### 7.1 黄金闭环路径详细步骤（R1a 版）
 
 ```
 1. 注册临时用户 → 登录 → /nana
 2. 点"拍一道题" → /nana/capture
 3. 上传 clear-printed.jpg（setInputFiles）
-4. 切到录音 tab → 点"说说看" → 虚拟麦克风触发 → 3 秒后点"我听完了"
+4. 切到录音 tab → 点"说说看" → Chromium fake-media 触发 → 3 秒后点"我听完了"
+   └── 真实 MediaRecorder 录制成 webm → 经过 ffmpeg 转码 → 喂给 /process
 5. 点"收好这道题"
-   ├── 性能断言：≤2s 看到"已收好"
-   ├── 性能断言：≤500ms 看到"正在整理"
-   └── mock /process 返回 <1s
+   ├── 硬门禁：≤10s 看到"已收好"（保存超时=阻塞）
+   ├── 硬门禁：AI 整理状态出现（无反馈=阻塞）
+   ├── 性能采集（不阻塞）：记录按钮反馈耗时、整理状态出现耗时
+   └── 假 Provider 返回 <100ms → 真实 /process 代码完整执行 → Prisma 事务落库
 6. 验证 AI 结果卡：
-   ├── transcript 非空
+   ├── transcript 非空（有录音时）
    ├── questionSummary 非空
-   ├── textbookTopicId 在种子范围
+   ├── textbookTopicId 在种子范围（孩子操作层验证）
+   ├── knowledgeNodeCandidates 在种子范围（系统验证层验证）
    ├── initialFeedback 非空
-   ├── possibleMistakeReason 可空（空时隐藏区块）
+   ├── possibleMistakeReason 可空（空时隐藏区块，不报错）
    └── nextActionSuggestion 非空
-7. 点"改分类" → 选择另一个课本章节 → 确认
-   ├── DB 验证：CaseTextbookTopicTag source=manual
-   └── DB 验证：CaseAiResult.textbookTopicEdited=true（依赖 TD-006）
-8. 点"去题目汇总" → /nana/knowledge-map（默认 tab=题目汇总）
-   ├── 验证题目在正确章节分组下
-   ├── 验证"未分类"分组不存在（已手动分类）
-   └── 性能断言：首屏可操作 ≤2.5s
-9. 切到"图谱" tab
+7. 点"去题目汇总" → /nana/knowledge-map（默认 tab=题目汇总）
+   ├── 验证题目在正确章节分组下（自动分类，非手动改）
+   └── 性能采集：首屏可操作时间
+8. 切到"图谱" tab
    ├── 验证有琥珀色"收过题"证据
    └── 验证无绿色"掌握"节点（v1 不点亮）
-10. 点"打印" → /nana/print-preview（依赖新页面实现）
-    ├── 验证按课本章节分组
-    ├── 验证每题含小题图 + AI 摘要 + AI 想对你说 + 下一步
-    ├── 验证不打印技术字段（时间/置信度/source/转写）
-    └── 调用 window.print() → 保存 PDF → 检查无裁切/重叠
-11. 证据包输出：截图序列 + 性能指标 + 控制台错误 + 网络耗时 + DB 验证结果
+9. DB 验证（双层）：
+   ├── Case.id + Case.studentId + Case.createdAt
+   ├── CaseAiResult.processingStatus = 'success'（在 CaseAiResult 上）
+   ├── CaseAiResult.questionSummary / initialFeedback / nextActionSuggestion 非空
+   ├── CaseAiResult.possibleMistakeReason 可空
+   ├── CaseTextbookTopicTag source=vlm（孩子操作层）
+   ├── CaseKnowledgeTag source=vlm（系统验证层）
+   ├── Artifact: question_image + audio_note
+   └── StudentNodeState 无新增记录（beforeCount == afterCount）
+10. 证据包输出：截图序列 + 性能指标 + 控制台错误 + 网络耗时 + DB 验证结果
 ```
 
-### 7.2 假豆包 Mock 响应结构
+### 7.2 假 Provider 服务器方案
 
 ```typescript
-// e2e/helpers/mock-provider.ts
+// e2e/helpers/fake-provider-server.ts（伪代码）
 
-interface MockCaseAnalyzerResult {
-  transcript: string;
-  questionSummary: string;
-  textbookTopicCandidates: { topicId: string; confidence: number; reason: string }[];
-  knowledgeNodeCandidates: { nodeId: string; confidence: number; reason: string }[];
-  initialFeedback: string;
-  possibleMistakeReason: string;
-  nextActionSuggestion: string;
-  audioStatus: 'success' | 'skipped' | 'failed' | 'timeout';
-  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
-}
+import http from 'http';
 
-// 三种 fixture 的 mock 响应
-const MOCK_CLEAR_PRINTED: MockCaseAnalyzerResult = {
-  transcript: '这道题是判断函数单调性的',
-  questionSummary: '判断 f(x)=x²-2x 在 [0,3] 上的单调性',
-  textbookTopicCandidates: [
-    { topicId: 'TB-010', confidence: 0.85, reason: '函数单调性判断' },
-  ],
-  knowledgeNodeCandidates: [
-    { nodeId: 'M2a-13', confidence: 0.8, reason: '用定义判断单调性' },
-  ],
-  initialFeedback: '你很仔细，推导过程写得很完整',
-  possibleMistakeReason: '可能在符号变换时出了差错',
-  nextActionSuggestion: '回看 3.2 函数的基本性质，重点检查移项后的符号',
-  audioStatus: 'success',
-  usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+// 严格模拟 OpenAI chat completion 响应格式
+// case-analyzer.ts 调用 client.chat.completions.create()
+// 假 Provider 需要返回相同格式
+
+const MOCK_RESULTS: Record<string, object> = {
+  'clear-printed': {
+    transcript: '这道题是判断函数单调性的',
+    questionSummary: '判断 f(x)=x²-2x 在 [0,3] 上的单调性',
+    textbookTopicCandidates: [
+      { topicId: 'TB-010', confidence: 0.85, reason: '函数单调性判断' },
+    ],
+    knowledgeNodeCandidates: [
+      { nodeId: 'M2a-13', confidence: 0.8, reason: '用定义判断单调性' },
+    ],
+    initialFeedback: '你很仔细，推导过程写得很完整',
+    possibleMistakeReason: '可能在符号变换时出了差错',
+    nextActionSuggestion: '回看 3.2 函数的基本性质，重点检查移项后的符号',
+  },
+  'with-handwriting': {
+    transcript: '我先用导数算的，然后代入端点值比较',
+    questionSummary: '利用导数判断函数单调性',
+    textbookTopicCandidates: [
+      { topicId: 'TB-010', confidence: 0.75, reason: '导数与单调性' },
+    ],
+    knowledgeNodeCandidates: [
+      { nodeId: 'M2a-13', confidence: 0.7, reason: '导数应用' },
+    ],
+    initialFeedback: '思路很清晰，知道用导数来分析',
+    possibleMistakeReason: '可能在计算导数时漏了系数',
+    nextActionSuggestion: '回看 3.3 导数的运算，检查求导过程',
+  },
+  'tilted-partial': {
+    transcript: '',
+    questionSummary: '图片不太完整，能看到部分三角函数内容',
+    textbookTopicCandidates: [], // 低置信 → 空数组
+    knowledgeNodeCandidates: [], // 低置信 → 空数组
+    initialFeedback: '这道题拍得有点斜，不过没关系，先帮你收着',
+    possibleMistakeReason: '', // 空 → 隐藏区块
+    nextActionSuggestion: '下次拍照时尽量把题目拍完整，方便 AI 更好地帮你整理',
+  },
 };
 
-const MOCK_WITH_HANDWRITING: MockCaseAnalyzerResult = {
-  transcript: '我先用导数算的，然后代入端点值比较',
-  questionSummary: '利用导数判断函数单调性',
-  textbookTopicCandidates: [
-    { topicId: 'TB-010', confidence: 0.75, reason: '导数与单调性' },
-  ],
-  knowledgeNodeCandidates: [
-    { nodeId: 'M2a-13', confidence: 0.7, reason: '导数应用' },
-  ],
-  initialFeedback: '思路很清晰，知道用导数来分析',
-  possibleMistakeReason: '可能在计算导数时漏了系数',
-  nextActionSuggestion: '回看 3.3 导数的运算，检查求导过程',
-  audioStatus: 'success',
-  usage: { promptTokens: 120, completionTokens: 60, totalTokens: 180 },
-};
+// 关键：假 Provider 通过请求 body 中的图片内容或 header 判断返回哪个 mock
+// 方案：在 webServer.command 中通过环境变量 E2E_FIXTURE_NAME 传递当前 fixture 名
+// 或：假 Provider 解析请求 body 中的 image_url，与预存 fixture 哈希比对
 
-const MOCK_TILTED_PARTIAL: MockCaseAnalyzerResult = {
-  transcript: '',
-  questionSummary: '图片不太完整，能看到部分三角函数内容',
-  textbookTopicCandidates: [], // 低置信 → 空数组
-  knowledgeNodeCandidates: [], // 低置信 → 空数组
-  initialFeedback: '这道题拍得有点斜，不过没关系，先帮你收着',
-  possibleMistakeReason: '', // 空 → 隐藏区块
-  nextActionSuggestion: '下次拍照时尽量把题目拍完整，方便 AI 更好地帮你整理',
-  audioStatus: 'skipped',
-  usage: { promptTokens: 80, completionTokens: 30, totalTokens: 110 },
-};
-```
-
-### 7.3 虚拟麦克风注入方案
-
-```typescript
-// e2e/helpers/virtual-microphone.ts
-
-async function injectVirtualMicrophone(page: import('@playwright/test').Page) {
-  await page.addInitScript(() => {
-    // fake getUserMedia —— 返回静音音频流
-    const audioContext = new AudioContext();
-    const oscillator = audioContext.createOscillator();
-    const dest = audioContext.createMediaStreamDestination();
-    oscillator.connect(dest);
-    oscillator.start();
-
-    navigator.mediaDevices.getUserMedia = async (constraints) => {
-      if (constraints?.audio) {
-        return dest.stream;
-      }
-      throw new Error('Only audio supported in test');
-    };
-
-    // fake MediaRecorder —— 收集 chunk → 合成 Blob
-    const OriginalMediaRecorder = window.MediaRecorder;
-    class FakeMediaRecorder extends OriginalMediaRecorder {
-      // 继承真实 MediaRecorder，但确保 stream 来自 fake getUserMedia
-      // ondataavailable / onstop 行为不变
+export function startFakeProvider(port = 3999): http.Server {
+  return http.createServer((req, res) => {
+    if (req.url === '/chat/completions' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        const fixtureName = process.env.E2E_FIXTURE_NAME || 'clear-printed';
+        const mockResult = MOCK_RESULTS[fixtureName];
+        // 包裹在 OpenAI chat completion 响应格式中
+        const response = {
+          id: 'chatcmpl-fake-' + Date.now(),
+          object: 'chat.completion',
+          choices: [{
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: JSON.stringify(mockResult),
+            },
+            finish_reason: 'stop',
+          }],
+          usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(response));
+      });
+    } else {
+      res.writeHead(404);
+      res.end();
     }
-    // 不替换 MediaRecorder 本身，只确保 getUserMedia 返回有效 stream
-    // 真实 MediaRecorder 可以处理 fake stream
   });
 }
 ```
 
-> **注意**：此方案需要验证 Playwright headless Chromium 是否支持 `AudioContext` + `MediaRecorder`。
-> 如果不支持，降级为：注入完全 fake 的 `MediaRecorder` 类，直接在 `onstop` 中返回预制的 Blob。
+### 7.3 CI webServer 启动方案
 
-### 7.4 数据库验证查询
+```typescript
+// playwright.config.ts 中的 webServer 配置
+
+// CI 模式下：先启动假 Provider，再启动 Next.js
+// 假 Provider 作为独立进程在后台运行
+// Next.js 的 VOLCENGINE_BASE_URL 指向假 Provider
+
+webServer: {
+  command: process.env.CI
+    ? 'node e2e/helpers/fake-provider-server.js & npm run start'
+    : `npx next dev -p ${E2E_PORT}`,
+  url: E2E_HOST,
+  reuseExistingServer: !process.env.CI,
+  timeout: 120 * 1000,
+  env: {
+    VOLCENGINE_API_KEY: 'fake-key',
+    VOLCENGINE_BASE_URL: 'http://127.0.0.1:3999',
+    LITE_ENDPOINT_ID: 'fake-endpoint',
+    LITE_MODEL_NAME: 'fake-model',
+    NANA_AUDIO_TRANSCRIPT_ENABLED: 'true',
+    // DATABASE_URL 等其他变量从 ci.yml 注入
+  },
+}
+```
+
+> **注意**：`fake-provider-server.js` 需要预先编译（`tsc` 或 `esbuild`），或者用 `.mjs` 直接写 JavaScript。
+
+### 7.4 数据库验证查询（修正版）
 
 ```typescript
 // e2e/helpers/db-verifier.ts
@@ -515,22 +818,31 @@ const prisma = new PrismaClient({
   datasources: { db: { url: process.env.DATABASE_URL } },
 });
 
+// 修正：processingStatus 在 CaseAiResult 上，不在 Case 上
 async function verifyCaseCreated(caseId: string) {
   const case_ = await prisma.case.findUnique({ where: { id: caseId } });
   expect(case_).toBeTruthy();
   expect(case_!.studentId).toBeTruthy();
-  // processingStatus 应为 success（mock 立即返回）
-  expect(case_!.processingStatus).toBe('success');
+  // Case 只有 id, studentId, createdAt —— 没有 processingStatus
 }
 
-async function verifyAiResult(caseId: string, expectedResult: MockCaseAnalyzerResult) {
+async function verifyAiResult(caseId: string, expected: MockResult) {
   const aiResult = await prisma.caseAiResult.findUnique({ where: { caseId } });
   expect(aiResult).toBeTruthy();
-  expect(aiResult!.questionSummary).toBe(expectedResult.questionSummary);
-  expect(aiResult!.initialFeedback).toBe(expectedResult.initialFeedback);
-  // textbookTopicId 应等于最高置信候选
-  if (expectedResult.textbookTopicCandidates.length > 0) {
-    const topCandidate = expectedResult.textbookTopicCandidates[0];
+  // processingStatus 在 CaseAiResult 上
+  expect(aiResult!.processingStatus).toBe('success');
+  expect(aiResult!.questionSummary).toBe(expected.questionSummary);
+  expect(aiResult!.initialFeedback).toBe(expected.initialFeedback);
+  expect(aiResult!.nextActionSuggestion).toBe(expected.nextActionSuggestion);
+  // possibleMistakeReason 允许为空
+  if (expected.possibleMistakeReason) {
+    expect(aiResult!.possibleMistakeReason).toBe(expected.possibleMistakeReason);
+  } else {
+    expect(aiResult!.possibleMistakeReason).toBeNull();
+  }
+  // textbookTopicId 验证（孩子操作层）
+  if (expected.textbookTopicCandidates.length > 0) {
+    const topCandidate = expected.textbookTopicCandidates[0];
     if (topCandidate.confidence >= 0.5) {
       expect(aiResult!.textbookTopicId).toBe(topCandidate.topicId);
     } else {
@@ -539,6 +851,24 @@ async function verifyAiResult(caseId: string, expectedResult: MockCaseAnalyzerRe
   }
 }
 
+// 修正：StudentNodeState.status 合法值为 stable|uncertain|gap|untested
+// 没有 mastered，v1 不写 StudentNodeState
+async function verifyNoStudentNodeStateChange(studentId: string, beforeCount: number) {
+  const afterCount = await prisma.studentNodeState.count({
+    where: { studentId },
+  });
+  expect(afterCount).toBe(beforeCount);
+}
+
+// 系统验证层：KnowledgeNode 标签
+async function verifyKnowledgeNodeTag(caseId: string, source: string, nodeId: string) {
+  const tag = await prisma.caseKnowledgeTag.findFirst({
+    where: { caseId, source, nodeId },
+  });
+  expect(tag).toBeTruthy();
+}
+
+// 孩子操作层：TextbookTopic 标签
 async function verifyTextbookTopicTag(caseId: string, source: string, topicId: string) {
   const tag = await prisma.caseTextbookTopicTag.findFirst({
     where: { caseId, source, textbookTopicId: topicId },
@@ -552,17 +882,115 @@ async function verifyArtifactCreated(caseId: string, type: string) {
   });
   expect(artifact).toBeTruthy();
 }
-
-async function verifyNoGreenMastery(studentId: string) {
-  // v1 不点亮节点 —— StudentNodeState 不应有 status=mastered
-  const mastered = await prisma.studentNodeState.findMany({
-    where: { studentId, status: 'mastered' },
-  });
-  expect(mastered.length).toBe(0);
-}
 ```
 
-### 7.5 AI 评审量表 JSON 输出格式
+### 7.5 虚拟麦克风方案（Chromium 原生）
+
+```typescript
+// playwright.config.ts 中的 project 配置
+
+{
+  name: 'mobile-chrome',
+  testDir: './e2e/ci',
+  use: {
+    ...devices['Pixel 7'],
+    // Chromium 原生 fake media —— 不改写 MediaRecorder
+    launchOptions: {
+      args: [
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+      ],
+    },
+  },
+}
+
+// 这样浏览器会：
+// 1. getUserMedia({ audio: true }) → 自动授权，返回虚拟音频流
+// 2. MediaRecorder 真实录制虚拟音频流 → 生成 webm Blob
+// 3. webm Blob 经过 ffmpeg 转码 → 喂给 /process → case-analyzer.ts 调用假/真 Provider
+// 完整音频链路被验证
+
+// 如果需要特定音频内容（数学口述），可用 --use-file-for-fake-audio-capture 指定 WAV 文件
+// launchOptions: {
+//   args: [
+//     '--use-fake-device-for-media-stream',
+//     '--use-fake-ui-for-media-stream',
+//     '--use-file-for-fake-audio-capture=tests/fixtures/nana/audio/math-voice-sample.wav',
+//   ],
+// }
+```
+
+### 7.6 Playwright 配置升级方案（分层策略）
+
+```typescript
+// playwright.config.ts 修改要点
+
+export default defineConfig({
+    testDir: './e2e',
+    fullyParallel: true,
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    workers: process.env.CI ? 1 : undefined,
+    reporter: [
+        ['html', { host: '0.0.0.0' }],
+        ['json', { outputFile: 'test-results/report.json' }],  // 新增
+    ],
+    use: {
+        baseURL: isSmoke
+            ? (process.env.E2E_BASE_URL ?? 'https://nana.nanatop.xyz')
+            : E2E_HOST,
+        // 分层策略：不全开 on，避免拖慢和堆积
+        trace: 'retain-on-failure',   // 失败时保留 trace
+        video: 'retain-on-failure',   // 失败时保留 video
+        screenshot: 'only-on-failure', // 失败时自动截图（每步手动截图在 spec 中做）
+        actionTimeout: 10_000,
+        navigationTimeout: 15_000,
+    },
+    projects: isSmoke ? [
+        {
+            name: 'smoke',
+            testDir: './e2e/smoke',
+            use: {
+                ...devices['Pixel 7'],
+                // Smoke 任务单独覆写：video on（需要完整证据包供 AI 评审）
+                video: 'on',
+                trace: 'on',
+                launchOptions: {
+                    args: [
+                        '--use-fake-device-for-media-stream',
+                        '--use-fake-ui-for-media-stream',
+                        '--use-file-for-fake-audio-capture=tests/fixtures/nana/audio/math-voice-sample.wav',
+                    ],
+                },
+            },
+            retries: 0,
+        },
+    ] : [
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+            testIgnore: ['**/ci/**', '**/smoke/**'],
+        },
+        {
+            name: 'mobile-chrome',
+            testDir: './e2e/ci',
+            use: {
+                ...devices['Pixel 7'],
+                launchOptions: {
+                    args: [
+                        '--use-fake-device-for-media-stream',
+                        '--use-fake-ui-for-media-stream',
+                        '--use-file-for-fake-audio-capture=tests/fixtures/nana/audio/math-voice-sample.wav',
+                    ],
+                },
+            },
+        },
+    ],
+    // webServer 配置见 §7.3
+});
+```
+
+### 7.7 AI 评审量表 JSON 输出格式（含引用）
 
 ```json
 {
@@ -575,27 +1003,20 @@ async function verifyNoGreenMastery(studentId: string) {
       "item": 1,
       "question": "是否知道下一步点哪里",
       "score": 2,
-      "reason": "每个页面都有明确的引导按钮，'收好这道题'和'去题目汇总'都很清楚"
+      "reason": "每个页面都有明确的引导按钮，'收好这道题'和'去题目汇总'都很清楚",
+      "screenshotRef": "screenshot-05-save-case.png",
+      "stepRef": "step-5-save-case",
+      "metricRef": "buttonFeedbackMs=85"
     },
     {
       "item": 2,
       "question": "每次点击是否立即有反馈",
       "score": 1,
-      "reason": "大部分按钮有反馈，但上传图片后等了约2秒才出现预览"
-    },
-    {
-      "item": 3,
-      "question": "等AI时是否误以为卡住",
-      "score": 2,
-      "reason": "'正在整理这题…'提示很清楚，还有预计时间"
-    },
-    {
-      "item": 4,
-      "question": "是否能区分'收过题'和'已经掌握'",
-      "score": 1,
-      "reason": "琥珀色和绿色有区分，但没有文字说明两者的区别"
+      "reason": "大部分按钮有反馈，但上传图片后等了约2秒才出现预览",
+      "screenshotRef": "screenshot-04-image-preview.png",
+      "stepRef": "step-4-upload-image",
+      "metricRef": "imagePreviewMs=2100"
     }
-    // ... 10 项
   ],
   "totalScore": 16,
   "maxScore": 20,
@@ -604,7 +1025,7 @@ async function verifyNoGreenMastery(studentId: string) {
 }
 ```
 
-### 7.6 真机抽检清单模板
+### 7.8 真机抽检清单模板
 
 ```markdown
 # 真机抽检清单
@@ -650,164 +1071,104 @@ async function verifyNoGreenMastery(studentId: string) {
 - PDF 页数：____
 ```
 
-### 7.7 CI 工作流集成方案
+### 7.9 CI 工作流集成方案
 
 ```yaml
 # ci.yml e2e-test job 增量修改
 
 e2e-test:
-  # ... 现有配置 ...
   env:
     DATABASE_URL: "file:./e2e.db"
     NEXTAUTH_SECRET: "ci-secret-value-123456"
     NEXTAUTH_URL: "http://127.0.0.1:3000"
-    # 新增：mock 模式标记
-    E2E_MOCK_PROVIDER: "true"
+    # 假 Provider 配置
+    VOLCENGINE_API_KEY: "fake-key"
+    VOLCENGINE_BASE_URL: "http://127.0.0.1:3999"
+    LITE_ENDPOINT_ID: "fake-endpoint"
+    NANA_AUDIO_TRANSCRIPT_ENABLED: "true"
   steps:
-    # ... 现有步骤 ...
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Setup Database
+      run: |
+        npx prisma db push
+        npx prisma db seed
+    - name: Build application
+      run: npm run build
     - name: Run Playwright tests (golden path)
       run: npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts
       env:
         CI: true
-
     - name: Upload Evidence Pack
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: evidence-pack
         path: test-results/evidence-pack/
-        retention-days: 30
-
+        retention-days: 14
     - name: Upload Playwright Report
       if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: playwright-report
         path: playwright-report/
-        retention-days: 30
+        retention-days: 14
 ```
 
-```yaml
-# .github/workflows/provider-smoke.yml（新增）
-
-name: Provider Smoke Test
-on:
-  workflow_dispatch:
-    inputs:
-      reason:
-        description: '触发原因'
-        required: false
-        default: 'manual'
-  schedule:
-    - cron: '0 19 * * *'  # 每天北京时间凌晨 3 点
-
-jobs:
-  provider-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      E2E_MODE: smoke
-      E2E_SMOKE_EMAIL: ${{ secrets.E2E_SMOKE_EMAIL }}
-      E2E_SMOKE_PASSWORD: ${{ secrets.E2E_SMOKE_PASSWORD }}
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
-      VOLCENGINE_API_KEY: ${{ secrets.VOLCENGINE_API_KEY }}
-      VOLCENGINE_BASE_URL: ${{ secrets.VOLCENGINE_BASE_URL }}
-      VOLCENGINE_LITE_ENDPOINT: ${{ secrets.VOLCENGINE_LITE_ENDPOINT }}
-      NANA_AUDIO_TRANSCRIPT_ENABLED: "true"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - name: Run Provider Smoke
-        run: npx playwright test --project=smoke e2e/smoke/nana-provider-smoke.spec.ts
-      - name: Run AI Review
-        if: always()
-        run: npx tsx scripts/ai-review-runner.ts
-        env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-      - name: Upload Evidence Pack
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: provider-evidence-pack
-          path: test-results/
-          retention-days: 30
-      - name: Create Issue on Failure
-        if: failure()
-        uses: actions/create-issue@v1
-        with:
-          title: 'Provider Smoke 失败'
-          body: '请查看 evidence-pack artifact 中的截图和指标'
-```
-
-### 7.8 五层测试与发布门禁关系
+### 7.10 五层测试与发布门禁关系（修订）
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  层级              验证什么               阻塞发布？   │
-├─────────────────────────────────────────────────────┤
-│  1. CI 功能闭环    每步走通+数据落库        是        │
-│  2. 性能毛刺采集    耗时/控制台/网络/溢出     是        │
-│  3. 真实 Provider   识图/转写/分类质量       初期告警   │
-│     Smoke                          稳定后门禁        │
-│  4. AI 体验评审     孩子视角语义判断        初期不阻塞  │
-│  5. 真机抽检        相机/麦克风/iOS/微信    发版前抽检  │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  层级              验证什么               阻塞发布？        │
+├──────────────────────────────────────────────────────────┤
+│  1. CI 功能闭环    每步走通+数据落库        是             │
+│     (假 Provider)  双层分类验证             是             │
+│                    无点击反馈/保存超时/     是             │
+│                    API失败/溢出/异常                       │
+│  2. 性能采集       耗时/控制台/网络/溢出    R1只采集不阻塞  │
+│                    滚动基线+30%告警         积累20次后告警  │
+│                    功能性硬门禁              是             │
+│  3. 真实 Provider   识图/转写/分类质量       初期告警       │
+│     Smoke          60s上限                  稳定后门禁      │
+│                   (DELETE API审计前手动)                   │
+│  4. AI 体验评审    孩子视角语义判断        始终是建议      │
+│                   必须引用截图/步骤/指标    不阻塞          │
+│  5. 真机抽检       相机/麦克风/iOS/微信    发版前抽检       │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### 7.9 Playwright 配置升级方案
-
-```typescript
-// playwright.config.ts 修改要点
-
-export default defineConfig({
-    testDir: './e2e',
-    fullyParallel: true,
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
-    reporter: [
-        ['html', { host: '0.0.0.0' }],
-        ['json', { outputFile: 'test-results/report.json' }],  // 新增
-    ],
-    use: {
-        baseURL: isSmoke
-            ? (process.env.E2E_BASE_URL ?? 'https://nana.nanatop.xyz')
-            : E2E_HOST,
-        trace: process.env.CI ? 'on' : 'retain-on-failure',  // 升级
-        video: 'on',          // 新增
-        screenshot: 'only-on-failure',  // 新增（每步手动截图在 spec 中做）
-        actionTimeout: 10_000,    // 新增
-        navigationTimeout: 15_000, // 新增
-    },
-    // ... 其余不变 ...
-});
-```
-
-### 7.10 实施优先级和分轮建议
+### 7.11 实施优先级和分轮建议（修订）
 
 | 轮次 | 范围 | 依赖 | 预计工时 |
 |------|------|------|----------|
-| **R1（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.6-2.7 + 第五部分 5.1 | 无 | 2-3 天 |
-| **R2（依赖 TD-006）** | 第二部分 2.5（三题批量 + 手动改分类 + 汇总分组验证） | TD-006 解决 | 1 天 |
-| **R3（依赖打印页）** | 第二部分 2.5 补充打印预览验证 | `/nana/print-preview` 实现 | 0.5 天 |
-| **R4（独立）** | 第三部分全部（真实 Provider Smoke） | 测试账号 + secrets 配置 | 1 天 |
-| **R5（独立）** | 第四部分全部（AI 评审） | R4 证据包 + AI 模型 API Key | 1 天 |
+| **R1a（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.5(不含手动改分类/打印), 2.6-2.9 + 第五部分 5.1 | 无 | 3-4 天 |
+| **R1b（依赖 TD-006）** | 手动改分类验证 + 汇总页按章节分组验证 | TD-006 解决 | 0.5 天 |
+| **R1c（依赖打印页）** | 打印预览验证 + PDF 生成验证 | `/nana/print-preview` 实现 | 0.5 天 |
+| **R1d（数据规模）** | 30 题汇总页性能场景 | R1a 完成 | 0.5 天 |
+| **R4（依赖 DELETE API）** | 真实 Provider Smoke + 自动清理 | 专用测试账号 + DELETE API 审计通过 + secrets 配置 | 1.5 天 |
+| **R5（依赖 R4）** | AI 评审 + 人工校准 | R4 证据包 + AI 评审 adapter | 1.5 天 |
 
-> **建议**：R1 立即启动，不受任何产品功能阻塞。R2/R3 等产品功能补齐后接上。R4/R5 可与 R1-R3 并行推进。
+> **建议**：R1a 立即启动，不受任何产品功能阻塞。R1b/R1c 等产品功能补齐后接上。R1d 在 R1a 稳定后做。R4/R5 等 DELETE API 审计通过后推进。
 
 ---
 
-## 8. 开放项（需用户确认）
+## 8. 开放项决议（已确认）
 
-1. **核心假设确认**：我们最终要测试的是"孩子看到的课本分类"（TextbookTopic），不是内部 48 个系统知识点（KnowledgeNode）。这个假设是否成立？
-2. **AI 评审模型选择**：使用 DeepSeek 还是 Claude 做评审？需要对应的 API Key。
-3. **Provider Smoke 测试账号**：是否已有专用测试账号？还是需要注册一个？
-4. **Provider Smoke 数据清理策略**：注册临时用户测试后删除，还是用固定账号定期清理？
-5. **性能基线确认**：§4.2 中的基线值是否合理？是否需要调整？
-6. ** nightly schedule 时间**：Provider Smoke 每天跑一次，北京时间凌晨几点合适？
-7. **R1 启动确认**：是否确认按此计划进入执行阶段？
+| # | 开放项 | 决议 |
+|---|--------|------|
+| 1 | 分类体系 | **双层契约**：孩子侧 TextbookTopic，系统侧 KnowledgeNode，两层都测 |
+| 2 | AI 评审模型 | R1/R5 暂不绑定；先定义 adapter 和人工审阅证据包的流程 |
+| 3 | Smoke 账号 | 固定专用测试账号 |
+| 4 | 清理策略 | 精确删除本次 Case；DELETE API 审计通过前不启用 nightly 写测试 |
+| 5 | 性能基线 | 先采集 20 次，不立即硬门禁；滚动基线 +30% 告警；硬门禁仅功能性断言 |
+| 6 | 调度 | 先每次部署后手动触发，稳定后每周 2-3 次，不必每日 |
+| 7 | R1 启动 | 暂不按 r1 稿启动；修订为 r2 后启动缩窄后的 R1a |
