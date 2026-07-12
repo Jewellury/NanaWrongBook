@@ -42,7 +42,9 @@ jobs:
         run: ocr llm test
 
       - name: Fetch base branch
-        run: git fetch origin main:refs/remotes/origin/main
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: git fetch origin "${BASE_REF}:refs/remotes/origin/${BASE_REF}"
 
       - name: Run AI Code Review
         id: review
@@ -52,15 +54,19 @@ jobs:
           OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
           OCR_USE_ANTHROPIC: 'false'
           PR_HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           ocr review \
-            --from "origin/main" \
+            --from "origin/${BASE_REF}" \
             --to "origin/${PR_HEAD_REF}" \
             --format text \
             --exclude "node_modules/**,.next/**,data/**,playwright-report/**,test-results/**,study/**" \
             --audience human \
-            > review-output.txt 2>&1
+            > review-output.txt 2>review-errors.txt
           cat review-output.txt
+          if [ -s review-errors.txt ]; then
+            echo "::warning::Review tool produced stderr output (redacted, see review-errors.txt)"
+          fi
 
       - name: Post review as PR comment
         if: always()
