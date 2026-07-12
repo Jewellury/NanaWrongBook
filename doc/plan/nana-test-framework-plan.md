@@ -181,14 +181,16 @@
   import http from 'http';
   import crypto from 'crypto';
 
-  // r3：按题图哈希映射固定响应，不依赖进程级环境变量
-  // 预计算每张 fixture 题图的哈希，建立哈希→mock 响应的映射表
+  // r3：按题图 data URL 哈希映射固定响应，不依赖进程级环境变量
+  // 哈希对象 = case-analyzer.ts 发送的 image_url.url 完整 data URL 字符串（含 data:image/...;base64, 前缀）
+  // 不是图片文件原始字节的 MD5
+  // 测试 setup 阶段：读取 fixture 文件 → FileReader.readAsDataURL → 得到 data URL → 算 MD5 → 存入此表
   const FIXTURE_HASHES: Record<string, string> = {
-    'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 的图片内容哈希
-    'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 的哈希
-    'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 的哈希
-    'm3n4o5p6...': 'set-theory',       // set-theory.jpg 的哈希
-    'q7r8s9t0...': 'inequality',        // inequality.jpg 的哈希
+    'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 转为 data URL 后的 MD5
+    'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 转为 data URL 后的 MD5
+    'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 转为 data URL 后的 MD5
+    'm3n4o5p6...': 'set-theory',       // set-theory.jpg 转为 data URL 后的 MD5
+    'q7r8s9t0...': 'inequality',        // inequality.jpg 转为 data URL 后的 MD5
   };
 
   const MOCK_RESPONSES: Record<string, object> = {
@@ -235,7 +237,9 @@
   }
   ```
 
-  > **r3 关键修正**：不再使用 `process.env.E2E_FIXTURE_NAME` 切换响应。批量测试中多张题图同时上传时，进程级变量不可靠。改为每张 fixture 预计算图片内容 MD5 哈希，假 Provider 从请求 body 提取 image_url 计算哈希后匹配。
+  > **r3 关键修正**：不再使用 `process.env.E2E_FIXTURE_NAME` 切换响应。批量测试中多张题图同时上传时，进程级变量不可靠。改为按请求 body 中 `image_url.url` 字段值计算 MD5 哈希匹配固定响应。
+  >
+  > **哈希对象澄清（审计 P2 修正）**：哈希的不是图片文件原始字节，而是 `case-analyzer.ts` 发送给 Provider 的完整 **data URL 字符串**（即 `data:image/jpeg;base64,...`）。fixture 哈希表应在测试 setup 阶段：读取 fixture 文件 → 转成 data URL（与前端 `FileReader.readAsDataURL` 一致）→ 计算 MD5 → 存入 `FIXTURE_HASHES`。
 
   - CI 启动方式：`webServer.command` 中先启动假 Provider，再启动 Next.js
   - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
@@ -362,6 +366,31 @@
   - 验证图谱中有三个琥珀证据点
   - **R1b 补充**：手动改分类验证（依赖 TD-006）
   - **R1c 补充**：打印预览验证（依赖 `/nana/print-preview`）
+
+- [ ] 任务 2.5b：编写连续拍题竞态 spec（R1a）——`e2e/ci/nana-sequential-capture.spec.ts`
+  - **覆盖场景 S7**（验收契约 CL-04, CL-15）
+  - 连续拍 3 道题（快速连拍，不等前一道 AI 整理完成）：
+    1. 上传 `clear-printed.jpg` → 点"收好这道题" → 立即点"再拍一道"
+    2. 上传 `set-theory.jpg` → 点"收好这道题" → 立即点"再拍一道"
+    3. 上传 `inequality.jpg` → 点"收好这道题" → 等待 AI 整理完成
+  - **硬门禁断言**：
+    - 每道题保存"已收好"均 ≤10s（CI）/ ≤5s（本地）
+    - 前一道题的 AI 结果不覆盖后一道题的状态（前端 `currentCaseIdRef` 竞态保护）
+    - 进入汇总页，3 道题各自归入正确章节
+  - **DB 验证**：3 个 Case 各有独立 CaseAiResult，caseId 互不串
+  - **证据采集**：每步截图 + 保存耗时 + AI 状态出现耗时
+
+- [ ] 任务 2.5c：编写跨用户隔离 spec（R1a）——`e2e/ci/nana-cross-user.spec.ts`
+  - **覆盖场景 S10**（验收契约 CL-16）
+  - 注册两个测试用户（userA, userB），各自独立 browser context
+  - userA 拍一道题 → 保存 → AI 整理完成
+  - userB 登录后：
+    - `GET /api/nana/cases/summary` 返回的 groups 中无 userA 的题
+    - `GET /api/nana/cases` 列表中无 userA 的题
+    - 知识地图 `GET /api/diagnosis/map` 中无 userA 的琥珀证据
+    - 直接访问 `GET /api/nana/cases/:userA-case-id` 返回 404
+  - **硬门禁断言**：userB 看不到 userA 的任何数据
+  - **DB 验证**：userB 的 `where: { studentId: userB.id }` 查询结果不含 userA 的 Case
 
 - [ ] 任务 2.6：升级现有 `nana-main-flow.spec.ts`——去掉 `?openCases=1` 绕过
   - 改为通过真实 UI 入口点击进入"最近拍过的题"浮层
@@ -657,6 +686,8 @@
 | 新增 `e2e/helpers/*` | 新增 | 无冲突 |
 | 新增 `e2e/ci/nana-golden-path.spec.ts` | 新增 | 无冲突 |
 | 新增 `e2e/ci/nana-batch-path.spec.ts` | 新增 | 无冲突 |
+| 新增 `e2e/ci/nana-sequential-capture.spec.ts` | 新增 | 无冲突 |
+| 新增 `e2e/ci/nana-cross-user.spec.ts` | 新增 | 无冲突 |
 | 新增 `e2e/ci/nana-scale-test.spec.ts` | 新增 | 无冲突 |
 | 新增 `e2e/smoke/nana-provider-smoke.spec.ts` | 新增 | 无冲突 |
 | 新增 `.github/workflows/provider-smoke.yml` | 新增 | 无冲突 |
@@ -695,6 +726,8 @@
 | `e2e/helpers/ai-review-prompt.ts` | 新增 | AI 评审提示词 + 统一量表定义 |
 | `e2e/ci/nana-golden-path.spec.ts` | 新增 | 黄金闭环最小路径（单题，假 Provider，R1a） |
 | `e2e/ci/nana-batch-path.spec.ts` | 新增 | 三题批量路径（nightly/release 触发，R1a + R1b + R1c） |
+| `e2e/ci/nana-sequential-capture.spec.ts` | 新增 | 连续拍题竞态验证（R1a，S7 场景） |
+| `e2e/ci/nana-cross-user.spec.ts` | 新增 | 跨用户隔离验证（R1a，S10 场景） |
 | `e2e/ci/nana-scale-test.spec.ts` | 新增 | 30 题数据规模场景（R1d） |
 | `e2e/ci/nana-main-flow.spec.ts` | 修改 | 去掉 `?openCases=1` 绕过，改用真实入口点击 |
 | `e2e/smoke/nana-provider-smoke.spec.ts` | 新增 | 真实 Provider 写操作 Smoke |
@@ -765,13 +798,15 @@ import crypto from 'crypto';
 // case-analyzer.ts 调用 client.chat.completions.create()
 // 假 Provider 需要返回相同格式
 
-// r3：预计算每张 fixture 题图的 MD5 哈希，建立哈希→fixture 名映射
+// r3：预计算每张 fixture 题图的 data URL MD5 哈希，建立哈希→fixture 名映射
+// 哈希对象 = case-analyzer.ts 发送的 image_url.url 完整 data URL 字符串（data:image/...;base64,...）
+// 不是图片文件原始字节，是经过 base64 编码后的完整 data URL 字符串
 const FIXTURE_HASHES: Record<string, string> = {
-  'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 的图片内容哈希
-  'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 的哈希
-  'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 的哈希
-  'm3n4o5p6...': 'set-theory',       // set-theory.jpg 的哈希
-  'q7r8s9t0...': 'inequality',        // inequality.jpg 的哈希
+  'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg → data URL → MD5
+  'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg → data URL → MD5
+  'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg → data URL → MD5
+  'm3n4o5p6...': 'set-theory',       // set-theory.jpg → data URL → MD5
+  'q7r8s9t0...': 'inequality',        // inequality.jpg → data URL → MD5
 };
 
 const MOCK_RESULTS: Record<string, object> = {
@@ -814,7 +849,8 @@ const MOCK_RESULTS: Record<string, object> = {
 
 // r3 关键修正：不再使用 process.env.E2E_FIXTURE_NAME 切换响应
 // 批量测试中多张题图同时上传时，进程级变量不可靠
-// 改为每张 fixture 预计算图片内容 MD5 哈希，假 Provider 从请求 body 提取 image_url 计算哈希后匹配
+// 改为从请求 body 提取 image_url.url 字段值（data URL 字符串），计算其 MD5 哈希后匹配
+// 注意：哈希对象是 data URL 字符串，不是图片文件原始字节
 
 export function startFakeProvider(port = 3999): http.Server {
   return http.createServer((req, res) => {
@@ -1234,7 +1270,7 @@ e2e-test:
 
 | 轮次 | 范围 | 依赖 | 预计工时 |
 |------|------|------|----------|
-| **R1a（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.5(不含手动改分类/打印), 2.6-2.7, 2.9 + 第五部分 5.1 | 无 | 3-4 天 |
+| **R1a（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.5(不含手动改分类/打印), 2.5b-2.5c, 2.6-2.7, 2.9 + 第五部分 5.1 | 无 | 3-4 天 |
 | **R1b（依赖 TD-006）** | 手动改分类验证 + 汇总页按章节分组验证 | TD-006 解决 | 0.5 天 |
 | **R1c（依赖打印页）** | 打印预览验证 + PDF 生成验证 | `/nana/print-preview` 实现 | 0.5 天 |
 | **R1d（数据规模）** | 30 题汇总页性能场景（任务 2.8） | R1a 完成 | 0.5 天 |
