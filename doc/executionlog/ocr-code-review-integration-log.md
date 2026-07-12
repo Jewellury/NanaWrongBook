@@ -121,15 +121,42 @@ Secrets 配置完成后，按以下步骤验证：
 ## 8. 下一步
 
 - [x] 用户配置 GitHub Secrets（3 个）
-- [ ] 发测试 PR 验证 workflow 正常运行
+- [x] 发测试 PR 验证 workflow 正常运行（4 轮迭代，最终通过）
 - [ ] 验证通过后考虑添加 `.opencodereview/rule.json` 项目级审查规则
 
 ---
 
 ## 9. 验证记录
 
-### 2026-07-12 测试 PR 验证
+### 2026-07-12 测试 PR 验证（PR #2）
 
-- 测试分支: `test/ocr-review`
-- 测试改动: 本文件追加验证记录小节
-- 目标: 触发 `AI Code Review (OCR)` workflow，确认 PR 评论区出现 AI 审查意见
+- 测试分支: `test/ocr-review` → 目标分支: `dev`
+- 测试 PR: https://github.com/Jewellury/NanaWrongBook/pull/2
+- 经历 4 轮 OCR 审查迭代，最终通过
+
+### 审查迭代过程
+
+| 轮次 | 触发 | 发现问题 | 修复 |
+|------|------|---------|------|
+| 第 1 轮 | 初始 PR | 3 条：script injection (high)、missing concurrency (medium)、unpinned version (medium) | 全部修复 |
+| 第 2 轮 | 推送修复后 | 3 条：@latest mutable tag (high)、fetch-depth:0 (medium)、正面评价 (low) | pin 到 @1.7.7；fetch-depth 保留 |
+| 第 3 轮 | 推送修复后 | 5 条 high + 5 条 low：hardcoded main (high×3)、stderr 泄露密钥 (high×2)、权限/并发正面评价 (low×5) | 动态 base ref + 分离 stderr |
+| 第 4 轮 | 推送修复后 | **0 条 — "Looks good to me."** | ✅ 通过 |
+
+### 最终修复清单
+
+1. **Script injection (security high)** — `${{ github.* }}` 表达式全部改为先赋值给环境变量，shell 中用 `${VAR}` 引用
+2. **Missing concurrency (performance medium)** — 添加 `concurrency` group + `cancel-in-progress: true`
+3. **Unpinned version (maintainability medium → security high)** — pin 到 `@1.7.7`
+4. **Hardcoded base branch (correctness high)** — 改用 `${{ github.event.pull_request.base.ref }}` 动态获取
+5. **Stderr secret leakage (security high)** — 分离 `> review-output.txt 2>review-errors.txt`，只 cat stdout，stderr 有内容时输出 redacted 警告
+
+### 保留不改的项
+
+- `fetch-depth: 0`（performance medium）— OCR 需要完整 git 历史做 merge-base diff，减小 fetch-depth 可能导致 diff 失败
+
+### 最终状态
+
+- PR #2 已合并到 dev（commit `0e6ad53`）
+- 测试分支 `test/ocr-review` 已清理
+- workflow 在所有 PR 上生效
