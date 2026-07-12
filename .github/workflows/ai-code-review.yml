@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   ai-review:
     runs-on: ubuntu-latest
@@ -25,7 +29,7 @@ jobs:
           node-version: '22'
 
       - name: Install Open Code Review
-        run: npm install -g @alibaba-group/open-code-review
+        run: npm install -g @alibaba-group/open-code-review@latest
 
       - name: Configure & Test LLM
         id: llm-test
@@ -47,10 +51,11 @@ jobs:
           OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
           OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
           OCR_USE_ANTHROPIC: 'false'
+          PR_HEAD_REF: ${{ github.head_ref }}
         run: |
           ocr review \
             --from "origin/main" \
-            --to "origin/${{ github.head_ref }}" \
+            --to "origin/${PR_HEAD_REF}" \
             --format text \
             --exclude "node_modules/**,.next/**,data/**,playwright-report/**,test-results/**,study/**" \
             --audience human \
@@ -61,6 +66,8 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
         run: |
           if [ -s review-output.txt ]; then
             {
@@ -69,7 +76,7 @@ jobs:
               echo "Automated review by [Open Code Review](https://github.com/alibaba/open-code-review) powered by DeepSeek."
               echo ""
               cat review-output.txt
-            } | gh pr comment ${{ github.event.pull_request.number }} \
+            } | gh pr comment "${PR_NUMBER}" \
               --body-file - \
-              --repo ${{ github.repository }}
+              --repo "${GH_REPO}"
           fi
