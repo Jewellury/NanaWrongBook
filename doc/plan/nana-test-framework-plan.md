@@ -1,10 +1,25 @@
-# Nana 测试框架 · 开发计划 (r2)
+# Nana 测试框架 · 开发计划 (r3)
 
-> 关联规格: `doc/product/nana-product-behavior-manual-v1.md`（产品行为手册）
+> **前置条件：** `doc/spec/nana-v1-minimum-loop-acceptance.md`（v1 最小闭环验收契约）已冻结
+> 关联规格: `doc/spec/nana-v1-minimum-loop-acceptance.md`（验收契约）、`doc/product/nana-product-behavior-manual-v1.md`（产品行为手册）
 > 关联 backlog: TD-006（手动改课本分类写入口径统一）、OD-003（E2E 补真实入口路径）
 > 关联参考: `doc/reference/TECH_PLAN_v2.md`（技术方案）、`doc/reference/OPS_handbook.md`（运营手册）
-> 计划日期: 2026-07-12（r2 修订: 2026-07-12，整合评审反馈）
+> 计划日期: 2026-07-12（r2: 2026-07-12，r3 修订: 2026-07-12，整合验收契约评审反馈）
 > 预计影响: `e2e/`、`playwright.config.ts`、`.github/workflows/`、`tests/fixtures/`、`scripts/`、`doc/`
+
+---
+
+## r3 修订摘要
+
+| 评审问题 | r2 不足 | r3 修正 |
+|---------|---------|---------|
+| 缺少功能契约 | 测试框架只解决"怎么测"，没有权威定义"测什么" | 新增 `doc/spec/nana-v1-minimum-loop-acceptance.md`，冻结 CL-01～CL-16 验收点；测试场景映射到 CL 编号 |
+| ffmpeg 在 CI 主机缺失 | r2 只在 Docker runner 装 ffmpeg，CI 主机跑 Next.js 时也需要 | r3 在 ci.yml e2e-test job 中显式 `ffmpeg -version` 检查 + 安装步骤 |
+| 假 Provider 响应选择不可靠 | r2 用进程级 `E2E_FIXTURE_NAME` 环境变量切换，批量测试中不可靠 | r3 改为按请求 body 中题图哈希映射固定响应，去掉环境变量切换 |
+| R1a/R1d 范围重复 | r2 在 R1a 写入 2.8（30 题场景）又单列 R1d，范围重叠 | r3 将 30 题场景（任务 2.8）从 R1a 移除，明确归入 R1d |
+| 保存时间阈值不一致 | r2 §4.2 写"2 秒"，§7.1 写"10 秒" | r3 统一：保存确认硬门禁 = 10s（CI）/ 5s（本地），由验收契约 CL-04 定义 |
+| Fixture 来源未约束 | r2 只说"补充集合、不等式、三角函数"，未约束到 16 个 TextbookTopic | r3 要求所有新 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围，逐张脱敏确认 |
+| 手动分类定位不清 | r2 未明确手动分类在产品中的定位 | r3 明确：手动 TextbookTopic 分类是纠错路径（CL-09），不是每题必经步骤；理想路径是 AI 自动分类 |
 
 ---
 
@@ -96,7 +111,7 @@
 
 | 轮次 | 范围 | 依赖 | 预计工时 |
 |------|------|------|----------|
-| **R1a（立即可做）** | 证据采集基础设施 + 假 Provider 服务器 + 虚拟麦克风 + 黄金路径（不含手动改分类/打印） + 去掉 `?openCases=1` + 真机清单 + 补充多章节 fixture | 无 | 3-4 天 |
+| **R1a（立即可做）** | 证据采集基础设施 + 假 Provider 服务器 + 虚拟麦克风 + 黄金路径（不含手动改分类/打印/30题） + 去掉 `?openCases=1` + 真机清单 + 补充多章节 fixture | 无 | 3-4 天 |
 | **R1b（依赖 TD-006）** | 手动改分类验证 + 汇总页按章节分组验证 | TD-006 解决 | 0.5 天 |
 | **R1c（依赖打印页）** | 打印预览验证 + PDF 生成验证 | `/nana/print-preview` 实现 | 0.5 天 |
 | **R1d（数据规模）** | 30 题汇总页性能场景 | R1a 完成 | 0.5 天 |
@@ -151,35 +166,80 @@
 
 - [ ] 任务 2.1：创建 `e2e/helpers/fake-provider-server.ts`——本地假豆包 Provider
   - 启动一个本地 HTTP 服务器，模拟 OpenAI 兼容接口（`/chat/completions`）
-  - 根据 fixture 文件名返回固定的 7 字段结构化 JSON
+  - **r3 修正：按请求 body 中题图哈希映射固定响应**（不用进程级环境变量切换）
   - 响应延迟可控（默认 <100ms，可模拟慢响应）
-  - 支持 three fixture 响应：
-    - `clear-printed` → 正常成功路径（高置信、完整字段）
-    - `with-handwriting` → 手写干扰路径（转写有内容、分类有候选）
-    - `tilted-partial` → 低置信降级路径（置信度 <0.5、未分类、诚实降级）
+  - 支持 fixture 响应（按题图哈希索引）：
+    - `clear-printed` 哈希 → 正常成功路径（高置信、完整字段）
+    - `with-handwriting` 哈希 → 手写干扰路径（转写有内容、分类有候选）
+    - `tilted-partial` 哈希 → 低置信降级路径（置信度 <0.5、未分类、诚实降级）
+    - `set-theory` 哈希 → 集合题路径（不同章节，验证多章节分组）
+    - `inequality` 哈希 → 不等式题路径（不同章节）
   - **关键**：浏览器仍请求真实 `/api/nana/cases/:id/process`，真实 route handler 执行，真实 `case-analyzer.ts` 调用假 Provider URL，真实 Prisma 事务落库
 
   ```typescript
   // e2e/helpers/fake-provider-server.ts（伪代码）
   import http from 'http';
+  import crypto from 'crypto';
 
-  const MOCK_RESPONSES: Record<string, string> = {
-    'clear-printed': JSON.stringify({ /* 7 字段 */ }),
-    'with-handwriting': JSON.stringify({ /* 7 字段 */ }),
-    'tilted-partial': JSON.stringify({ /* 7 字段 */ }),
+  // r3：按题图哈希映射固定响应，不依赖进程级环境变量
+  // 预计算每张 fixture 题图的哈希，建立哈希→mock 响应的映射表
+  const FIXTURE_HASHES: Record<string, string> = {
+    'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 的图片内容哈希
+    'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 的哈希
+    'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 的哈希
+    'm3n4o5p6...': 'set-theory',       // set-theory.jpg 的哈希
+    'q7r8s9t0...': 'inequality',        // inequality.jpg 的哈希
+  };
+
+  const MOCK_RESPONSES: Record<string, object> = {
+    'clear-printed': { /* 7 字段 */ },
+    'with-handwriting': { /* 7 字段 */ },
+    'tilted-partial': { /* 7 字段，低置信 */ },
+    'set-theory': { /* 7 字段，TB-003 集合运算 */ },
+    'inequality': { /* 7 字段，TB-008 一元二次不等式 */ },
   };
 
   export function startFakeProvider(port = 3999): http.Server {
     return http.createServer((req, res) => {
-      // 模拟 OpenAI /chat/completions 响应
-      // 从请求 body 中提取图片标识（或用 header 传递 fixture 名）
-      // 返回对应 mock JSON 包裹在 OpenAI chat completion 格式中
+      if (req.url === '/chat/completions' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          // r3：从请求 body 中提取 image_url，计算哈希，匹配 fixture
+          const parsed = JSON.parse(body);
+          const imageUrl = parsed.messages?.[0]?.content?.find(
+            (c: any) => c.type === 'image_url'
+          )?.image_url?.url || '';
+          const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
+          const fixtureName = FIXTURE_HASHES[hash] || 'clear-printed'; // fallback
+          const mockResult = MOCK_RESPONSES[fixtureName];
+          // 包裹在 OpenAI chat completion 响应格式中
+          const response = {
+            id: 'chatcmpl-fake-' + Date.now(),
+            object: 'chat.completion',
+            choices: [{
+              index: 0,
+              message: { role: 'assistant', content: JSON.stringify(mockResult) },
+              finish_reason: 'stop',
+            }],
+            usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+          };
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(response));
+        });
+      } else {
+        res.writeHead(404);
+        res.end();
+      }
     });
   }
   ```
 
+  > **r3 关键修正**：不再使用 `process.env.E2E_FIXTURE_NAME` 切换响应。批量测试中多张题图同时上传时，进程级变量不可靠。改为每张 fixture 预计算图片内容 MD5 哈希，假 Provider 从请求 body 提取 image_url 计算哈希后匹配。
+
   - CI 启动方式：`webServer.command` 中先启动假 Provider，再启动 Next.js
   - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
+  - **r3：不需要 `E2E_FIXTURE_NAME` 环境变量**——假 Provider 按题图哈希自动匹配
 
 - [ ] 任务 2.2：创建 `e2e/helpers/virtual-microphone.ts`——虚拟麦克风（Chromium 原生方案）
   - **优先使用 Chromium 官方 fake-media 参数**，不自己改写 MediaRecorder
@@ -274,7 +334,7 @@
   - 上传真实手拍题图 `clear-printed.jpg`
   - 通过虚拟麦克风完成录音（Chromium fake-media，不能跳过）
   - 点击"收好这道题"
-  - **硬门禁断言**：2 秒内看到"已收好"（保存超时 = 阻塞）
+  - **硬门禁断言**：10s 内看到"已收好"（CI 环境）/ 5s（本地）（保存超时 = 阻塞，由 CL-04 定义）
   - **硬门禁断言**：AI 整理状态出现（无反馈 = 阻塞）
   - **性能采集（不阻塞）**：记录按钮反馈耗时、整理状态出现耗时
   - 等待假 Provider 返回（<100ms），验证 AI 结果卡：
@@ -309,11 +369,11 @@
 
 - [ ] 任务 2.7：补充多章节 fixture 题图
   - 现有 3 张全偏函数题，无法证明"按不同课本章节整理错题集"真的有用
-  - 至少补充：集合题、不等式题、三角函数题等不同章节的脱敏题图
-  - 每张需目视确认无隐私信息（复用 `scripts/prepare-e2e-fixtures.ts` 流程）
+  - 至少补充：集合题（TB-003）、不等式题（TB-008）等不同章节的脱敏题图
+  - **r3 约束**：所有新 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围（见验收契约 §7），逐张脱敏确认
   - 对应的假 Provider mock 响应也需要覆盖新章节的 topicId/nodeId
 
-- [ ] 任务 2.8：30 题数据规模场景 spec（R1d）——`e2e/ci/nana-scale-test.spec.ts`
+- [ ] 任务 2.8：30 题数据规模场景 spec（**R1d，不在 R1a 范围**）——`e2e/ci/nana-scale-test.spec.ts`
   - 通过数据库直接灌入 30 道 Case + CaseAiResult（不同章节分布）
   - 打开题目汇总页，验证：
     - 首屏可操作时间（采集，不阻塞）
@@ -325,6 +385,7 @@
 
 - [ ] 任务 2.9：CI 工作流集成
   - `ci.yml` 的 `e2e-test` job 增加假 Provider 启动步骤
+  - **r3：显式 ffmpeg 检查**——CI 主机跑 Next.js 时也需要 ffmpeg（音频转码依赖），必须在 e2e-test job 中显式安装和验证
   - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
   - 黄金路径每次 push 跑
   - 批量路径只在 nightly schedule 或 release tag 时跑
@@ -506,7 +567,7 @@
 |------|:------:|:--------:|
 | 按钮点击到 pressed/loading 反馈 | 记录 | 是（无反馈=阻塞） |
 | 上传后题图预览出现 | 记录 | 否（仅采集） |
-| 保存后"已收好"出现 | 记录 | 是（>10s=阻塞） |
+| 保存后“已收好”出现 | 记录 | 是（>10s=阻塞，CI / >5s 本地） |
 | AI 整理状态出现 | 记录 | 是（无反馈=阻塞） |
 | 假 Provider 完成 | 记录 | 否（<2s 期望） |
 | 题目汇总首屏可操作 | 记录 | 否（仅采集） |
@@ -646,7 +707,7 @@
 | `tests/fixtures/nana/audio/math-voice-sample.wav` | 新增 | 脱敏数学口述 WAV 文件（虚拟麦克风用） |
 | `tests/fixtures/nana/cases/set-theory.jpg` | 新增 | 集合题脱敏题图（多章节覆盖） |
 | `tests/fixtures/nana/cases/inequality.jpg` | 新增 | 不等式题脱敏题图（多章节覆盖） |
-| `tests/fixtures/nana/cases/trigonometry.jpg` | 新增 | 三角函数题脱敏题图（多章节覆盖） |
+| `tests/fixtures/nana/cases/exponent.jpg` | 新增 | 指数函数题脱敏题图（TB-011，多章节覆盖） |
 | `.env.e2e.example` | 新增 | E2E 环境变量模板（假 Provider 配置 + smoke 凭证占位） |
 
 ---
@@ -692,16 +753,26 @@
 10. 证据包输出：截图序列 + 性能指标 + 控制台错误 + 网络耗时 + DB 验证结果
 ```
 
-### 7.2 假 Provider 服务器方案
+### 7.2 假 Provider 服务器方案（r3 修订）
 
 ```typescript
 // e2e/helpers/fake-provider-server.ts（伪代码）
 
 import http from 'http';
+import crypto from 'crypto';
 
 // 严格模拟 OpenAI chat completion 响应格式
 // case-analyzer.ts 调用 client.chat.completions.create()
 // 假 Provider 需要返回相同格式
+
+// r3：预计算每张 fixture 题图的 MD5 哈希，建立哈希→fixture 名映射
+const FIXTURE_HASHES: Record<string, string> = {
+  'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 的图片内容哈希
+  'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 的哈希
+  'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 的哈希
+  'm3n4o5p6...': 'set-theory',       // set-theory.jpg 的哈希
+  'q7r8s9t0...': 'inequality',        // inequality.jpg 的哈希
+};
 
 const MOCK_RESULTS: Record<string, object> = {
   'clear-printed': {
@@ -741,9 +812,9 @@ const MOCK_RESULTS: Record<string, object> = {
   },
 };
 
-// 关键：假 Provider 通过请求 body 中的图片内容或 header 判断返回哪个 mock
-// 方案：在 webServer.command 中通过环境变量 E2E_FIXTURE_NAME 传递当前 fixture 名
-// 或：假 Provider 解析请求 body 中的 image_url，与预存 fixture 哈希比对
+// r3 关键修正：不再使用 process.env.E2E_FIXTURE_NAME 切换响应
+// 批量测试中多张题图同时上传时，进程级变量不可靠
+// 改为每张 fixture 预计算图片内容 MD5 哈希，假 Provider 从请求 body 提取 image_url 计算哈希后匹配
 
 export function startFakeProvider(port = 3999): http.Server {
   return http.createServer((req, res) => {
@@ -751,7 +822,13 @@ export function startFakeProvider(port = 3999): http.Server {
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {
-        const fixtureName = process.env.E2E_FIXTURE_NAME || 'clear-printed';
+        // r3：从请求 body 中提取 image_url，计算哈希，匹配 fixture
+        const parsed = JSON.parse(body);
+        const imageUrl = parsed.messages?.[0]?.content?.find(
+          (c: any) => c.type === 'image_url'
+        )?.image_url?.url || '';
+        const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
+        const fixtureName = FIXTURE_HASHES[hash] || 'clear-printed'; // fallback
         const mockResult = MOCK_RESULTS[fixtureName];
         // 包裹在 OpenAI chat completion 响应格式中
         const response = {
@@ -1096,6 +1173,11 @@ e2e-test:
         cache: 'npm'
     - name: Install dependencies
       run: npm ci
+    - name: Install ffmpeg (r3)
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ffmpeg
+        ffmpeg -version
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Setup Database
@@ -1104,6 +1186,8 @@ e2e-test:
         npx prisma db seed
     - name: Build application
       run: npm run build
+    - name: Verify ffmpeg (r3)
+      run: ffmpeg -version
     - name: Run Playwright tests (golden path)
       run: npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts
       env:
@@ -1150,10 +1234,10 @@ e2e-test:
 
 | 轮次 | 范围 | 依赖 | 预计工时 |
 |------|------|------|----------|
-| **R1a（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.5(不含手动改分类/打印), 2.6-2.9 + 第五部分 5.1 | 无 | 3-4 天 |
+| **R1a（立即可做）** | 第一部分全部 + 第二部分 2.1-2.4, 2.5(不含手动改分类/打印), 2.6-2.7, 2.9 + 第五部分 5.1 | 无 | 3-4 天 |
 | **R1b（依赖 TD-006）** | 手动改分类验证 + 汇总页按章节分组验证 | TD-006 解决 | 0.5 天 |
 | **R1c（依赖打印页）** | 打印预览验证 + PDF 生成验证 | `/nana/print-preview` 实现 | 0.5 天 |
-| **R1d（数据规模）** | 30 题汇总页性能场景 | R1a 完成 | 0.5 天 |
+| **R1d（数据规模）** | 30 题汇总页性能场景（任务 2.8） | R1a 完成 | 0.5 天 |
 | **R4（依赖 DELETE API）** | 真实 Provider Smoke + 自动清理 | 专用测试账号 + DELETE API 审计通过 + secrets 配置 | 1.5 天 |
 | **R5（依赖 R4）** | AI 评审 + 人工校准 | R4 证据包 + AI 评审 adapter | 1.5 天 |
 
@@ -1171,4 +1255,9 @@ e2e-test:
 | 4 | 清理策略 | 精确删除本次 Case；DELETE API 审计通过前不启用 nightly 写测试 |
 | 5 | 性能基线 | 先采集 20 次，不立即硬门禁；滚动基线 +30% 告警；硬门禁仅功能性断言 |
 | 6 | 调度 | 先每次部署后手动触发，稳定后每周 2-3 次，不必每日 |
-| 7 | R1 启动 | 暂不按 r1 稿启动；修订为 r2 后启动缩窄后的 R1a |
+| 7 | R1 启动 | r2 修订后启动缩窄后的 R1a |
+| 8 | 功能契约 | **r3 新增**：先冻结 `doc/spec/nana-v1-minimum-loop-acceptance.md`（CL-01～CL-16），再启动 R1a。测试场景映射到 CL 编号，不围绕页面结构固化 |
+| 9 | ffmpeg CI | **r3 新增**：ci.yml e2e-test job 显式安装 + 验证 ffmpeg，避免虚拟录音链路失败 |
+| 10 | 假 Provider 响应选择 | **r3 新增**：按请求 body 中题图哈希映射固定响应，不用进程级环境变量 |
+| 11 | 时间阈值 | **r3 新增**：保存确认硬门禁统一为 10s（CI）/ 5s（本地），由 CL-04 定义 |
+| 12 | Fixture 来源 | **r3 新增**：所有新 fixture 必须来自 16 个 TextbookTopic 覆盖范围，逐张脱敏确认 |
