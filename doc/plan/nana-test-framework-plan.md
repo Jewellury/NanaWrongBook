@@ -1,25 +1,24 @@
-# Nana 测试框架 · 开发计划 (r3)
+# Nana 测试框架 · 开发计划 (r3.1)
 
 > **前置条件：** `doc/spec/nana-v1-minimum-loop-acceptance.md`（v1 最小闭环验收契约）已冻结
 > 关联规格: `doc/spec/nana-v1-minimum-loop-acceptance.md`（验收契约）、`doc/product/nana-product-behavior-manual-v1.md`（产品行为手册）
 > 关联 backlog: TD-006（手动改课本分类写入口径统一）、OD-003（E2E 补真实入口路径）
 > 关联参考: `doc/reference/TECH_PLAN_v2.md`（技术方案）、`doc/reference/OPS_handbook.md`（运营手册）
-> 计划日期: 2026-07-12（r2: 2026-07-12，r3 修订: 2026-07-12，整合验收契约评审反馈）
+> 计划日期: 2026-07-12（r2: 2026-07-12，r3: 2026-07-12，r3.1 修订: 2026-07-12，整合评审第二轮反馈）
 > 预计影响: `e2e/`、`playwright.config.ts`、`.github/workflows/`、`tests/fixtures/`、`scripts/`、`doc/`
 
 ---
 
-## r3 修订摘要
+## r3.1 修订摘要
 
-| 评审问题 | r2 不足 | r3 修正 |
+| 评审问题 | r3 不足 | r3.1 修正 |
 |---------|---------|---------|
-| 缺少功能契约 | 测试框架只解决"怎么测"，没有权威定义"测什么" | 新增 `doc/spec/nana-v1-minimum-loop-acceptance.md`，冻结 CL-01～CL-16 验收点；测试场景映射到 CL 编号 |
-| ffmpeg 在 CI 主机缺失 | r2 只在 Docker runner 装 ffmpeg，CI 主机跑 Next.js 时也需要 | r3 在 ci.yml e2e-test job 中显式 `ffmpeg -version` 检查 + 安装步骤 |
-| 假 Provider 响应选择不可靠 | r2 用进程级 `E2E_FIXTURE_NAME` 环境变量切换，批量测试中不可靠 | r3 改为按请求 body 中题图哈希映射固定响应，去掉环境变量切换 |
-| R1a/R1d 范围重复 | r2 在 R1a 写入 2.8（30 题场景）又单列 R1d，范围重叠 | r3 将 30 题场景（任务 2.8）从 R1a 移除，明确归入 R1d |
-| 保存时间阈值不一致 | r2 §4.2 写"2 秒"，§7.1 写"10 秒" | r3 统一：保存确认硬门禁 = 10s（CI）/ 5s（本地），由验收契约 CL-04 定义 |
-| Fixture 来源未约束 | r2 只说"补充集合、不等式、三角函数"，未约束到 16 个 TextbookTopic | r3 要求所有新 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围，逐张脱敏确认 |
-| 手动分类定位不清 | r2 未明确手动分类在产品中的定位 | r3 明确：手动 TextbookTopic 分类是纠错路径（CL-09），不是每题必经步骤；理想路径是 AI 自动分类 |
+| 假 Provider 哈希方案会失效 | r3 预计算 fixture 原始文件 MD5，但前端 `processImageFile()` 会压缩重新编码，fixture 原始 data URL ≠ 压缩后 data URL ≠ Provider 收到的 image_url.url。且未知哈希 fallback 到 clear-printed 会产生假绿灯 | r3.1 改为**动态注册**：Playwright 拦截 `POST /api/nana/cases`，从请求体提取压缩后 `question_image.content`，算 SHA-256，调假 Provider 控制端点注册映射。未注册哈希**显式报错**，禁止 fallback |
+| 产品体验目标和测试超时混淆 | r3 CL-04 把"本地 5s、CI 10s"写成成功条件，9s 也会被判合格 | r3.1 分为：产品行为（即时进入已保存状态）、体验目标（≤2s 采集趋势）、测试超时（5s/10s 仅判卡死）、发布门禁（超时阻塞/超目标告警） |
+| 14/16 制造虚假完成感 | r3 写"已实现"实际只是"代码存在" | r3.1 改为四级状态表：代码存在 / 确定性测试通过 / 真实 Provider 通过 / 真机通过。总体结论明确：v1 闭环尚未完成 |
+| S5 错误映射 CL-13 | r3 S5 同时映射 CL-13 打印，但 R1b 无打印依赖 | r3.1 S5 只验证纠正后汇总更新（CL-09, CL-10），打印统一归 S9/R1c |
+| 图像质量与跨章节 fixture 混用 | r3 三张全函数题验证"不同章节分组"，mock 响应张冠李戴 | r3.1 拆为素材组 A（图像质量/降级，3张函数题）+ 素材组 B（跨章节分类，3张不同章节题）|
+| S7 竞态未真正触发 | r3 假 Provider 均 <100ms 返回，连续上传难触发竞态 | r3.1 S7 配置三题不同延迟（Q1 最慢、Q2 中等、Q3 最快），验证晚到结果不覆盖新状态 |
 
 ---
 
@@ -166,14 +165,12 @@
 
 - [ ] 任务 2.1：创建 `e2e/helpers/fake-provider-server.ts`——本地假豆包 Provider
   - 启动一个本地 HTTP 服务器，模拟 OpenAI 兼容接口（`/chat/completions`）
-  - **r3 修正：按请求 body 中题图哈希映射固定响应**（不用进程级环境变量切换）
-  - 响应延迟可控（默认 <100ms，可模拟慢响应）
-  - 支持 fixture 响应（按题图哈希索引）：
-    - `clear-printed` 哈希 → 正常成功路径（高置信、完整字段）
-    - `with-handwriting` 哈希 → 手写干扰路径（转写有内容、分类有候选）
-    - `tilted-partial` 哈希 → 低置信降级路径（置信度 <0.5、未分类、诚实降级）
-    - `set-theory` 哈希 → 集合题路径（不同章节，验证多章节分组）
-    - `inequality` 哈希 → 不等式题路径（不同章节）
+  - **r3.1 修正：动态注册方案**——不再预计算 fixture 哈希，改为运行时拦截真实请求动态注册
+  - 响应延迟可控（默认 <100ms，可模拟慢响应；S7 竞态测试需配置不同延迟）
+  - 两个端点：
+    - `POST /chat/completions`：模拟 OpenAI 接口，根据已注册的哈希→响应映射返回 mock
+    - `POST /__test/register`：测试控制端点，注册"压缩后 data URL 的 SHA-256 → mock 响应"映射
+  - **禁止 fallback**：未注册哈希必须返回 HTTP 500 + 明确错误信息，不伪装成功
   - **关键**：浏览器仍请求真实 `/api/nana/cases/:id/process`，真实 route handler 执行，真实 `case-analyzer.ts` 调用假 Provider URL，真实 Prisma 事务落库
 
   ```typescript
@@ -181,53 +178,75 @@
   import http from 'http';
   import crypto from 'crypto';
 
-  // r3：按题图 data URL 哈希映射固定响应，不依赖进程级环境变量
-  // 哈希对象 = case-analyzer.ts 发送的 image_url.url 完整 data URL 字符串（含 data:image/...;base64, 前缀）
-  // 不是图片文件原始字节的 MD5
-  // 测试 setup 阶段：读取 fixture 文件 → FileReader.readAsDataURL → 得到 data URL → 算 MD5 → 存入此表
-  const FIXTURE_HASHES: Record<string, string> = {
-    'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg 转为 data URL 后的 MD5
-    'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg 转为 data URL 后的 MD5
-    'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg 转为 data URL 后的 MD5
-    'm3n4o5p6...': 'set-theory',       // set-theory.jpg 转为 data URL 后的 MD5
-    'q7r8s9t0...': 'inequality',        // inequality.jpg 转为 data URL 后的 MD5
-  };
+  // r3.1：动态注册表——测试运行时通过 /__test/register 端点写入
+  // 不再预计算 fixture 文件哈希，因为前端 processImageFile() 会压缩重新编码
+  // fixture 原始 data URL ≠ 压缩后 data URL ≠ Provider 收到的 image_url.url
+  const registeredHashes = new Map<string, { mock: object; delayMs?: number }>();
 
-  const MOCK_RESPONSES: Record<string, object> = {
-    'clear-printed': { /* 7 字段 */ },
-    'with-handwriting': { /* 7 字段 */ },
+  const MOCK_RESULTS: Record<string, object> = {
+    'clear-printed': { /* 7 字段，TB-010 */ },
+    'with-handwriting': { /* 7 字段，TB-010 */ },
     'tilted-partial': { /* 7 字段，低置信 */ },
-    'set-theory': { /* 7 字段，TB-003 集合运算 */ },
-    'inequality': { /* 7 字段，TB-008 一元二次不等式 */ },
+    'set-theory': { /* 7 字段，TB-003 */ },
+    'inequality': { /* 7 字段，TB-008 */ },
+    'function-graph': { /* 7 字段，TB-010 */ },
   };
 
   export function startFakeProvider(port = 3999): http.Server {
     return http.createServer((req, res) => {
+      // 测试控制端点：注册压缩后 data URL 的哈希 → mock 响应
+      if (req.url === '/__test/register' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          const { dataUrl, fixtureName, delayMs } = JSON.parse(body);
+          const hash = crypto.createHash('sha256').update(dataUrl).digest('hex');
+          registeredHashes.set(hash, { mock: MOCK_RESULTS[fixtureName], delayMs });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, hash }));
+        });
+        return;
+      }
+
+      // OpenAI 兼容接口
       if (req.url === '/chat/completions' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
         req.on('end', () => {
-          // r3：从请求 body 中提取 image_url，计算哈希，匹配 fixture
           const parsed = JSON.parse(body);
           const imageUrl = parsed.messages?.[0]?.content?.find(
             (c: any) => c.type === 'image_url'
           )?.image_url?.url || '';
-          const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
-          const fixtureName = FIXTURE_HASHES[hash] || 'clear-printed'; // fallback
-          const mockResult = MOCK_RESPONSES[fixtureName];
-          // 包裹在 OpenAI chat completion 响应格式中
-          const response = {
-            id: 'chatcmpl-fake-' + Date.now(),
-            object: 'chat.completion',
-            choices: [{
-              index: 0,
-              message: { role: 'assistant', content: JSON.stringify(mockResult) },
-              finish_reason: 'stop',
-            }],
-            usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-          };
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(response));
+          const hash = crypto.createHash('sha256').update(imageUrl).digest('hex');
+          const entry = registeredHashes.get(hash);
+
+          // r3.1：未注册哈希显式报错，禁止 fallback
+          if (!entry) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              error: 'UNREGISTERED_HASH',
+              hash,
+              message: '此题图哈希未注册。请检查 Playwright 是否拦截了 POST /api/nana/cases 并调用了 /__test/register',
+            }));
+            return;
+          }
+
+          // 可选延迟（S7 竞态测试用）
+          const delay = entry.delayMs ?? 0;
+          setTimeout(() => {
+            const response = {
+              id: 'chatcmpl-fake-' + Date.now(),
+              object: 'chat.completion',
+              choices: [{
+                index: 0,
+                message: { role: 'assistant', content: JSON.stringify(entry.mock) },
+                finish_reason: 'stop',
+              }],
+              usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+            };
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(response));
+          }, delay);
         });
       } else {
         res.writeHead(404);
@@ -237,13 +256,49 @@
   }
   ```
 
-  > **r3 关键修正**：不再使用 `process.env.E2E_FIXTURE_NAME` 切换响应。批量测试中多张题图同时上传时，进程级变量不可靠。改为按请求 body 中 `image_url.url` 字段值计算 MD5 哈希匹配固定响应。
+  ```typescript
+  // e2e/helpers/register-fixture.ts（伪代码）
+  // r3.1：Playwright 拦截 POST /api/nana/cases，提取压缩后 data URL，注册到假 Provider
+  import crypto from 'crypto';
+
+  export async function setupFixtureRegistration(
+    page: Page,
+    fakeProviderUrl: string,
+    fixtureName: string,
+    delayMs?: number,
+  ) {
+    // 拦截 createCase 请求（不伪造，只监听）
+    page.on('request', async (request) => {
+      if (request.url().includes('/api/nana/cases') && request.method() === 'POST') {
+        const body = JSON.parse(request.postData()!);
+        const imageArtifact = body.artifacts?.find(
+          (a: any) => a.type === 'question_image'
+        );
+        if (imageArtifact) {
+          // imageArtifact.content 就是经过 processImageFile 压缩后的 data URL
+          // 这与 case-analyzer.ts 最终发给 Provider 的 image_url.url 完全一致
+          const dataUrl = imageArtifact.content;
+          // 注册到假 Provider
+          await fetch(`${fakeProviderUrl}/__test/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataUrl, fixtureName, delayMs }),
+          });
+        }
+      }
+    });
+  }
+  ```
+
+  > **r3.1 关键修正**：不再预计算 fixture 文件哈希。因为前端 `processImageFile()` 会通过 Canvas 压缩重新编码（maxWidth 1280、quality 0.7），fixture 原始 data URL ≠ 压缩后 data URL ≠ Provider 收到的 image_url.url。
   >
-  > **哈希对象澄清（审计 P2 修正）**：哈希的不是图片文件原始字节，而是 `case-analyzer.ts` 发送给 Provider 的完整 **data URL 字符串**（即 `data:image/jpeg;base64,...`）。fixture 哈希表应在测试 setup 阶段：读取 fixture 文件 → 转成 data URL（与前端 `FileReader.readAsDataURL` 一致）→ 计算 MD5 → 存入 `FIXTURE_HASHES`。
+  > 改为**动态注册**：Playwright 监听（不伪造）`POST /api/nana/cases`，从请求体 `artifacts[0].content` 提取压缩后 data URL，算 SHA-256，调假 Provider `/__test/register` 端点注册映射。
+  >
+  > **未注册哈希显式失败**：假 Provider 收到未注册哈希时返回 HTTP 500 + 错误信息，禁止 fallback。避免匹配失败被伪装成成功。
 
   - CI 启动方式：`webServer.command` 中先启动假 Provider，再启动 Next.js
   - 环境变量：`VOLCENGINE_API_KEY=fake-key`、`VOLCENGINE_BASE_URL=http://127.0.0.1:3999`、`LITE_ENDPOINT_ID=fake-endpoint`
-  - **r3：不需要 `E2E_FIXTURE_NAME` 环境变量**——假 Provider 按题图哈希自动匹配
+  - **不需要 `E2E_FIXTURE_NAME` 环境变量**——动态注册自动匹配
 
 - [ ] 任务 2.2：创建 `e2e/helpers/virtual-microphone.ts`——虚拟麦克风（Chromium 原生方案）
   - **优先使用 Chromium 官方 fake-media 参数**，不自己改写 MediaRecorder
@@ -335,10 +390,11 @@
 
 - [ ] 任务 2.4：编写黄金闭环最小路径 spec（R1a）——`e2e/ci/nana-golden-path.spec.ts`
   - 登录测试账号（注册临时用户，复用现有模式）
-  - 上传真实手拍题图 `clear-printed.jpg`
+  - 上传真实手拍题图 `clear-printed.jpg`（素材组 A）
   - 通过虚拟麦克风完成录音（Chromium fake-media，不能跳过）
   - 点击"收好这道题"
-  - **硬门禁断言**：10s 内看到"已收好"（CI 环境）/ 5s（本地）（保存超时 = 阻塞，由 CL-04 定义）
+  - **硬门禁断言**：10s 内看到"已收好"（CI 环境）/ 5s（本地）（测试超时 = 阻塞，由 CL-04 定义）
+  - **体验采集（不阻塞）**：记录"已收好"出现耗时，目标 ≤2s（采集趋势，积累后设滚动基线）
   - **硬门禁断言**：AI 整理状态出现（无反馈 = 阻塞）
   - **性能采集（不阻塞）**：记录按钮反馈耗时、整理状态出现耗时
   - 等待假 Provider 返回（<100ms），验证 AI 结果卡：
@@ -358,27 +414,34 @@
   - **证据采集**：每步截图 + 性能指标 + 控制台错误 + 网络耗时
 
 - [ ] 任务 2.5：编写三题批量路径 spec（R1a，不含手动改分类/打印）——`e2e/ci/nana-batch-path.spec.ts`
-  - 三张 fixture 依次走黄金路径：
-    - `clear-printed.jpg`：正常成功路径
-    - `with-handwriting.jpg` + 录音：验证手写干扰和转写
-    - `tilted-partial.jpg`：验证低置信、未分类及诚实降级
-  - 验证三题在汇总页正确分组（自动分类）
-  - 验证图谱中有三个琥珀证据点
-  - **R1b 补充**：手动改分类验证（依赖 TD-006）
-  - **R1c 补充**：打印预览验证（依赖 `/nana/print-preview`）
+  - **素材组 A（图像质量与降级能力）**三张 fixture 依次走黄金路径：
+    - `clear-printed.jpg`：正常成功路径（TB-010 函数性质）
+    - `with-handwriting.jpg` + 录音：验证手写干扰和转写（TB-010 函数性质）
+    - `tilted-partial.jpg`：验证低置信、未分类及诚实降级（TB-010 函数性质）
+  - 验证三题在汇总页正确分组（均为 TB-010，在同一章节组内）
+  - 验证图谱中有琥珀证据点
+  - **R1b 补充**：手动改分类验证（依赖 TD-006，S5 只验证纠正后汇总更新，不含打印）
+  - **R1c 补充**：打印预览验证（依赖 `/nana/print-preview`，S9 独立验证）
 
 - [ ] 任务 2.5b：编写连续拍题竞态 spec（R1a）——`e2e/ci/nana-sequential-capture.spec.ts`
   - **覆盖场景 S7**（验收契约 CL-04, CL-15）
-  - 连续拍 3 道题（快速连拍，不等前一道 AI 整理完成）：
-    1. 上传 `clear-printed.jpg` → 点"收好这道题" → 立即点"再拍一道"
-    2. 上传 `set-theory.jpg` → 点"收好这道题" → 立即点"再拍一道"
-    3. 上传 `inequality.jpg` → 点"收好这道题" → 等待 AI 整理完成
+  - **r3.1 关键：配置三种不同延迟，真正触发竞态**
+  - 连续拍 3 道题（素材组 B，快速连拍，不等前一道 AI 整理完成）：
+    1. 上传 `set-theory.jpg` → 点"收好这道题" → 立即点"再拍一道"
+       - 假 Provider 注册延迟 **2000ms**（最慢，最晚返回）
+    2. 上传 `inequality.jpg` → 点"收好这道题" → 立即点"再拍一道"
+       - 假 Provider 注册延迟 **500ms**（中等）
+    3. 上传 `function-graph.jpg` → 点"收好这道题" → 等待 AI 整理完成
+       - 假 Provider 注册延迟 **50ms**（最快，最先返回）
+  - **竞态验证核心**：Q3 最先返回（50ms），Q2 次之（500ms），Q1 最晚（2000ms）
+    - Q1 的晚到结果不能覆盖 Q3 的已显示状态（前端 `currentCaseIdRef` 保护）
+    - Q2 的结果不能覆盖 Q3 的状态
   - **硬门禁断言**：
-    - 每道题保存"已收好"均 ≤10s（CI）/ ≤5s（本地）
-    - 前一道题的 AI 结果不覆盖后一道题的状态（前端 `currentCaseIdRef` 竞态保护）
-    - 进入汇总页，3 道题各自归入正确章节
-  - **DB 验证**：3 个 Case 各有独立 CaseAiResult，caseId 互不串
-  - **证据采集**：每步截图 + 保存耗时 + AI 状态出现耗时
+    - 每道题保存"已收好"均 ≤10s（CI）/ ≤5s（本地）（测试超时）
+    - 最终页面显示的是 Q3（function-graph）的 AI 结果，不是 Q1 或 Q2 的
+    - 进入汇总页，3 道题各自归入正确章节（TB-003, TB-008, TB-010）
+  - **DB 验证**：3 个 Case 各有独立 CaseAiResult，caseId 互不串，AI 结果内容与各自 fixture 匹配
+  - **证据采集**：每步截图 + 保存耗时 + AI 状态出现耗时 + 延迟时序记录
 
 - [ ] 任务 2.5c：编写跨用户隔离 spec（R1a）——`e2e/ci/nana-cross-user.spec.ts`
   - **覆盖场景 S10**（验收契约 CL-16）
@@ -396,11 +459,17 @@
   - 改为通过真实 UI 入口点击进入"最近拍过的题"浮层
   - 保留作为快速冒烟测试（不跑完整黄金路径）
 
-- [ ] 任务 2.7：补充多章节 fixture 题图
-  - 现有 3 张全偏函数题，无法证明"按不同课本章节整理错题集"真的有用
-  - 至少补充：集合题（TB-003）、不等式题（TB-008）等不同章节的脱敏题图
-  - **r3 约束**：所有新 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围（见验收契约 §7），逐张脱敏确认
-  - 对应的假 Provider mock 响应也需要覆盖新章节的 topicId/nodeId
+- [ ] 任务 2.7：补充多章节 fixture 题图（r3.1 拆分为素材组 A + B）
+  - **素材组 A（图像质量与降级能力）**：现有 3 张全偏函数题，验证图像质量和降级
+    - `clear-printed.jpg`、`with-handwriting.jpg`、`tilted-partial.jpg`
+    - mock 响应统一映射到 TB-010 / M2a-13（函数性质），不张冠李戴
+  - **素材组 B（跨章节分类与汇总）**：新增 3 张不同章节的脱敏题图
+    - `set-theory.jpg`（TB-003 集合的基本运算，第一章）
+    - `inequality.jpg`（TB-008 一元二次不等式，第二章）
+    - `function-graph.jpg`（TB-010 函数的基本性质，第三章）
+    - mock 响应分别映射到各自章节的 topicId/nodeId
+  - **r3.1 约束**：所有 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围（见验收契约 §7），逐张脱敏确认
+  - mock 响应中的 topicId 和 nodeId 必须与题图实际内容匹配，不能给一张函数题硬配三角函数响应
 
 - [ ] 任务 2.8：30 题数据规模场景 spec（**R1d，不在 R1a 范围**）——`e2e/ci/nana-scale-test.spec.ts`
   - 通过数据库直接灌入 30 道 Case + CaseAiResult（不同章节分布）
@@ -590,19 +659,21 @@
 
 ### 4.2 性能采集与门禁策略
 
-#### R1 阶段：只采集，不因绝对耗时阻塞
+#### r3.1 修正：产品体验目标 vs 测试超时分离
 
-| 指标 | 采集值 | 硬门禁？ |
-|------|:------:|:--------:|
-| 按钮点击到 pressed/loading 反馈 | 记录 | 是（无反馈=阻塞） |
-| 上传后题图预览出现 | 记录 | 否（仅采集） |
-| 保存后“已收好”出现 | 记录 | 是（>10s=阻塞，CI / >5s 本地） |
-| AI 整理状态出现 | 记录 | 是（无反馈=阻塞） |
-| 假 Provider 完成 | 记录 | 否（<2s 期望） |
-| 题目汇总首屏可操作 | 记录 | 否（仅采集） |
-| 全流程控制台未处理错误 | 0 | 是（≥1=阻塞） |
-| 全流程失败网络请求 | 0 | 是（≥1=阻塞） |
-| 全流程横向溢出 | 0 | 是（≥1=阻塞） |
+| 指标 | 采集值 | 体验目标 | 测试超时（硬门禁） |
+|------|:------:|:--------:|:------------------:|
+| 按钮点击到 pressed/loading 反馈 | 记录 | ≤200ms | 无反馈=阻塞 |
+| 上传后题图预览出现 | 记录 | ≤1s | 仅采集 |
+| 保存后"已收好"出现 | 记录 | **≤2s** | **>5s 本地 / >10s CI=阻塞** |
+| AI 整理状态出现 | 记录 | ≤3s | 无反馈=阻塞 |
+| 假 Provider 完成 | 记录 | <2s | 仅采集 |
+| 题目汇总首屏可操作 | 记录 | ≤2s | 仅采集 |
+| 全流程控制台未处理错误 | 0 | — | ≥1=阻塞 |
+| 全流程失败网络请求 | 0 | — | ≥1=阻塞 |
+| 全流程横向溢出 | 0 | — | ≥1=阻塞 |
+
+> **r3.1 关键修正**：体验目标和测试超时分开。体验目标（≤2s）采集趋势，先不阻塞；测试超时（5s/10s）仅判断功能是否彻底卡死。超过体验目标告警不阻塞，超过测试超时硬阻塞。
 
 #### 积累 20 次后的门禁升级策略
 
@@ -738,9 +809,10 @@
 | `scripts/generate-checklist.ts` | 新增 | 真机抽检清单自动生成脚本 |
 | `doc/checklist/real-device-checklist.md` | 新增 | 真机抽检清单（4 项检查） |
 | `tests/fixtures/nana/audio/math-voice-sample.wav` | 新增 | 脱敏数学口述 WAV 文件（虚拟麦克风用） |
-| `tests/fixtures/nana/cases/set-theory.jpg` | 新增 | 集合题脱敏题图（多章节覆盖） |
-| `tests/fixtures/nana/cases/inequality.jpg` | 新增 | 不等式题脱敏题图（多章节覆盖） |
-| `tests/fixtures/nana/cases/exponent.jpg` | 新增 | 指数函数题脱敏题图（TB-011，多章节覆盖） |
+| `tests/fixtures/nana/cases/set-theory.jpg` | 新增 | 集合题脱敏题图（素材组 B，TB-003） |
+| `tests/fixtures/nana/cases/inequality.jpg` | 新增 | 不等式题脱敏题图（素材组 B，TB-008） |
+| `tests/fixtures/nana/cases/function-graph.jpg` | 新增 | 函数图象题脱敏题图（素材组 B，TB-010） |
+| `e2e/helpers/register-fixture.ts` | 新增 | Playwright 拦截 createCase 请求 + 动态注册假 Provider 哈希 |
 | `.env.e2e.example` | 新增 | E2E 环境变量模板（假 Provider 配置 + smoke 凭证占位） |
 
 ---
@@ -756,7 +828,8 @@
 4. 切到录音 tab → 点"说说看" → Chromium fake-media 触发 → 3 秒后点"我听完了"
    └── 真实 MediaRecorder 录制成 webm → 经过 ffmpeg 转码 → 喂给 /process
 5. 点"收好这道题"
-   ├── 硬门禁：≤10s 看到"已收好"（保存超时=阻塞）
+   ├── 硬门禁：≤10s 看到"已收好"（CI）/ ≤5s（本地）（测试超时=阻塞）
+   ├── 体验采集（不阻塞）：记录"已收好"耗时，目标 ≤2s
    ├── 硬门禁：AI 整理状态出现（无反馈=阻塞）
    ├── 性能采集（不阻塞）：记录按钮反馈耗时、整理状态出现耗时
    └── 假 Provider 返回 <100ms → 真实 /process 代码完整执行 → Prisma 事务落库
@@ -786,7 +859,7 @@
 10. 证据包输出：截图序列 + 性能指标 + 控制台错误 + 网络耗时 + DB 验证结果
 ```
 
-### 7.2 假 Provider 服务器方案（r3 修订）
+### 7.2 假 Provider 服务器方案（r3.1 修订：动态注册）
 
 ```typescript
 // e2e/helpers/fake-provider-server.ts（伪代码）
@@ -798,18 +871,14 @@ import crypto from 'crypto';
 // case-analyzer.ts 调用 client.chat.completions.create()
 // 假 Provider 需要返回相同格式
 
-// r3：预计算每张 fixture 题图的 data URL MD5 哈希，建立哈希→fixture 名映射
-// 哈希对象 = case-analyzer.ts 发送的 image_url.url 完整 data URL 字符串（data:image/...;base64,...）
-// 不是图片文件原始字节，是经过 base64 编码后的完整 data URL 字符串
-const FIXTURE_HASHES: Record<string, string> = {
-  'a1b2c3d4...': 'clear-printed',    // clear-printed.jpg → data URL → MD5
-  'e5f6g7h8...': 'with-handwriting', // with-handwriting.jpg → data URL → MD5
-  'i9j0k1l2...': 'tilted-partial',   // tilted-partial.jpg → data URL → MD5
-  'm3n4o5p6...': 'set-theory',       // set-theory.jpg → data URL → MD5
-  'q7r8s9t0...': 'inequality',        // inequality.jpg → data URL → MD5
-};
+// r3.1：动态注册表——不再预计算 fixture 文件哈希
+// 前端 processImageFile() 会通过 Canvas 压缩重新编码（maxWidth 1280、quality 0.7）
+// fixture 原始 data URL ≠ 压缩后 data URL ≠ Provider 收到的 image_url.url
+// 因此改为运行时动态注册
+const registeredHashes = new Map<string, { mock: object; delayMs?: number }>();
 
 const MOCK_RESULTS: Record<string, object> = {
+  // 素材组 A（图像质量与降级，统一 TB-010）
   'clear-printed': {
     transcript: '这道题是判断函数单调性的',
     questionSummary: '判断 f(x)=x²-2x 在 [0,3] 上的单调性',
@@ -838,54 +907,150 @@ const MOCK_RESULTS: Record<string, object> = {
   },
   'tilted-partial': {
     transcript: '',
-    questionSummary: '图片不太完整，能看到部分三角函数内容',
+    questionSummary: '图片不太完整，能看到部分函数内容',
     textbookTopicCandidates: [], // 低置信 → 空数组
     knowledgeNodeCandidates: [], // 低置信 → 空数组
     initialFeedback: '这道题拍得有点斜，不过没关系，先帮你收着',
     possibleMistakeReason: '', // 空 → 隐藏区块
     nextActionSuggestion: '下次拍照时尽量把题目拍完整，方便 AI 更好地帮你整理',
   },
+  // 素材组 B（跨章节分类，各自映射正确章节）
+  'set-theory': {
+    transcript: '这道题是求集合的交集和并集',
+    questionSummary: '已知集合 A 和 B，求 A∩B 和 A∪B',
+    textbookTopicCandidates: [
+      { topicId: 'TB-003', confidence: 0.88, reason: '集合的基本运算' },
+    ],
+    knowledgeNodeCandidates: [
+      { nodeId: 'M1a-01', confidence: 0.85, reason: '集合运算' },
+    ],
+    initialFeedback: '集合运算做得很清楚',
+    possibleMistakeReason: '可能在求补集时漏了全集',
+    nextActionSuggestion: '回看 1.3 集合的基本运算',
+  },
+  'inequality': {
+    transcript: '解一元二次不等式，先因式分解',
+    questionSummary: '解不等式 x²-5x+6>0',
+    textbookTopicCandidates: [
+      { topicId: 'TB-008', confidence: 0.86, reason: '一元二次不等式' },
+    ],
+    knowledgeNodeCandidates: [
+      { nodeId: 'M2a-05', confidence: 0.82, reason: '一元二次不等式解法' },
+    ],
+    initialFeedback: '思路正确，先因式分解再判断',
+    possibleMistakeReason: '可能开口方向判断反了',
+    nextActionSuggestion: '回看 2.3 一元二次不等式',
+  },
+  'function-graph': {
+    transcript: '看函数图象判断单调区间',
+    questionSummary: '根据函数图象判断单调递增和递减区间',
+    textbookTopicCandidates: [
+      { topicId: 'TB-010', confidence: 0.84, reason: '函数的基本性质' },
+    ],
+    knowledgeNodeCandidates: [
+      { nodeId: 'M2a-13', confidence: 0.79, reason: '图象法判断单调性' },
+    ],
+    initialFeedback: '从图象读单调性做得不错',
+    possibleMistakeReason: '',
+    nextActionSuggestion: '回看 3.2 函数的基本性质',
+  },
 };
 
-// r3 关键修正：不再使用 process.env.E2E_FIXTURE_NAME 切换响应
-// 批量测试中多张题图同时上传时，进程级变量不可靠
-// 改为从请求 body 提取 image_url.url 字段值（data URL 字符串），计算其 MD5 哈希后匹配
-// 注意：哈希对象是 data URL 字符串，不是图片文件原始字节
+// r3.1 关键修正：不再预计算 fixture 文件哈希
+// 改为运行时动态注册——测试通过 /__test/register 端点写入映射
+// 未注册哈希显式失败，禁止 fallback
 
 export function startFakeProvider(port = 3999): http.Server {
   return http.createServer((req, res) => {
+    // 测试控制端点：注册压缩后 data URL 的哈希 → mock 响应
+    if (req.url === '/__test/register' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        const { dataUrl, fixtureName, delayMs } = JSON.parse(body);
+        const hash = crypto.createHash('sha256').update(dataUrl).digest('hex');
+        registeredHashes.set(hash, { mock: MOCK_RESULTS[fixtureName], delayMs });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, hash }));
+      });
+      return;
+    }
+
+    // OpenAI 兼容接口
     if (req.url === '/chat/completions' && req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {
-        // r3：从请求 body 中提取 image_url，计算哈希，匹配 fixture
         const parsed = JSON.parse(body);
         const imageUrl = parsed.messages?.[0]?.content?.find(
           (c: any) => c.type === 'image_url'
         )?.image_url?.url || '';
-        const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
-        const fixtureName = FIXTURE_HASHES[hash] || 'clear-printed'; // fallback
-        const mockResult = MOCK_RESULTS[fixtureName];
-        // 包裹在 OpenAI chat completion 响应格式中
-        const response = {
-          id: 'chatcmpl-fake-' + Date.now(),
-          object: 'chat.completion',
-          choices: [{
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: JSON.stringify(mockResult),
-            },
-            finish_reason: 'stop',
-          }],
-          usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-        };
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(response));
+        const hash = crypto.createHash('sha256').update(imageUrl).digest('hex');
+        const entry = registeredHashes.get(hash);
+
+        // r3.1：未注册哈希显式报错，禁止 fallback
+        if (!entry) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'UNREGISTERED_HASH',
+            hash,
+            message: '此题图哈希未注册',
+          }));
+          return;
+        }
+
+        // 可选延迟（S7 竞态测试用）
+        const delay = entry.delayMs ?? 0;
+        setTimeout(() => {
+          const response = {
+            id: 'chatcmpl-fake-' + Date.now(),
+            object: 'chat.completion',
+            choices: [{
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: JSON.stringify(entry.mock),
+              },
+              finish_reason: 'stop',
+            }],
+            usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+          };
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(response));
+        }, delay);
       });
     } else {
       res.writeHead(404);
       res.end();
+    }
+  });
+}
+```
+
+```typescript
+// e2e/helpers/register-fixture.ts（伪代码）
+// r3.1：Playwright 拦截 POST /api/nana/cases，提取压缩后 data URL，注册到假 Provider
+export async function setupFixtureRegistration(
+  page: Page,
+  fakeProviderUrl: string,
+  fixtureName: string,
+  delayMs?: number,
+) {
+  page.on('request', async (request) => {
+    if (request.url().includes('/api/nana/cases') && request.method() === 'POST') {
+      const body = JSON.parse(request.postData()!);
+      const imageArtifact = body.artifacts?.find(
+        (a: any) => a.type === 'question_image'
+      );
+      if (imageArtifact) {
+        // imageArtifact.content 就是经过 processImageFile 压缩后的 data URL
+        // 这与 case-analyzer.ts 最终发给 Provider 的 image_url.url 完全一致
+        await fetch(`${fakeProviderUrl}/__test/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl: imageArtifact.content, fixtureName, delayMs }),
+        });
+      }
     }
   });
 }
@@ -1291,9 +1456,12 @@ e2e-test:
 | 4 | 清理策略 | 精确删除本次 Case；DELETE API 审计通过前不启用 nightly 写测试 |
 | 5 | 性能基线 | 先采集 20 次，不立即硬门禁；滚动基线 +30% 告警；硬门禁仅功能性断言 |
 | 6 | 调度 | 先每次部署后手动触发，稳定后每周 2-3 次，不必每日 |
-| 7 | R1 启动 | r2 修订后启动缩窄后的 R1a |
+| 7 | R1 启动 | r3.1 修订后启动缩窄后的 R1a |
 | 8 | 功能契约 | **r3 新增**：先冻结 `doc/spec/nana-v1-minimum-loop-acceptance.md`（CL-01～CL-16），再启动 R1a。测试场景映射到 CL 编号，不围绕页面结构固化 |
 | 9 | ffmpeg CI | **r3 新增**：ci.yml e2e-test job 显式安装 + 验证 ffmpeg，避免虚拟录音链路失败 |
-| 10 | 假 Provider 响应选择 | **r3 新增**：按请求 body 中题图哈希映射固定响应，不用进程级环境变量 |
-| 11 | 时间阈值 | **r3 新增**：保存确认硬门禁统一为 10s（CI）/ 5s（本地），由 CL-04 定义 |
-| 12 | Fixture 来源 | **r3 新增**：所有新 fixture 必须来自 16 个 TextbookTopic 覆盖范围，逐张脱敏确认 |
+| 10 | 假 Provider 响应选择 | **r3.1 修正**：改为动态注册——Playwright 拦截 `POST /api/nana/cases`，提取压缩后 data URL 算 SHA-256，调假 Provider `/__test/register` 注册映射。未注册哈希显式失败，禁止 fallback |
+| 11 | 时间阈值 | **r3.1 修正**：分离产品体验目标（≤2s 采集趋势）与测试超时（5s/10s 硬门禁），由 CL-04 定义 |
+| 12 | Fixture 来源 | **r3.1 修正**：拆为素材组 A（图像质量/降级，3张函数题）+ 素材组 B（跨章节分类，3张不同章节题）。mock 响应与题图实际内容匹配 |
+| 13 | 实现状态分级 | **r3.1 新增**：四级状态表（代码存在/确定性测试通过/真实Provider通过/真机通过），总体结论明确 v1 闭环尚未完成 |
+| 14 | S5 范围 | **r3.1 修正**：S5 只验证纠正后汇总更新（CL-09, CL-10），打印统一归 S9/R1c |
+| 15 | S7 竞态触发 | **r3.1 新增**：三题配置不同延迟（2000ms/500ms/50ms），验证晚到结果不覆盖新状态 |

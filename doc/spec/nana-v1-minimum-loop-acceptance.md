@@ -103,12 +103,19 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 | **用户目标** | 点"收好这道题"后快速看到"已收好"，不需要等 AI 整理完 |
 | **页面反馈** | 保存按钮 → "saving" → "已收好"（浮动卡）；同时 AI 异步开始整理 |
 | **API/落库** | `POST /api/nana/cases` 返回 caseId → 立即显示成功 → `POST /api/nana/cases/:id/process` 异步触发 |
-| **成功条件** | 保存到"已收好" ≤ 5s（本地）/ ≤ 10s（CI runner）；AI 整理状态异步出现 |
+| **成功条件** | 保存成功 → 立即进入"已收好"状态（产品行为）；AI 整理状态异步出现 |
 | **失败降级** | 保存失败 → "收的时候出了点问题"，题图数据保留可重试 |
-| **当前实现** | ✅ 已实现（capture/page.tsx: `setSaveState("saved")` 在 `triggerCaseProcess` 之前） |
+| **当前实现** | ✅ 代码已存在（capture/page.tsx: `setSaveState("saved")` 在 `triggerCaseProcess` 之前） |
 | **测试层** | CI 闭环（R1a） |
 
-> **时间阈值统一：** 保存确认硬门禁 = 10s（CI 环境）。测试计划 r2 中 §4.2 写"2 秒"与 §7.1 写"10 秒"不一致，r3 统一为 10s（CI）/ 5s（本地）。
+> **r3.1 修正：产品体验目标 vs 测试超时分离**
+>
+> | 层级 | 含义 | 阈值 | 门禁类型 |
+> |------|------|------|----------|
+> | **产品行为** | 保存确认不等待 AI，立即进入已保存状态 | 即时（代码保证 `setSaveState` 在 `triggerCaseProcess` 前） | 功能性硬门禁（无反馈=阻塞） |
+> | **体验目标** | 在受控网络下，"已收好"出现的目标耗时 | ≤ 2s | 采集趋势，先不阻塞；积累数据后设滚动基线 |
+> | **测试超时** | 判断功能是否彻底卡死的等待上限 | 5s（本地）/ 10s（CI runner） | 超过=测试失败（硬门禁） |
+> | **发布门禁** | 超过测试超时 → 阻塞发布；超过体验目标 → 告警不阻塞 | — | 测试超时=阻塞；体验目标=告警 |
 
 ### CL-05：有录音时返回真实转写；转写失败不影响题图整理
 
@@ -266,7 +273,7 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 | S2 | 清晰题图、不录音 | CL-03, CL-04, CL-06 | CI 闭环 | R1a | 验证语音确实可选 |
 | S3 | 音频失败、图片成功 | CL-05, CL-14 | CI 闭环 | R1a | 假 Provider 返回 audioStatus=failed，题图结果正常 |
 | S4 | 倾斜/不完整图片：低置信、诚实降级 | CL-06, CL-08, CL-14 | CI 闭环 | R1a | 假 Provider 低置信 → 未分类 |
-| S5 | AI 分类错误后手动纠正 | CL-09, CL-10, CL-13 | CI 闭环 | R1b | 依赖 TD-006；汇总和打印随之更新 |
+| S5 | AI 分类错误后手动纠正 | CL-09, CL-10 | CI 闭环 | R1b | 依赖 TD-006；验证纠正后汇总更新（不含打印） |
 | S6 | 三个不同章节的题 | CL-07, CL-10, CL-11, CL-12 | CI 闭环 | R1a | 验证真正的章节分组 |
 | S7 | 连续拍三题 | CL-04, CL-15 | CI 闭环 | R1a | 验证不被 AI 等待阻塞、无竞态 |
 | S8 | 30 题数据集 | CL-10, CL-11, CL-12 | CI 闭环 | R1d | 验证汇总速度、滚动和图谱性能 |
@@ -289,7 +296,7 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 | CL-10 | ✓ | | | | ✓ | ✓ | | ✓ | | |
 | CL-11 | ✓ | | | | | ✓ | | ✓ | | |
 | CL-12 | ✓ | | | | | ✓ | | ✓ | | |
-| CL-13 | | | | | ✓ | | | | ✓ | |
+| CL-13 | | | | | | | | | ✓ | |
 | CL-14 | | | ✓ | ✓ | | | | | | |
 | CL-15 | ✓ | | | | | | ✓ | | | |
 | CL-16 | | | | | | | | | | ✓ |
@@ -324,33 +331,46 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 
 ## 6. 当前实现状态汇总
 
-### 6.1 已实现（14/16）
+### 6.1 总体结论
 
-| CL | 实现位置 | 验证方式 |
-|----|----------|----------|
-| CL-01 | `/nana/page.tsx` 拍题入口 | E2E 导航断言 |
-| CL-02 | `/nana/capture/page.tsx` + `POST /api/nana/cases` | DB 验证 Artifact |
-| CL-03 | `capture/page.tsx` 录音可选 + `case-analyzer.ts` audioStatus=skipped | E2E 不录音路径 |
-| CL-04 | `capture/page.tsx: setSaveState("saved")` 在 `triggerCaseProcess` 前 | E2E 保存耗时断言 |
-| CL-05 | `case-analyzer.ts: audioTranscodeFailed` 降级 + `deriveAudioStatus` | E2E + DB 验证 audioStatus |
-| CL-06 | `case-analyzer.ts` 7 字段 + `process/route.ts` 持久化 | E2E + DB 验证 |
-| CL-07 | `process/route.ts: HIGH_CONFIDENCE_THRESHOLD=0.5` + `persistAiResult` 事务双写 | DB 验证双标签 |
-| CL-08 | `process/route.ts: persistAiResult` 低置信不挂 tag | DB 验证无标签 + textbookTopicId=null |
-| CL-10 | `summary/route.ts` 按 TextbookTopic 分组 | E2E 汇总页断言 |
-| CL-11 | `summary/route.ts` groups 结构 | E2E 多题汇总 |
-| CL-12 | `map/route.ts: caseEvidenceCount` + 不写 StudentNodeState | DB 验证 StudentNodeState 不变 |
-| CL-14 | `process/route.ts: persistFailedResult` + `capture/page.tsx: handleRetryProcess` | E2E 失败→重试 |
-| CL-15 | `capture/page.tsx: currentCaseIdRef + abortControllerRef` | E2E 连续拍题 |
-| CL-16 | 所有 `/api/nana/cases` 路由 `where: { studentId: session.user.id }` | E2E 跨用户 |
+> **v1 最小错题集闭环尚未完成。** CL-09、CL-13 未实现，其余条目多数仍待本框架验证。
+> "代码存在"不等于"验收通过"——下表四级状态如实反映当前进度。
 
-### 6.2 未实现（2/16）
+### 6.2 实现状态明细（r3.1 四级状态）
+
+| CL | 代码存在 | 确定性测试通过 | 真实 Provider 通过 | 真机通过 | 实现位置 |
+|----|:--------:|:--------------:|:-------------------:|:--------:|----------|
+| CL-01 | ✅ | ❌ 待 R1a | ❌ 待 R4 | ❌ 待发版 | `/nana/page.tsx` 拍题入口 |
+| CL-02 | ✅ | ❌ 待 R1a | ❌ 待 R4 | ❌ 待发版 | `capture/page.tsx` + `POST /api/nana/cases` |
+| CL-03 | ✅ | ❌ 待 R1a | ❌ 待 R4 | ❌ 待发版 | `capture/page.tsx` + `case-analyzer.ts` |
+| CL-04 | ✅ | ❌ 待 R1a | — | ❌ 待发版 | `capture/page.tsx: setSaveState` 在 `triggerCaseProcess` 前 |
+| CL-05 | ✅ | ❌ 待 R1a | ❌ 待 R4 | ❌ 待发版 | `case-analyzer.ts: audioTranscodeFailed` + `deriveAudioStatus` |
+| CL-06 | ✅ | ❌ 待 R1a | ❌ 待 R4 | ❌ 待发版 | `case-analyzer.ts` 7 字段 + `process/route.ts` 持久化 |
+| CL-07 | ✅ | ❌ 待 R1a | ❌ 待 R4 | — | `process/route.ts: HIGH_CONFIDENCE_THRESHOLD=0.5` 双写 |
+| CL-08 | ✅ | ❌ 待 R1a | ❌ 待 R4 | — | `process/route.ts: persistAiResult` 低置信不挂 tag |
+| CL-09 | ❌ 未实现 | — | — | — | **TD-006**：无 PATCH/PUT API、无"改分类" UI |
+| CL-10 | ✅ | ❌ 待 R1a | — | — | `summary/route.ts` 按 TextbookTopic 分组 |
+| CL-11 | ✅ | ❌ 待 R1a | — | — | `summary/route.ts` groups 结构 |
+| CL-12 | ✅ | ❌ 待 R1a | — | — | `map/route.ts: caseEvidenceCount` + 不写 StudentNodeState |
+| CL-13 | ❌ 未实现 | — | — | — | **Nana 打印页**：无 `/nana/print-preview` 路由 |
+| CL-14 | ✅ | ❌ 待 R1a | ❌ 待 R4 | — | `process/route.ts: persistFailedResult` + `handleRetryProcess` |
+| CL-15 | ✅ | ❌ 待 R1a | — | — | `capture/page.tsx: currentCaseIdRef + abortControllerRef` |
+| CL-16 | ✅ | ❌ 待 R1a | — | — | 所有路由 `where: { studentId: session.user.id }` |
+
+> **状态含义说明：**
+> - **代码存在** = 找得到实现代码（不等于验收通过）
+> - **确定性测试通过** = 假 Provider + 临时 DB 的 CI 闭环已验证
+> - **真实 Provider 通过** = 豆包真实质量已验证（R4 Smoke）
+> - **真机通过** = 手机权限和体感已验证（发版前抽检）
+
+### 6.3 未实现项与阻塞
 
 | CL | 阻塞项 | 阻塞轮次 | 影响 |
 |----|--------|----------|------|
 | CL-09 | **TD-006**：无 PATCH/PUT API、无"改分类" UI、双写口径未统一 | R1b | 手动纠错路径无法测试 |
 | CL-13 | **Nana 打印页**：无 `/nana/print-preview` 路由 | R1c | 打印预览验证无法做 |
 
-### 6.3 需额外验证的实现（标记重点）
+### 6.4 需额外验证的实现（标记重点）
 
 | 项目 | 当前状态 | 验证重点 |
 |------|----------|----------|
@@ -360,22 +380,48 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 
 ---
 
-## 7. 16 个 TextbookTopic 覆盖范围
+## 7. Fixture 素材组与 TextbookTopic 覆盖范围
 
-测试 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围，并逐张脱敏确认。
+> **r3.1 修正：拆分图像质量 fixture 与跨章节 fixture 为两组，不能给一张函数题硬配三角函数 mock 响应。**
+
+### 7.1 素材组 A：图像质量与降级能力（S1-S4）
+
+| Fixture | 图像特征 | 验证目标 | 对应章节 | 对应场景 |
+|---------|----------|----------|----------|----------|
+| `clear-printed.jpg` | 清晰打印体 | 正常成功路径（高置信、完整字段） | TB-010 函数的基本性质 | S1, S2, S7 |
+| `with-handwriting.jpg` | 手写干扰 | 手写干扰下的转写和分类 | TB-010 函数的基本性质 | S1, S3 |
+| `tilted-partial.jpg` | 倾斜/不完整 | 低置信、未分类、诚实降级 | TB-010 函数的基本性质 | S4 |
+
+> 这三张素材都偏函数题，用来验证**图像质量和降级能力**，不验证跨章节分类。
+> mock 响应中的 topicId 和 nodeId 必须与题图实际内容匹配（都是 TB-010 / M2a-13）。
+
+### 7.2 素材组 B：跨章节分类与汇总（S6, S7）
+
+| Fixture | 图像特征 | 验证目标 | 对应章节 | 对应场景 |
+|---------|----------|----------|----------|----------|
+| `set-theory.jpg` | 集合运算题 | 跨章节：第一章集合 | TB-003 集合的基本运算 | S6, S7 |
+| `inequality.jpg` | 不等式题 | 跨章节：第二章不等式 | TB-008 一元二次不等式 | S6, S7 |
+| `function-graph.jpg` | 函数图象题 | 跨章节：第三章函数 | TB-010 函数的基本性质 | S6, S7 |
+
+> 这三张素材来自**不同章节**，用来验证**真正的跨章节分类与汇总分组**。
+> mock 响应中的 topicId 和 nodeId 必须与题图实际内容匹配，不能张冠李戴。
+
+### 7.3 16 个 TextbookTopic 覆盖范围
+
+所有 fixture 必须来自当前 16 个 TextbookTopic 覆盖范围，并逐张脱敏确认。
 
 | ID | 名称 | 章节 | Fixture 覆盖 |
 |----|------|------|-------------|
-| TB-001 | 集合的概念 | 第一章 集合与常用逻辑用语 | 待补充集合题 fixture |
+| TB-001 | 集合的概念 | 第一章 集合与常用逻辑用语 | 待补充 |
 | TB-002 | 集合间的基本关系 | 第一章 | 待补充 |
-| TB-003 | 集合的基本运算 | 第一章 | 待补充 |
+| TB-003 | 集合的基本运算 | 第一章 | 素材组 B: set-theory.jpg |
 | TB-004 | 充分条件与必要条件 | 第一章 | 待补充 |
 | TB-005 | 全称量词与存在量词 | 第一章 | 待补充 |
-| TB-006 | 等式性质与不等式性质 | 第二章 一元二次函数、方程和不等式 | 待补充不等式题 fixture |
+| TB-006 | 等式性质与不等式性质 | 第二章 一元二次函数、方程和不等式 | 待补充 |
 | TB-007 | 基本不等式 | 第二章 | 待补充 |
-| TB-008 | 一元二次不等式 | 第二章 | 待补充 |
+| TB-008 | 一元二次不等式 | 第二章 | 素材组 B: inequality.jpg |
 | TB-009 | 函数的概念及其表示 | 第三章 函数的概念与性质 | 待补充 |
-| TB-010 | 函数的基本性质 | 第三章 | 现有 fixture（函数单调性） |
+| TB-010 | 函数的基本性质 | 第三章 | 素材组 A: clear-printed, with-handwriting, tilted-partial; 素材组 B: function-graph.jpg |
 | TB-011 | 指数函数 | 第四章 指数函数与对数函数 | 待补充 |
 | TB-012 | 对数 | 第四章 | 待补充 |
 | TB-013 | 对数函数 | 第四章 | 待补充 |
@@ -383,7 +429,7 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 | TB-015 | 复数的概念 | 第七章 复数 | 待补充 |
 | TB-016 | 复数的四则运算 | 第七章 | 待补充 |
 
-> **R1a fixture 要求：** 至少覆盖 3 个不同章节（第一章集合、第二章不等式、第三章函数或第四章指数对数），用于验证 S6（三个不同章节的题）场景。每张题图需目视确认无姓名、学校、日期等隐私信息。
+> **R1a fixture 要求：** 素材组 A（3 张）+ 素材组 B（3 张）= 共 6 张脱敏题图。每张需目视确认无姓名、学校、日期等隐私信息。素材组 A 的 mock 响应统一映射到 TB-010；素材组 B 的 mock 响应分别映射到各自章节。
 
 ---
 
@@ -402,5 +448,12 @@ AI 给摘要、转写、课本分类、轻反馈、下一步
 
 ---
 
-> **本文档冻结后，测试计划 r3 方可作为执行依据。**
-> 用户确认本文档 → 启动 r3 修订 → 用户确认 r3 → 启动 R1a。
+> **本文档冻结后，测试计划 r3.1 方可作为执行依据。**
+> 用户确认本文档 → 启动 r3.1 修订 → 用户确认 r3.1 → 启动 R1a。
+>
+> **r3.1 修订要点：**
+> 1. CL-04 分离产品体验目标（≤2s 采集趋势）与测试超时（5s/10s 硬门禁）
+> 2. 实现状态从"已实现/未实现"改为四级状态表
+> 3. S5 去掉 CL-13，打印只归 S9/R1c
+> 4. Fixture 拆为素材组 A（图像质量）和素材组 B（跨章节），mock 响应与题图内容一致
+> 5. 总体结论明确：v1 最小错题集闭环尚未完成
