@@ -16,7 +16,7 @@
 | 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ⬜ | — | 基础设施 |
 | 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ⬜ | — | 基础设施 |
 | 5 | 任务 2.3：db-verifier.ts | ✅ | 待提交 | 主会话遗留文件评估后保留+测试数据修复 |
-| 6 | 任务 2.4：nana-golden-path.spec.ts | ✅ | 待提交 | 黄金闭环，本批次 Commit D |
+| 6 | 任务 2.4：nana-golden-path.spec.ts | ✅ | 07b3d87 | 黄金闭环，本批次 Commit D |
 | 7 | 任务 2.5：nana-batch-path.spec.ts | ⬜ | — | 三题批量 |
 | 8 | 任务 2.5c：nana-cross-user.spec.ts | ⬜ | — | CL-16 强化 |
 | 9 | 任务 2.5b：nana-sequential-capture.spec.ts | ⬜ | — | fixture-blocked |
