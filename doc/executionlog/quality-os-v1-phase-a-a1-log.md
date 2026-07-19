@@ -15,8 +15,8 @@
 | 2 | CL-14 UI 补齐（audioStatus=failed 重试按钮） | ✅ | 待提交 | TDD 红→绿 |
 | 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ⬜ | — | 基础设施 |
 | 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ⬜ | — | 基础设施 |
-| 5 | 任务 2.3：db-verifier.ts | ⬜ | — | 基础设施 |
-| 6 | 任务 2.4：nana-golden-path.spec.ts | ⬜ | — | 黄金闭环 |
+| 5 | 任务 2.3：db-verifier.ts | ✅ | 待提交 | 主会话遗留文件评估后保留+测试数据修复 |
+| 6 | 任务 2.4：nana-golden-path.spec.ts | 🟡 | — | 黄金闭环，本批次 Commit D |
 | 7 | 任务 2.5：nana-batch-path.spec.ts | ⬜ | — | 三题批量 |
 | 8 | 任务 2.5c：nana-cross-user.spec.ts | ⬜ | — | CL-16 强化 |
 | 9 | 任务 2.5b：nana-sequential-capture.spec.ts | ⬜ | — | fixture-blocked |
@@ -83,4 +83,58 @@
 - 未碰其他 untracked 文件（ci-status-*.txt / doc/research/*）（本任务边界清晰）✅
 - 遇到测试失败先定位再修（铁律 5）✅
 - 9/9 测试通过、build 通过、lint 干净才提交（铁律 6）✅
+
+### 子任务 5：db-verifier 收尾（Commit C）（2026-07-19）
+
+**主会话遗留文件评估（execute-agent 接手时先评估再决策）**：
+
+主会话此前越界写了两个未提交文件（违反三代理框架，已纠正）：
+- `e2e/helpers/db-verifier.ts`（实现，完成度高）
+- `src/__tests__/e2e-helpers/db-verifier.test.ts`（测试，19/20 通过，1 个 artifact content 长度断言失败）
+
+execute-agent 评估决策：
+
+| 文件 | 决策 | 理由 |
+|------|------|------|
+| `e2e/helpers/db-verifier.ts` | **保留不动** | 实现完全符合 r3.1 §3 任务 2.3 要求；FREEZE-001 关键修正全部到位：`processingStatus` 在 CaseAiResult 上不在 Case 上、StudentNodeState 合法值 stable/uncertain/gap/untested 无 mastered、双层 tag 独立验证、Artifact 支持 type + 可选 minContentLength；工厂模式 `createDbVerifier(prisma)` API 清晰 |
+| `src/__tests__/e2e-helpers/db-verifier.test.ts` | **保留主体，仅修两处** | 19/20 通过证明测试整体正确；唯一失败的 `artifactExists 验证 question_image Artifact 落库` 是**测试数据设计 bug**（setupCompleteCase 创建的 content 仅 41 字符，与 `minContentLength=50` 断言冲突），不是实现 bug |
+
+**修复动作（仅测试文件，实现不动）**：
+
+1. **修测试数据 bug**：`setupCompleteCase` 中 question_image content 由 `'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ'`（41 字符）改为 `'data:image/jpeg;base64,' + 'A'.repeat(256)`（277 字符），更接近真实压缩后 base64 长度，保持 `minContentLength=50` 断言不动
+2. **修 lint warning**：移除未使用的 `beforeEach` import（主会话遗留）
+
+**TDD 流程**：
+- 红：主会话遗留 1 红 19 绿（artifactExists minContentLength 失败）
+- 绿：修测试数据 → 20/20 通过（无需改实现，证明实现正确）
+
+**验证结果**：
+
+| 命令 | 结果 |
+|------|------|
+| `DATABASE_URL="file:./data/test/test.db" npm.cmd run test -- src/__tests__/e2e-helpers/db-verifier.test.ts --run` | **20/20 通过** ✅ |
+| `npm.cmd run build` | **通过** ✅（57 页面全部编译） |
+| `node node_modules/eslint/bin/eslint.js e2e/helpers/db-verifier.ts src/__tests__/e2e-helpers/db-verifier.test.ts` | **干净** ✅（0 error / 0 warning） |
+| 本地 Docker 测试容器 | **未跑**（本地 Docker 状态未知；测试容器门禁交 GitHub Actions） |
+| 本地 e2e | **未跑**（依赖批次 3 任务 2.9 webServer env 配置，本批次范围外） |
+
+**关键断言覆盖的 FREEZE-001 条款**：
+
+| CL | 测试用例 | 断言要点 |
+|----|---------|----------|
+| CL-02 | `caseCreated` + `artifactExists` | Case.id/studentId 落库 + Artifact(question_image) 落库 |
+| CL-06 | `aiResultPersisted` 完整成功路径 | 7 字段（questionSummary/initialFeedback/nextActionSuggestion/textbookTopicId 等） |
+| CL-07 | `textbookTopicTagExists` + `knowledgeTagExists` | 双层 tag 独立挂载（孩子操作层 + 系统验证层） |
+| CL-08 | `aiResultPersisted` 低置信降级 | `textbookTopicId=null` + 实际非空时抛错 |
+| CL-12 | `noStudentNodeStateChange` + `allStudentNodeStateStatusLegal` | v1 不点亮节点：拍题前后数量不变；status 无 mastered 非法值 |
+| CL-14 | `aiResultPersisted` 整体失败 + 音频子失败 | processingStatus=failed（整体）/ processingStatus=success + audioStatus=failed（音频子失败） |
+
+**偏离记录**：无（保留主会话实现 + 仅修测试数据是计划内决策，r3.1 §3 任务 2.3 验收要求全部满足）。
+
+**安全铁律遵守**：
+- 未改 Prisma schema / 上游表（铁律 3）✅
+- 未入 git 密钥（铁律 4）✅
+- 未碰其他 untracked 残留（ci-status-*.txt / doc/research/*）（铁律 5 边界清晰）✅
+- 测试数据 bug 先定位再修，不猜测（铁律 5）✅
+- 20/20 测试 + build + lint 干净才提交（铁律 6）✅
 
