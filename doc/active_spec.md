@@ -12,7 +12,8 @@
 ### 背景
 
 r3.3 计划已冻结（commit `ca816df`，O-1~O-6 全部确认），战略方向正式冻结不再出 r3.4。
-Phase A 目标：实现 R1a 黄金闭环 + 历史缺陷回放护栏 + audit 受控盲测 + 两类受控失败演练，达成 **Pilot-ready** 成熟度。
+**A-0 第一次冻结已完成**（FREEZE-001，commit `29a4dfe`，14 条 R1a 主路径条款已冻结）。
+Phase A 当前目标：实现 R1a 黄金闭环 + 历史缺陷回放护栏 + audit 受控盲测 + 两类受控失败演练，达成 **Pilot-ready** 成熟度。
 
 **核心主线**：R1a 建护栏 → CL-09 验证第一个产品 Goal → CL-13 验证跨需求复制 → 真实发布和使用结果验证 → 再沉淀 Quality OS。
 
@@ -20,7 +21,7 @@ Phase A 目标：实现 R1a 黄金闭环 + 历史缺陷回放护栏 + audit 受�
 
 - [nana-quality-os-v1-plan.md](plan/nana-quality-os-v1-plan.md)（r3.3 冻结版，Phase A 可执行 + B/C/D/E 只写目标）
 - [nana-test-framework-plan.md](plan/nana-test-framework-plan.md)（r3.1，A-1 直接消费其 R1a 任务 2.1~2.7+2.9）
-- [nana-v1-minimum-loop-acceptance.md](spec/nana-v1-minimum-loop-acceptance.md)（v1 验收契约，CL-10 已拆为 CL-10a/10b）
+- [nana-v1-minimum-loop-acceptance.md](spec/nana-v1-minimum-loop-acceptance.md)（v1 验收契约，**FREEZE-001 已冻结 14 条**；CL-10 已拆为 CL-10a/10b）
 
 ### 上轮尾巴（P1 追踪，不阻塞 A-0）
 
@@ -40,8 +41,8 @@ Phase A 目标：实现 R1a 黄金闭环 + 历史缺陷回放护栏 + audit 受�
 
 | 任务 ID | 任务 | 状态 | 说明 |
 |---------|------|:----:|------|
-| **A-0** 第一次冻结 | 产品复核 + 冻结 14 条 CL | 🟡 进行中 | 用户审阅 CL-01~08、CL-10a、CL-11~12、CL-14~16（共 14 条）；产出 spec "已冻结条款清单（第一次）"段；排除 CL-09/CL-10b/CL-13 |
-| **A-1** R1a 实现 | 黄金闭环 + 护栏 | ⬜ | r3.1 任务 2.1~2.7+2.9（不含 2.8=30题规模=R1d）；假 Provider + 虚拟麦克风 + golden-path spec + 证据采集器 |
+| **A-0** 第一次冻结 | 产品复核 + 冻结 14 条 CL | ✅ 完成 | FREEZE-001（commit `29a4dfe`）；A-0 契约补丁（`922045d`）修 9 条 CL；14 条 R1a 主路径条款冻结；CL-06/CL-14 显式标注 A-1 补齐项 |
+| **A-1** R1a 实现 | 黄金闭环 + 护栏 | 🟡 启动中 | r3.1 任务 2.1~2.7+2.9（不含 2.8=30题规模=R1d）；假 Provider + 虚拟麦克风 + golden-path spec + 证据采集器；**+ A-0 标注的两处 UI 补齐**：① CL-06 textbookTopic=null 占位；② CL-14 audioStatus=failed 重试按钮 |
 | **A-2** Evidence Summary | 最小证据摘要 | ⬜ | `scripts/quality/build-evidence-summary.ts`（只读 git+测试+性能，不读 audit，不入 Git） |
 | **A-3** audit verifier 模式 | 新会话独立验证 R1a | ⬜ | `doc/auditlog/r1a-verifier-mode.md`（逻辑隔离非权限隔离） |
 | **A-4** 历史缺陷回放 | HD-2+3+4+5（HD-1 对照） | ⬜ | 旧 commit/故障 fixture/characterization test，不删现有保护代码 |
@@ -67,7 +68,10 @@ Phase A 目标：实现 R1a 黄金闭环 + 历史缺陷回放护栏 + audit 受�
 
 ### 下一步
 
-立即进入 **A-0 条款审阅**：用户逐条审阅 14 条 CL（CL-01~08、CL-10a、CL-11~12、CL-14~16），确认后冻结并产出"已冻结条款清单（第一次）"段。冻结后启动 A-1（R1a 实现）。
+**A-0 已完成（FREEZE-001）。立即进入 A-1（R1a 实现）**：
+- 按 r3.1 任务 2.1~2.7+2.9 顺序实现（假 Provider → 虚拟麦克风 → golden-path spec → 证据采集器 → Playwright 配置升级 → 多章节 fixture → CI 集成）
+- **A-1 额外两处 UI 补齐**（FREEZE-001 显式标注的待办）：① CL-06 textbookTopic=null 占位（`ai-result-card.tsx:93`）；② CL-14 audioStatus=failed 重试按钮（`ai-result-card.tsx:80-83`）
+- 每个子任务完成后写执行日志，测试先红后绿，证据入 artifact
 
 ### 安全约束
 
