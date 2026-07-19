@@ -16,7 +16,7 @@
 | 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ⬜ | — | 基础设施 |
 | 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ⬜ | — | 基础设施 |
 | 5 | 任务 2.3：db-verifier.ts | ✅ | 待提交 | 主会话遗留文件评估后保留+测试数据修复 |
-| 6 | 任务 2.4：nana-golden-path.spec.ts | 🟡 | — | 黄金闭环，本批次 Commit D |
+| 6 | 任务 2.4：nana-golden-path.spec.ts | ✅ | 待提交 | 黄金闭环，本批次 Commit D |
 | 7 | 任务 2.5：nana-batch-path.spec.ts | ⬜ | — | 三题批量 |
 | 8 | 任务 2.5c：nana-cross-user.spec.ts | ⬜ | — | CL-16 强化 |
 | 9 | 任务 2.5b：nana-sequential-capture.spec.ts | ⬜ | — | fixture-blocked |
@@ -137,4 +137,25 @@ execute-agent 评估决策：
 - 未碰其他 untracked 残留（ci-status-*.txt / doc/research/*）（铁律 5 边界清晰）✅
 - 测试数据 bug 先定位再修，不猜测（铁律 5）✅
 - 20/20 测试 + build + lint 干净才提交（铁律 6）✅
+
+### 子任务 6：golden-path spec（Commit D）（2026-07-19）
+
+**TDD 流程**：spec 本身是测试，每个 CL 断言先确定"断言什么、什么时候红/绿"。
+
+**实现内容**（`e2e/ci/nana-golden-path.spec.ts` 约 530 行）：
+- 2 个 describe.serial 测试
+- S1 主路径：CL-01/02/03/04/05/06/07/10a/11/12/15（基础断言）
+- S4 低置信路径：CL-08（独立 test，用 tilted-partial fixture 测诚实降级）
+- 集成前批的 fake-provider-server / register-fixture / virtual-microphone / db-verifier 四件套
+- @TODO 任务 1.x evidence-collector 补齐后切换统一采集器（当前用 Playwright 原生 page.screenshot）
+
+**lint 修正**：删除 2 处多余的 `// eslint-disable-next-line no-console`（eslint 配置未禁用 no-console）
+
+**本地 e2e 状态**：未跑通——依赖批次 3 任务 2.9 的 webServer env 配置（注入 VOLCENGINE_BASE_URL=http://127.0.0.1:3999）。符合执行规则：本地 e2e 跑不通不阻塞 commit，门禁交 GitHub Actions。
+
+**验证结果**：
+- ✅ `node node_modules/eslint/bin/eslint.js e2e/ci/nana-golden-path.spec.ts` → 0 error 0 warning
+- ✅ `npm.cmd run build` → 通过
+- ✅ `npx playwright test --list` → 识别 2 个测试
+- ⚠️ 本地 e2e 完整运行 → 未跑（依赖批次 3 任务 2.9 webServer env）
 
