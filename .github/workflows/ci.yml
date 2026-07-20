@@ -7,6 +7,10 @@ on:
       - 'v*'
   pull_request:
     branches: [main]
+  # r3.1 任务 2.9：nightly schedule 跑完整 E2E 套件（含批量路径、连续拍题等）
+  # 默认 push/PR 只跑黄金路径，避免拖慢 CI
+  schedule:
+    - cron: '0 18 * * *'  # UTC 18:00 = 北京时间 02:00
 
 jobs:
   # ============================================
@@ -99,6 +103,12 @@ jobs:
       DATABASE_URL: "file:./e2e.db"
       NEXTAUTH_SECRET: "ci-secret-value-123456"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
+      # r3.1 任务 2.9：假豆包 Provider 配置
+      # webServer.command 启动 Next.js 时，子进程继承父 env，case-analyzer.ts 通过
+      # process.env.VOLCENGINE_BASE_URL 找到假 Provider（http://127.0.0.1:3999）
+      VOLCENGINE_API_KEY: "fake-key"
+      VOLCENGINE_BASE_URL: "http://127.0.0.1:3999"
+      LITE_ENDPOINT_ID: "fake-endpoint"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -115,6 +125,17 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
+      # r3.1 任务 2.9：显式 ffmpeg 检查
+      # 音频转码链路依赖 ffmpeg（webm→wav）；ubuntu-latest 默认预装，
+      # 但显式 sanity check + install fallback 避免预装缺失时静默失败
+      - name: Ensure ffmpeg available
+        run: |
+          if ! command -v ffmpeg &> /dev/null; then
+            echo "ffmpeg not pre-installed, installing..."
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -1
+
       - name: Setup Database
         run: |
           npx prisma db push
@@ -123,13 +144,76 @@ jobs:
       - name: Build application
         run: npm run build
 
+      # r3.1 任务 2.9：启动本地假豆包 Provider（监听 127.0.0.1:3999）
+      # 必须在 Next.js webServer 启动前 ready，因为 case-analyzer.ts 会请求它
+      # 用 nohup + & 后台运行，PID 写入文件供后续关闭 step 使用
+      # fake-provider-server.ts 只 export 函数，用 tsx -e + dynamic import 启动
+      - name: Start fake provider server
+        run: |
+          nohup npx tsx -e "import('./e2e/helpers/fake-provider-server').then(m => m.startFakeProvider(3999).then(({ port }) => console.log('fake-provider listening on', port)).catch(e => { console.error(e); process.exit(1); }))" > /tmp/fake-provider.log 2>&1 &
+          echo $! > /tmp/fake-provider.pid
+          # 等待端口监听（最长 30s）
+          response="000"
+          for i in $(seq 1 30); do
+            response=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3999/ 2>/dev/null || echo "000")
+            if [ "$response" != "000" ]; then
+              echo "fake provider ready (HTTP $response)"
+              break
+            fi
+            sleep 1
+          done
+          if [ "$response" = "000" ]; then
+            echo "::error::fake provider failed to start within 30s"
+            echo "--- fake-provider.log ---"
+            cat /tmp/fake-provider.log 2>/dev/null || true
+            exit 1
+          fi
+
+      # r3.1 任务 2.9：触发策略
+      # - push/PR：只跑黄金路径 spec（快路径，验证主功能闭环）
+      # - schedule（nightly）：跑完整 mobile-chrome 套件（含批量路径、跨用户、连续拍题等）
       - name: Run Playwright tests
-        run: npx playwright test
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            echo "Nightly schedule: running full mobile-chrome E2E suite"
+            npx playwright test --project=mobile-chrome
+          else
+            echo "Push/PR: running golden-path only"
+            npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts
+          fi
         env:
           CI: true
 
+      # r3.1 任务 2.9：优雅关闭 fake-provider（无论成功失败都执行）
+      - name: Stop fake provider server
+        if: always()
+        run: |
+          if [ -f /tmp/fake-provider.pid ]; then
+            PID=$(cat /tmp/fake-provider.pid)
+            if kill -0 "$PID" 2>/dev/null; then
+              kill "$PID" || true
+              echo "killed fake provider PID=$PID"
+            fi
+            rm -f /tmp/fake-provider.pid
+          fi
+          # 打印日志供失败排查
+          if [ -f /tmp/fake-provider.log ]; then
+            echo "--- fake-provider.log (tail) ---"
+            tail -50 /tmp/fake-provider.log || true
+          fi
+
+      # r3.1 任务 2.9：证据包上传（含截图/trace/video/json report）
+      # always() 上传：成功时也保留供对照；retention 14 天控制存储成本
+      - name: Upload evidence pack
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nana-evidence-pack
+          path: test-results/
+          retention-days: 14
+
       - name: Upload Playwright Report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
