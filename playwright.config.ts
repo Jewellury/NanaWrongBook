@@ -58,10 +58,15 @@ export default defineConfig({
             // r3.1 任务 2.9 CI 修复（2026-07-27）：
             // 显式注入 fake provider env 给 Next.js 子进程（双保险）。
             // Playwright webServer.env 与父进程 env 合并（非替换），不影响其他变量。
+            //
+            // DATABASE_URL 用绝对路径：standalone server.js 的 CWD 可能在 .next/standalone/
+            // 而非项目根目录，相对路径 file:./e2e.db 会解析到错误位置
+            // （Setup Database step 在项目根跑 prisma db push，db 文件在根目录）
             env: {
                 VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY || '',
                 VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || '',
                 LITE_ENDPOINT_ID: process.env.LITE_ENDPOINT_ID || '',
+                DATABASE_URL: `file:${process.cwd()}/e2e.db`,
             },
         },
     }),
