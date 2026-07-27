@@ -14,6 +14,12 @@
  */
 import { test, expect } from '@playwright/test';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+
+const CLEAR_PRINTED_FIXTURE = path.resolve(
+    process.cwd(),
+    'tests/fixtures/nana/cases/clear-printed.jpg',
+);
 
 test.describe.serial('诊断：虚拟麦克风录音 CI 失败根因', () => {
     let prisma: PrismaClient | null = null;
@@ -72,6 +78,11 @@ test.describe.serial('诊断：虚拟麦克风录音 CI 失败根因', () => {
         await page.getByText('拍一道题').click();
         await page.waitForURL('**/nana/capture', { timeout: 10_000 });
         await expect(page.getByRole('button', { name: '说说看' })).toBeVisible({ timeout: 5_000 });
+
+        // ★ 上传题图（复现 golden-path CL-02 → CL-03 交互）
+        await page.setInputFiles('input[type="file"]', CLEAR_PRINTED_FIXTURE);
+        await expect(page.getByRole('img', { name: '刚拍的题图' })).toBeVisible({ timeout: 10_000 });
+        console.log('=== DIAG: 题图已上传，现在测试点"说说看" ===');
 
         // 在点击前注入诊断 hook：拦截 getUserMedia 调用并记录
         await page.addInitScript(() => {
