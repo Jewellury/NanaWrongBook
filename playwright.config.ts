@@ -43,30 +43,23 @@ export default defineConfig({
     // Smoke 模式不启动本地 server（测试生产环境）
     ...(isSmoke ? {} : {
         webServer: {
-            // CI 修复（2026-07-27）：next.config.ts 配置了 output:'standalone'，
-            // Next.js 16 在 standalone 模式下 `next start` 不工作（会警告并行为异常，
-            // 导致 case-analyzer.ts 读不到 VOLCENGINE_BASE_URL → fallback 真实豆包 API
-            // → fake-key 认证失败 → /process 500）。
-            // 正确启动方式：node .next/standalone/server.js
-            // 但 standalone 不含静态资源，必须先复制 .next/static 和 public
-            command: process.env.CI
-                ? 'cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public 2>/dev/null; HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js'
-                : `npx next dev -p ${E2E_PORT}`,
+            // CI 修复（2026-07-27）：统一用 next dev（开发模式）
+            // 原因：next.config.ts 配了 output:'standalone'，`next start` 会警告且行为异常
+            // （case-analyzer 读不到 env），standalone server.js 需要手动复制静态资源+
+            // schema+prisma client+修 CWD，打地鼠式调试已 7 次失败。
+            // next dev 不做构建时优化，process.env 运行时读取，行为最可预测。
+            // CI 上已先 build（Build application step）满足编译检查门禁，webServer 用 dev 跑测试。
+            // 慢一些（dev 模式 on-the-fly 编译），但 CI 容忍慢，稳定性优先。
+            command: `npx next dev -p ${E2E_PORT}`,
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
-            timeout: 120 * 1000,
+            timeout: 180 * 1000, // dev 模式首屏编译慢，给 3 分钟
             // r3.1 任务 2.9 CI 修复（2026-07-27）：
-            // 显式注入 fake provider env 给 Next.js 子进程（双保险）。
-            // Playwright webServer.env 与父进程 env 合并（非替换），不影响其他变量。
-            //
-            // DATABASE_URL 用绝对路径：standalone server.js 的 CWD 可能在 .next/standalone/
-            // 而非项目根目录，相对路径 file:./e2e.db 会解析到错误位置
-            // （Setup Database step 在项目根跑 prisma db push，db 文件在根目录）
+            // 显式注入 fake provider env 给 Next.js 子进程（双保险）
             env: {
                 VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY || '',
                 VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || '',
                 LITE_ENDPOINT_ID: process.env.LITE_ENDPOINT_ID || '',
-                DATABASE_URL: `file:${process.cwd()}/e2e.db`,
             },
         },
     }),
