@@ -129,3 +129,91 @@
 - 本地 e2e 完整运行（依赖 Docker + ffmpeg + webServer env 联调，门禁交 CI）
 
 ## Git 收口
+
+（本节原 v1 内容，下方 v2 追加）
+
+---
+
+## 追加记录：v2 录音步骤适配 + /process 静默失败诊断（2026-07-27）
+
+> 本段由主会话在会话收尾时追加，记录 v1 之后的 10+ 次 CI 迭代和当前卡点。
+> **下一个会话必须读本段 + 问题征询报告再继续。**
+
+### v2 阶段 commits（按时间顺序，origin/dev 已推送）
+
+| # | Commit | 内容 | CI 结果 |
+|---|--------|------|---------|
+| 1 | `8d3352d` | spec beforeAll 加端口检测（EADDRINUSE 修复） | E2E 进到 /process timeout |
+| 2 | `901a53c` | webServer.env 显式注入 VOLCENGINE_* | 同上 |
+| 3 | `2bb9e91` | fake-provider-server 加请求日志诊断 | 同上 |
+| 4 | `8355ed4` | standalone server.js 替代 next start | 页面空白 |
+| 5 | `ee14e50` | 复制 .next/static 到 standalone | 注册不跳转 |
+| 6 | `ccc3fcf` | DATABASE_URL 绝对路径 | 仍不跳转 |
+| 7 | `0173d9c` | 改用 `npx next dev`（开发模式） | 注册通了，/process 仍失败 |
+| 8 | `56afc7d` | 回滚 fake-provider debug 日志 | 同上 |
+| 9 | `05fb797` | plan v2 录音步骤修订计划 | — |
+| 10 | `901357a` | 诊断 spec + ci.yml 临时改跑诊断 | 诊断 spec 失败（注册流程缺字段）|
+| 11 | `72c430d` | 诊断 spec 注册流程对齐 golden-path | ✅ 诊断 spec pass |
+| 12 | `c3b717b` | 诊断 spec 加上传题图复现场景 | ✅ 诊断 spec pass |
+| 13 | `9f296d0` | 同时跑 golden-path + 诊断 | golden-path ❌ / 诊断 ✅ |
+| 14 | `bbc8df5` | CI 跳过录音步骤（plan v2 任务 H） | golden-path 卡 /process timeout |
+| 15 | `3dddbfe` | webServer 启动前 echo env（被缓冲没显示）| 同上 |
+| 16 | `1a8e923` | /process route 加 console.log | **日志不出现 → handler 没执行** |
+
+### v2 阶段关键发现
+
+1. **getUserMedia 在 CI 可用**（诊断 spec 实证：返回 1 audio track，"我听完了"正常显示）——假设"虚拟麦克风失效"排除
+2. **录音步骤不是 /process 失败的根因**——CI 跳过录音后 /process 仍失败
+3. **/process route handler 在 CI 完全不执行**——`[process-route DEBUG]` console.log 在 CI 日志不出现
+4. **fake provider 只收到 register 没收到 chat/completions**——case-analyzer 没被调到
+5. **关键矛盾**：前端 `page.waitForRequest(/\/process$/)` 捕获到请求（CL-04 通过），但 handler 不执行
+
+### 当前卡点（核心问题）
+
+**Next.js 16 + `output: 'standalone'` + Playwright webServer 在 GitHub Actions CI 上，`/api/nana/cases/:id/process` route handler 静默失败——不执行、不报错、不返回。**
+
+- 本地 dev 模式没这问题
+- CI 上 `next start` + standalone 警告"does not work"
+- CI 上 `next dev` 注册流程通了但 /process 仍静默失败
+- 详见问题征询报告：`doc/research/2026-07-27_ci-process-route-silent-failure-consult.md`
+
+### 当前未推 commit（本地工作区）
+
+- `/process` route 的 `[DEBUG CI 2026-07-27]` console.log（`1a8e923`，已推）
+- 无其他未推改动
+
+### 给下一个会话的交接
+
+**必读文件**（按顺序）：
+1. `doc/research/2026-07-27_ci-process-route-silent-failure-consult.md` — 问题全貌（已准备好给外部 AI 协助）
+2. 本文件（执行日志）
+3. `doc/plan/nana-test-framework-ci-fix-plan.md` — v1 + v2 修订计划
+4. `git log origin/main..origin/dev --oneline` — 49 个 commit（含 A-1 测试框架 + CI 修复）
+
+**当前状态**：
+- dev 领先 main 49 个 commit
+- CI：Unit/Integration/Build/ai-review ✅ 全过，E2E ❌ 卡 /process
+- PR #3 开着（dev → main）
+- 工作区干净（除临时文件 ci-status*.txt + doc/research 两个 md）
+
+**下一步（等外部 AI 反馈后决定）**：
+- 方案 X：继续在 CI 用 `next start`
+- 方案 Y：E2E 跳过 /process 相关断言
+- 方案 Z：vitest 集成测试替代 E2E 覆盖 /process
+- 方案 W：next.config.ts 环境变量切换 output
+- 方案 V：移除 standalone，Dockerfile 改回传统模式
+
+**待清理的技术债**（下一轮或后续轮次）：
+- `e2e/ci/_diagnose-audio.spec.ts` 诊断 spec（根因定位后删除）
+- `src/app/api/nana/cases/[id]/process/route.ts` 的 `[DEBUG CI 2026-07-27]` console.log（回滚）
+- golden-path 录音步骤的 `process.env.CI` 跳过（根因解决后恢复）
+- `playwright.config.ts` 的 `npx next dev`（根因解决后改回生产模式）
+
+## 安全铁律遵守清单（v2 阶段补充）
+
+- [x] 铁律 1：无破坏性操作（未改 Prisma schema、未删文件）
+- [x] 铁律 2：保持可回退（49 个 commit 都在 dev，不 force-push）
+- [x] 铁律 3：不改上游表结构（未碰 prisma/）
+- [x] 铁律 4：密钥不入 git（fake-key 是占位）
+- [x] 铁律 5：遇错停下（10+ 次迭代后停下报告，不盲目继续）
+- [x] 铁律 6：显式失败不掩盖（每次 CI 失败如实记录，不谎报通过）
