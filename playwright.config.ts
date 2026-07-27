@@ -47,6 +47,17 @@ export default defineConfig({
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
+            // r3.1 任务 2.9 CI 修复（2026-07-27）：
+            // 显式注入 fake provider env 给 Next.js 子进程。
+            // 之前依赖父进程 env 继承，但 Next.js 16 Turbopack 生产模式（next start）
+            // 可能在内部 fork worker 时不完整继承父 env，导致 case-analyzer.ts
+            // 读不到 VOLCENGINE_BASE_URL，fallback 到真实豆包 API → fake-key 认证失败 → /process 500。
+            // Playwright webServer.env 与父进程 env 合并（非替换），不影响其他变量。
+            env: {
+                VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY || '',
+                VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || '',
+                LITE_ENDPOINT_ID: process.env.LITE_ENDPOINT_ID || '',
+            },
         },
     }),
     projects: isSmoke ? [
