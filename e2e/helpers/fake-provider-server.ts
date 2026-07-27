@@ -215,8 +215,6 @@ export function startFakeProvider(port = 0): Promise<StartedFakeProvider> {
 
     const server = http.createServer(async (req, res) => {
       try {
-        // [DEBUG CI 2026-07-27] 记录所有请求到 stdout，便于诊断 CI 上 case-analyzer 是否调到 fake provider
-        console.log(`[fake-provider] ${req.method} ${req.url}`);
         // ─── 测试控制端点：注册压缩后 data URL 的哈希 → mock 响应 ───
         if (req.url === '/__test/register' && req.method === 'POST') {
           const bodyText = await readBody(req);
@@ -269,8 +267,6 @@ export function startFakeProvider(port = 0): Promise<StartedFakeProvider> {
 
           const hash = crypto.createHash('sha256').update(imageUrl).digest('hex');
           const entry = store.get(hash);
-          // [DEBUG CI 2026-07-27] 记录 chat/completions 命中/未命中 + 注册表大小
-          console.log(`[fake-provider] chat/completions hash=${hash.slice(0, 12)}... registered=${entry ? 'HIT' : 'MISS'} storeSize=${store.size()}`);
 
           // r3.1 关键修正：未注册哈希显式报错，禁止 fallback
           if (!entry) {
