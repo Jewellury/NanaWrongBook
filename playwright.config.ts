@@ -48,8 +48,9 @@ export default defineConfig({
             // 导致 case-analyzer.ts 读不到 VOLCENGINE_BASE_URL → fallback 真实豆包 API
             // → fake-key 认证失败 → /process 500）。
             // 正确启动方式：node .next/standalone/server.js
+            // 但 standalone 不含静态资源，必须先复制 .next/static 和 public
             command: process.env.CI
-                ? 'HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js'
+                ? 'cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public 2>/dev/null; HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js'
                 : `npx next dev -p ${E2E_PORT}`,
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
