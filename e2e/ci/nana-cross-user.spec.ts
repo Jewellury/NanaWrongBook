@@ -162,8 +162,14 @@ async function getLatestCaseId(userId: string): Promise<string> {
 test.describe.serial('nana-cross-user: CL-16 用户隔离 + 直接接口越权', () => {
 
     test.beforeAll(async () => {
+        // 端口检测：CI 已在 out-of-process 启动 → 跳过；本地未占用 → 自起
         if (!fakeProvider) {
-            fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            const portInUse = await fetch(`http://127.0.0.1:${FAKE_PROVIDER_PORT}/`)
+                .then(() => true)
+                .catch(() => false);
+            if (!portInUse) {
+                fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            }
         }
         if (!prisma) {
             prisma = new PrismaClient();

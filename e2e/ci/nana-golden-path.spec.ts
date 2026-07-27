@@ -173,8 +173,15 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
 
     test.beforeAll(async () => {
         // 启动假 Provider（端口 3999，与 webServer env 一致）
+        // 端口检测：CI 已在 out-of-process 启动（ci.yml Start step）→ 跳过；
+        // 本地跑 e2e 端口未占用 → spec 自己起 in-process 实例（保留自包含性）
         if (!fakeProvider) {
-            fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            const portInUse = await fetch(`http://127.0.0.1:${FAKE_PROVIDER_PORT}/`)
+                .then(() => true)
+                .catch(() => false);
+            if (!portInUse) {
+                fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            }
         }
         if (!prisma) {
             prisma = new PrismaClient();
@@ -427,8 +434,14 @@ test.describe.serial('nana-golden-path: S4 低置信诚实降级（CL-08）', ()
 
     test.beforeAll(async () => {
         // 共用顶层 fake-provider / prisma（若 S1 已启动则复用）
+        // 端口检测：CI 已在 out-of-process 启动 → 跳过；本地未占用 → 自起
         if (!fakeProvider) {
-            fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            const portInUse = await fetch(`http://127.0.0.1:${FAKE_PROVIDER_PORT}/`)
+                .then(() => true)
+                .catch(() => false);
+            if (!portInUse) {
+                fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            }
         }
         if (!prisma) {
             prisma = new PrismaClient();

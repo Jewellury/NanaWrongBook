@@ -223,8 +223,14 @@ async function saveCaseAndExpectToast(page: Page): Promise<void> {
 test.describe.serial('nana-batch-path: 素材组 A 三题批量验证', () => {
 
     test.beforeAll(async () => {
+        // 端口检测：CI 已在 out-of-process 启动 → 跳过；本地未占用 → 自起
         if (!fakeProvider) {
-            fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            const portInUse = await fetch(`http://127.0.0.1:${FAKE_PROVIDER_PORT}/`)
+                .then(() => true)
+                .catch(() => false);
+            if (!portInUse) {
+                fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            }
         }
         if (!prisma) {
             prisma = new PrismaClient();
