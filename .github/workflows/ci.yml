@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # C1 决策（用户 2026-07-27 确认）：忠实 r3.1 §3 任务 2.9「黄金路径每次 push 跑」原文意图
+    # 仓库 Public，Actions 额度无限；dev push 也跑 CI，问题早暴露不等开 PR
+    branches: [main, dev]
     tags:
       - 'v*'
   pull_request:
@@ -147,22 +149,30 @@ jobs:
       # r3.1 任务 2.9：启动本地假豆包 Provider（监听 127.0.0.1:3999）
       # 必须在 Next.js webServer 启动前 ready，因为 case-analyzer.ts 会请求它
       # 用 nohup + & 后台运行，PID 写入文件供后续关闭 step 使用
-      # fake-provider-server.ts 只 export 函数，用 tsx -e + dynamic import 启动
+      # ⚠️上游文件修改：ci.yml 追踪自上游 wrong-notebook；本 step 为本项目自有增量
+      # （f43eda5 引入；2026-07-27 修订：换独立启动脚本绕开 tsx -e 不稳定）
+      # 启动方式：用独立脚本 scripts/start-fake-provider.ts，不再用 `npx tsx -e`
+      #   原因：PR #3 CI 实测 `tsx -e` 模式下 dynamic import 报 `m.startFakeProvider is not a function`
+      #   （源码 e2e/helpers/fake-provider-server.ts:212 确实 export 了该函数）
+      #   换独立脚本文件后 tsx 走正常文件加载路径，行为可预测
+      # 就绪检查：用 curl 退出码（方案 A），不再用 `-w "%{http_code}" || echo "000"`
+      #   原因：连接失败时旧逻辑把 "000" + "000" 拼成 "000000" 误判 ready
+      #   curl 拿到任何 HTTP 响应（含 404，fake-provider-server.ts:312-313 对 `/` 返回 404）= 退出码 0 = 服务器已启动
       - name: Start fake provider server
         run: |
-          nohup npx tsx -e "import('./e2e/helpers/fake-provider-server').then(m => m.startFakeProvider(3999).then(({ port }) => console.log('fake-provider listening on', port)).catch(e => { console.error(e); process.exit(1); }))" > /tmp/fake-provider.log 2>&1 &
+          nohup npx tsx scripts/start-fake-provider.ts > /tmp/fake-provider.log 2>&1 &
           echo $! > /tmp/fake-provider.pid
-          # 等待端口监听（最长 30s）
-          response="000"
+          # 用 curl 退出码判断就绪：拿到任何 HTTP 响应（含 404）= 服务器已启动
+          ready=0
           for i in $(seq 1 30); do
-            response=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3999/ 2>/dev/null || echo "000")
-            if [ "$response" != "000" ]; then
-              echo "fake provider ready (HTTP $response)"
+            if curl -s -o /dev/null http://127.0.0.1:3999/ 2>/dev/null; then
+              echo "fake provider ready (responded on attempt $i)"
+              ready=1
               break
             fi
             sleep 1
           done
-          if [ "$response" = "000" ]; then
+          if [ "$ready" != "1" ]; then
             echo "::error::fake provider failed to start within 30s"
             echo "--- fake-provider.log ---"
             cat /tmp/fake-provider.log 2>/dev/null || true
