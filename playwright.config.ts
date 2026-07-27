@@ -43,15 +43,19 @@ export default defineConfig({
     // Smoke 模式不启动本地 server（测试生产环境）
     ...(isSmoke ? {} : {
         webServer: {
-            command: process.env.CI ? 'npm run start' : `npx next dev -p ${E2E_PORT}`,
+            // CI 修复（2026-07-27）：next.config.ts 配置了 output:'standalone'，
+            // Next.js 16 在 standalone 模式下 `next start` 不工作（会警告并行为异常，
+            // 导致 case-analyzer.ts 读不到 VOLCENGINE_BASE_URL → fallback 真实豆包 API
+            // → fake-key 认证失败 → /process 500）。
+            // 正确启动方式：node .next/standalone/server.js
+            command: process.env.CI
+                ? 'HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js'
+                : `npx next dev -p ${E2E_PORT}`,
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
             timeout: 120 * 1000,
             // r3.1 任务 2.9 CI 修复（2026-07-27）：
-            // 显式注入 fake provider env 给 Next.js 子进程。
-            // 之前依赖父进程 env 继承，但 Next.js 16 Turbopack 生产模式（next start）
-            // 可能在内部 fork worker 时不完整继承父 env，导致 case-analyzer.ts
-            // 读不到 VOLCENGINE_BASE_URL，fallback 到真实豆包 API → fake-key 认证失败 → /process 500。
+            // 显式注入 fake provider env 给 Next.js 子进程（双保险）。
             // Playwright webServer.env 与父进程 env 合并（非替换），不影响其他变量。
             env: {
                 VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY || '',
