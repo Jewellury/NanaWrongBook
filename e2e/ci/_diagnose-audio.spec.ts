@@ -40,14 +40,27 @@ test.describe.serial('诊断：虚拟麦克风录音 CI 失败根因', () => {
             pageErrors.push(err.message);
         });
 
-        // 注册临时用户
+        // 注册临时用户（复用 golden-path 的完整流程：注册→login→nana）
         const suffix = `diag_${Date.now()}`;
         const email = `e2e_diag_${suffix}@test.local`;
+        const password = '123456';
         await page.goto('/register');
-        await expect(page.locator('body')).toContainText(/注册|Register/);
+        await expect(page.locator('body')).toContainText(/注册|Register/, { timeout: 15_000 });
         await page.locator('input[name="name"]').fill(`diag_${suffix}`);
         await page.locator('input[name="email"]').fill(email);
-        await page.locator('input[name="password"]').fill('123456');
+        await page.locator('input[name="password"]').fill(password);
+        await page.locator('input[name="confirmPassword"]').fill(password);
+        await page.locator('select[name="educationStage"]').selectOption('senior_high');
+        await page.locator('input[name="enrollmentYear"]').fill('2024');
+        page.once('dialog', (d) => d.accept());
+        await page.locator('button[type="submit"]').click();
+        try {
+            await page.waitForURL('**/login', { timeout: 5_000 });
+        } catch {
+            await page.goto('/login');
+        }
+        await page.locator('input[name="email"]').fill(email);
+        await page.locator('input[name="password"]').fill(password);
         await page.locator('button[type="submit"]').click();
         await page.waitForURL('**/nana', { timeout: 15_000 });
 
