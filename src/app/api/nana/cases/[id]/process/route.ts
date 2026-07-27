@@ -273,6 +273,14 @@ export async function POST(
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return unauthorized();
 
+  // [DEBUG CI 2026-07-27] 临时诊断：打印 case-analyzer 需要的 env
+  console.log("[process-route DEBUG]", {
+    VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY ? "(set)" : "(unset)",
+    VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || "(unset)",
+    LITE_ENDPOINT_ID: process.env.LITE_ENDPOINT_ID || "(unset)",
+    DATABASE_URL: process.env.DATABASE_URL || "(unset)",
+  });
+
   try {
     const { id } = await params;
 
