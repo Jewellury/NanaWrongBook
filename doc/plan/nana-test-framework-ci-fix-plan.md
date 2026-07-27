@@ -364,3 +364,353 @@ main().catch((err) => {
 ---
 
 > 本计划完成后，等用户确认（特别是任务 C 的选项决策）再进入 execute 阶段。
+
+---
+
+# 修订 v2：虚拟麦克风录音步骤 CI 适配（2026-07-27 追加）
+
+> 关联：本计划 §5 第 197 行"不改 playwright.config.ts"在 v2 中被推翻——v1 修复后 CI 实际卡在录音步骤，必须改。
+> 关联：r3.1 §3 任务 2.2 降级预案（[nana-test-framework-plan.md:311](nana-test-framework-plan.md)）、r3.1 §5.2 技术风险第 1 条（[nana-test-framework-plan.md:741](nana-test-framework-plan.md)）。
+> 触发：v1 任务 A-E + 5 个额外 bug 已推 dev，CI 多轮迭代后卡点收敛到录音步骤（`e2e/ci/nana-golden-path.spec.ts:256-258` "我听完了"按钮 5s timeout）。
+> 计划日期：2026-07-27
+> 执行者：plan-agent（设计），待用户确认后交 execute-agent
+
+---
+
+## 1. 背景
+
+v1 修复（任务 A-E + 5 个额外 bug：tsx -e / curl 退出码 / dev push 触发 / 端口冲突 / standalone 模式 / 执行日志诚实化 / 单测补强）全部完成后，CI 前序 bug 全部修通。卡点最终收敛到 `e2e/ci/nana-golden-path.spec.ts:256-258`：
+
+```ts
+await expect(
+    page.getByRole('button', { name: '我听完了' }),
+).toBeVisible({ timeout: 5_000 });
+```
+
+这是 CL-03 录音路径的第 2 步：点"说说看"开始录音（line 254）后，前端应切到 recording 态并渲染"我听完了"按钮。CI headless 上 5s 内未出现 → timeout。
+
+### 1.1 根因状态：推断，未确认
+
+当前 8 次 CI 失败的日志**只显示 timeout，没有 console error / DOM 快照 / 录音状态证据**，根因是推断：
+
+| 假设 | 内容 | 可能性 |
+|------|------|--------|
+| A | Chromium fake-media flags 在 headless Linux 不产生有效音频流 → `MediaRecorder.ondataavailable` 不触发 → state 不切换 | 中（最常见解释） |
+| B | `math-voice-sample.wav` 路径在 CI 上解析错（launchOptions 在 config 加载时算绝对路径，理论 OK，未验证） | 低 |
+| C | 前端录音组件 state 转换依赖 headless 下行为差异的浏览器 API | 中 |
+| D | `--use-file-for-fake-audio-capture` flag 在新版 Chromium 改名或行为变化 | 低 |
+
+**任务 F 的存在就是为了把"推断"变成"确认"。**
+
+### 1.2 关键事实
+
+- `playwright.config.ts:13` 已调用 `getVirtualMicLaunchOptions()`（含 `--use-fake-device-for-media-stream` + `--use-fake-ui-for-media-stream` + `--use-file-for-fake-audio-capture=...math-voice-sample.wav`）
+- `playwright.config.ts:90-97` mobile-chrome project 已 `launchOptions: virtualMicLaunchOptions`
+- `e2e/helpers/virtual-microphone.ts:100-132` `injectFakeUserMedia()` 降级 helper **已完整实现**，用 WebAudio 生成静默 AudioStream，让真实 MediaRecorder 处理 fake stream
+- r3.1 §3 任务 2.2（plan:311）+ §5.2（plan:741）**已明确把"headless 不工作"列为已知技术风险**，降级到 injectFakeUserMedia 是计划内选项，不是偏离
+
+---
+
+## 2. 任务分解
+
+### 任务 F：诊断 + 选型（必做，先诊断再修）
+
+**涉及文件**：`e2e/ci/_diagnose-audio.spec.ts`（新增，临时诊断 spec）
+
+**做什么**：写一个独立的轻量诊断 spec，只验证"点'说说看'后录音状态切换"，不做完整 golden path。伪代码：
+
+```ts
+import { test } from '@playwright/test';
+import { injectFakeUserMedia } from '../helpers/virtual-microphone';
+// 复用 golden-path 的 registerAndLogin / setupFixtureRegistration
+
+test('diagnose: 说说看 → 我听完了 状态切换', async ({ page }) => {
+  // 采集浏览器 console + pageerror
+  page.on('console', msg => console.log('[browser]', msg.type(), msg.text()));
+  page.on('pageerror', err => console.log('[pageerror]', err.message));
+
+  // 1. 注册登录 + 导航 /nana/capture + 注册 fixture + 上传题图（复用现有 helper）
+  // 2. 点击前截图
+  await page.screenshot({ path: 'test-results/diagnose-before-click.png' });
+
+  // 3. 点"说说看"
+  await page.getByRole('button', { name: '说说看' }).click();
+
+  // 4. 立即截图 + 2s 后再截图（给 state 切换时间）
+  await page.screenshot({ path: 'test-results/diagnose-after-click.png' });
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: 'test-results/diagnose-2s.png' });
+
+  // 5. dump 页面 HTML + 可见按钮列表
+  const html = await page.content();
+  require('fs').writeFileSync('test-results/diagnose-page.html', html);
+  const buttons = await page.getByRole('button').allTextContents();
+  console.log('[visible-buttons]', JSON.stringify(buttons));
+
+  // 6. 不做断言，spec 永远 pass（目的是收集诊断产物，不是验证）
+});
+```
+
+CI 跑一次后，从 artifact 下载 `test-results/diagnose-*.png` + `diagnose-page.html`，结合 job log 中 `[browser]` / `[pageerror]` / `[visible-buttons]` 输出，人工分析根因。
+
+**为什么这么做**：
+- 8 次失败全是同一个 timeout，没有 console error / DOM 快照，无法判断是 launchOptions.flags 失效还是前端 state 依赖问题
+- 独立 spec 跑得快（< 1 min），不污染 golden-path，可反复迭代
+- 诊断产物（截图 + HTML + console log）是 G/H/I 的决策依据
+
+**风险**：低。诊断 spec 不做断言、不影响其他 spec。跑完可保留（防御性回归）或删除。
+
+**诊断结论会指向**：
+- 截图显示"说说看"按钮还在（未切到 recording 态）→ launchOptions.flags 失效 → 选 G
+- 截图显示"我听完了"已出现但 spec 仍 timeout → selector 或 timing 问题（超出当前假设，需新方案）
+- console 有 `MediaRecorder` / `AudioContext` / `file not found` 错误 → 对应假设确认
+
+---
+
+### 任务 G：方案 1——降级到 injectFakeUserMedia（r3.1 §3 任务 2.2 预案）
+
+**涉及文件**：
+- `playwright.config.ts`（修改 mobile-chrome project：line 90-97）
+- `e2e/ci/nana-golden-path.spec.ts`（加 addInitScript hook）
+- 同步检查 `nana-cross-user.spec.ts` / `nana-batch-path.spec.ts` / `nana-sequential-capture.spec.ts` 是否有录音步骤
+
+**做什么**：
+1. `playwright.config.ts:90-97` mobile-chrome project 改为只用 base flags（保留 `--use-fake-device-for-media-stream` + `--use-fake-ui-for-media-stream`，**移除** `--use-file-for-fake-audio-capture`——这是失败嫌疑点）
+2. 在 spec 的 page 创建后、`page.goto` 之前加 `await page.addInitScript(injectFakeUserMedia)`
+3. `injectFakeUserMedia`（virtual-microphone.ts:100-132）已实现，用 WebAudio 生成静默 AudioStream，让真实 MediaRecorder 处理
+
+**伪代码（spec 改动）**：
+```ts
+import { injectFakeUserMedia } from '../helpers/virtual-microphone';
+
+// 推荐：用 context-level init script（比 page-level 更稳，覆盖所有新 page）
+// 在 beforeAll 创建 browserContext 后：
+await context.addInitScript(injectFakeUserMedia);
+// 必须在 context.newPage() / page.goto 之前调用
+```
+
+**为什么这么做**：
+- r3.1 §3 任务 2.2（plan:311）原文："如果 Chromium fake-media 在 headless 中不工作：降级为 `page.addInitScript` 注入 fake `getUserMedia` 返回预制 Blob，但仍不替换 `MediaRecorder`"
+- r3.1 §5.2（plan:741）把"Chromium fake-media 在 headless CI 中不工作"明确列为已知技术风险，缓解方案就是 injectFakeUserMedia
+- virtual-microphone.ts:100-132 已实现降级 helper，最小改动
+- 降级方案仍走真实 MediaRecorder，验证完整链路（getUserMedia → MediaRecorder → webm → ffmpeg → /process）
+
+**风险**：
+- WebAudio 在 headless 也可能行为差异（`AudioContext` 在某些 Chromium headless 配置下需要 `--autoplay-policy=no-user-gesture-required`）——若 G 失败可叠加任务 I 的 flag
+- `addInitScript` 必须在 `page.goto` 之前注入，否则首屏的 getUserMedia 调用拿不到 fake 版本——execute-agent 注意调用顺序
+- 多个 ci spec 都用到 page，建议用 `browserContext.addInitScript`（context 级，覆盖所有新 page）而非 `page.addInitScript`（page 级，每个新 page 都要重注入）
+
+---
+
+### 任务 H：方案 2——让 golden-path 录音步骤可降级跳过
+
+**涉及文件**：
+- `e2e/ci/nana-golden-path.spec.ts`（line 251-264 录音 step 加环境检测）
+- `.github/workflows/ci.yml`（e2e-test job env 加 `SKIP_AUDIO_IN_CI`）
+
+**做什么**：
+1. spec 中加环境检测：`process.env.CI && process.env.SKIP_AUDIO_IN_CI` 时跳过 CL-03 录音 step，直接进 CL-04 保存
+2. CI e2e-test job env 段加 `SKIP_AUDIO_IN_CI: 'true'`
+3. **execute-agent 必须先验证 CL-04 保存路径是否依赖 audio_note**（读 `src/app/[locale]/nana/capture/page.tsx` 确认）——若强依赖，H 不可行，必须选 G
+
+**伪代码（spec 改动）**：
+```ts
+await test.step('CL-03+04 录音可选 + 保存不等待 AI', async () => {
+  const skipAudio = !!(process.env.CI && process.env.SKIP_AUDIO_IN_CI);
+
+  if (!skipAudio) {
+    // 原 CL-03 录音步骤（line 253-264）
+    await page.getByRole('button', { name: '说说看' }).click();
+    await expect(page.getByRole('button', { name: '我听完了' })).toBeVisible({ timeout: 5_000 });
+    await page.waitForTimeout(1500);
+    await page.getByRole('button', { name: '我听完了' }).click();
+    await page.waitForTimeout(1500);
+  } else {
+    test.info().annotations.push({
+      type: 'skip-reason',
+      description: 'CI SKIP_AUDIO_IN_CI：录音路径在 CI 不覆盖，由本地/真机抽检覆盖（r3.1 §5 第五层）',
+    });
+  }
+
+  // CL-04 保存步骤（line 271+）原样保留
+  // ...
+});
+```
+
+**为什么这么做**：
+- r3.1 §3 任务 2.2 录音是"可选"路径（CL-03 标的就是"录音可选"），保存路径 CL-04 不应强依赖录音
+- 最快让 CI 转绿，把诊断压力降下来
+- 录音路径由 r3.1 §5 第五层（本地/真机抽检）覆盖，CI 不覆盖是可接受的降级
+
+**风险**：
+- **录音路径在 CI 长期不覆盖** → 若选 H 作为永久方案，需在执行日志显式记录"录音链路 CI 不覆盖"
+- 临时跳过易、恢复难——若选 H，必须加 `@TODO(r3.1-task-2.2-audio-ci)` 注释 + 在 `doc/00_CURRENT.md` 登记技术债
+- 若 CL-04 保存逻辑强依赖 audio_note（execute-agent 验证），H 不可行，必须选 G
+
+**与 G 的关系**：H 是"先转绿再优化"的过渡方案。可先 H 让 CI 转绿 + 留录音路径技术债，后续再补 G；或直接 G 一次到位。由用户决策。
+
+---
+
+### 任务 I：方案 3——Chromium flags 调优（备选）
+
+**涉及文件**：`e2e/helpers/virtual-microphone.ts`（`VIRTUAL_MIC_BASE_FLAGS` 增补）
+
+**做什么**：研究 Playwright + Chromium fake-media 在 headless Linux 的已知问题，可能的调整：
+- 加 `--autoplay-policy=no-user-gesture-required`（让 AudioContext 不需用户手势即可启动）
+- 加 `--mute-audio`（避免 fake audio 触发实际播放错误）
+- 升级 `@playwright/test` 版本（若是 Playwright 已知 bug，新版可能已修）
+- 检查 Chromium 版本与 `--use-file-for-fake-audio-capture` 的兼容性
+
+**为什么这么做**：
+- 若任务 F 诊断显示 launchOptions.flags 部分生效（如 getUserMedia 拿到 stream 但 MediaRecorder 不触发 dataavailable），可能是某个 flag 缺失或冲突
+- 这是 G 和 H 之外的备选，研究成本高
+
+**风险**：
+- 高。Playwright/Chromium headless 行为差异的官方文档稀少，研究可能无果
+- 改 flags 影响所有用 launchOptions 的 project（mobile-chrome + smoke）
+- 若选 I，必须配合任务 F 的诊断产物验证，不能盲调
+
+---
+
+## 3. 任务优先级与决策路径
+
+**强烈建议**：F 先诊断 → 根据诊断结果选 G 或 H。I 仅在 G/H 都失败时作为备选。
+
+```
+任务 F（诊断 spec，必做，< 1 个 CI 周期）
+    ↓
+人工分析 diagnose 截图 + console log
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 假设 A/B/D 确认（flags 失效）→ 任务 G（injectFakeUserMedia）    │
+│ G 仍失败 → 任务 I（flags 调优）作为 G 的补丁                    │
+└─────────────────────────────────────────────────────────────┘
+                       或
+┌─────────────────────────────────────────────────────────────┐
+│ 时间紧 / 想先转绿 → 任务 H（跳过录音）                          │
+│ 转绿后再补 G（恢复录音覆盖）                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**plan-agent 倾向：F + G**。理由：
+1. r3.1 §3 任务 2.2 + §5.2 已明确把 injectFakeUserMedia 列为预案，G 是计划内路径，不是新设计
+2. F 的诊断成本低（< 1 个 CI 周期），收益高（明确根因，避免继续打地鼠）
+3. H 虽快但留下技术债，长期看反而增加维护成本
+4. I 风险高、收益不确定，作为最后备选
+
+**但最终由用户决定。**
+
+---
+
+## 4. 文件变更清单
+
+| 文件 | 操作 | 任务 | 上游冲突风险 |
+|------|------|------|:---:|
+| `e2e/ci/_diagnose-audio.spec.ts` | 新增（临时/保留） | F | 无（本项目新增） |
+| `playwright.config.ts` | 修改（mobile-chrome project 的 launchOptions） | G | 无（mobile-chrome project 是本项目新增，非上游） |
+| `e2e/ci/nana-golden-path.spec.ts` | 修改（加 addInitScript 或环境检测） | G 或 H | 无（本项目新增） |
+| `e2e/ci/nana-cross-user.spec.ts` / `nana-batch-path.spec.ts` / `nana-sequential-capture.spec.ts` | 修改（如有录音步骤，同步改） | G | 无（本项目新增） |
+| `.github/workflows/ci.yml` | 修改（e2e-test job env 加 `SKIP_AUDIO_IN_CI`） | H | 低（自有增量 job） |
+| `e2e/helpers/virtual-microphone.ts` | 修改（`VIRTUAL_MIC_BASE_FLAGS` 增补 flag） | I | 无（本项目新增） |
+
+> **关于"不改 playwright.config.ts"的推翻**：v1 §5（风险）第 197 行写了"不改 playwright.config.ts（webServer env 注入维持现状）"——那是 v1 修复阶段的范围控制（v1 当时卡点在假 Provider 启动，不在录音）。v2 卡点已变（前序 bug 全修通，卡在录音），必须动 launchOptions/project 配置。这个推翻本身在执行日志记录即可，不算偏离（计划本身允许修订）。
+
+---
+
+## 5. 验收标准
+
+### 5.1 CI 转绿（最终门禁）
+
+- [ ] 推送修复到 dev 后，CI E2E Tests job 退出码 0
+- [ ] `nana-golden-path.spec.ts` 全部测试通过
+- [ ] CI 日志中不再出现 `getByRole('button', { name: '我听完了' })` 5s timeout
+
+### 5.2 任务 F 验收（如做）
+
+- [ ] `_diagnose-audio.spec.ts` 跑通，artifact 含 `diagnose-*.png` + `diagnose-page.html` + job log 含 `[browser]` / `[pageerror]` / `[visible-buttons]` 输出
+- [ ] 人工分析诊断产物，根因明确写入执行日志（即使结论是"仍不确定"，也要诚实记录）
+
+### 5.3 任务 G 验收（如做）
+
+- [ ] spec 中 `context.addInitScript(injectFakeUserMedia)` 在 `page.goto` 之前调用
+- [ ] 录音步骤在 CI 通过（"我听完了"按钮可见 → 点击 → completed 态）
+- [ ] CL-04 保存路径 + CL-05/06/07/08 后续断言全部通过
+- [ ] `playwright.config.ts:90-97` mobile-chrome project 已移除 `--use-file-for-fake-audio-capture`
+
+### 5.4 任务 H 验收（如做）
+
+- [ ] CI e2e-test job env 含 `SKIP_AUDIO_IN_CI: 'true'`
+- [ ] spec 录音 step 在 CI 跳过，`test.info().annotations` 记录 `skip-reason`
+- [ ] 执行日志显式记录"录音路径在 CI 不覆盖，由本地/真机抽检覆盖（r3.1 §5 第五层）"
+- [ ] spec 中加 `@TODO(r3.1-task-2.2-audio-ci)` 注释登记技术债
+
+### 5.5 不变性
+
+- [ ] Unit / Integration / Build job 继续绿色
+- [ ] smoke project 不受影响（smoke 用独立 launchOptions，不强行联动）
+- [ ] 本地（非 CI 环境）跑 golden-path 不受影响（H 的 `SKIP_AUDIO_IN_CI` 只在 CI 生效；G 的 injectFakeUserMedia 对本地无副作用）
+
+---
+
+## 6. 风险与注意事项
+
+### 6.1 不确定性诚实标注
+
+| 项 | 不确定性 | 处置 |
+|----|---------|------|
+| Chromium fake-media 在 headless Linux 的实际行为 | **未确认**（8 次 CI 失败未采集诊断产物） | 任务 F 采集后再确认 |
+| `math-voice-sample.wav` 路径在 CI 是否正确解析 | 推断 OK（launchOptions 在 config 加载时算绝对路径），未验证 | 任务 F 的 console log 会暴露 file not found 错误 |
+| `injectFakeUserMedia` 在 headless 是否工作 | 推断 OK（WebAudio 标准 API），但 AudioContext 可能需 autoplay flag | G 失败时叠加 I 的 `--autoplay-policy=no-user-gesture-required` |
+| CL-04 保存是否依赖 audio_note | **未验证** | H 实施前 execute-agent 必须读 `src/app/[locale]/nana/capture/page.tsx` 确认 |
+
+### 6.2 范围控制
+
+**不做的事**：
+- 不改 `src/` 业务代码（如 capture/page.tsx 的录音组件逻辑）——若任务 F 诊断显示前端有 bug，单独开新计划，不在 v2 内混入
+- 不改 r3.1 计划本身（计划冻结，执行偏差在执行日志记录）
+- 不重构 `virtual-microphone.ts`（已实现完整，只在 `VIRTUAL_MIC_BASE_FLAGS` 增补 flag）
+- 不改其他 spec 的非录音部分
+
+### 6.3 与 v1 计划的关系
+
+- v2 是 v1 的延续：v1 任务 A-E + 5 个额外 bug 已完成，不在 v2 范围
+- v1 §5 第 197 行"不改 playwright.config.ts"被 v2 推翻——基于 v1 修复后实际卡点的合理调整
+- v1 的执行顺序（§7）已完成，v2 在 v1 之后启动
+
+### 6.4 r3.1 计划对照
+
+| r3.1 原文 | v2 实现位置 |
+|-----------|------------|
+| §3 任务 2.2（plan:311）："如果 Chromium fake-media 在 headless 中不工作：降级为 `page.addInitScript` 注入 fake `getUserMedia`" | 任务 G 直接落实这个预案 |
+| §5.2 第 1 条（plan:741）："Chromium fake-media 在 headless CI 中不工作 → 降级为 `page.addInitScript` 注入 fake `getUserMedia`" | 任务 G |
+| §3 任务 2.2 录音"可选"（CL-03 标"录音可选"） | 任务 H 利用"可选"语义跳过 |
+
+> **结论**：v2 的 G/H/I 都是 r3.1 已预案的路径，不是新设计。任务 F 是新增的诊断手段（r3.1 未明确写），属于"先诊断再修"的工程常识，符合 AGENTS.md 铁律 5（遇错停下来）和铁律 6（显式失败，不掩盖）。
+
+### 6.5 诚实声明
+
+- 本计划写时根因**未确认**（任务 F 之前无法确认）。所有假设 A/B/C/D 都是推断。
+- 8 次 CI 失败未采集诊断产物，是前序执行的疏漏——v2 任务 F 就是为了补这个疏漏。
+- 若用户选 H 跳过诊断直接转绿，等于"接受根因未知，先把 CI 转绿"——这是合法选择，但要在执行日志写明"根因未查清，录音路径技术债待还"。
+
+---
+
+## 7. 需要用户决策的开放问题
+
+1. **执行路径**（必答）：
+   - 选项 ①：F（先诊断）→ G（降级 injectFakeUserMedia）—— plan-agent 倾向
+   - 选项 ②：F（先诊断）→ H（先转绿，留技术债）
+   - 选项 ③：直接 H（不诊断，最快转绿）—— 风险：根因永远不知道
+   - 选项 ④：直接 G（不诊断，直接试降级方案）—— 风险：若 G 失败，仍不知道为什么
+
+2. **任务 F 诊断 spec 跑完后的处置**：保留作为回归诊断工具，还是跑完即删？
+
+3. **若选 H**：CI 录音路径技术债什么时候还？（建议下个开发轮次，或某次 Playwright/Chromium 升级后重试）
+
+4. **若 G + I 都失败**：是否接受 H 作为长期方案（CI 永久不覆盖录音路径）？
+
+5. **任务 F 的诊断 spec 的 fixture**：复用 golden-path 的 `clear-printed.jpg`，还是单独准备一张更小的图（更快）？
+
+---
+
+> 本修订 v2 完成后，等用户确认（特别是开放问题 1-5 的决策）再进入 execute 阶段。
