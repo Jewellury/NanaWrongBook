@@ -13,8 +13,8 @@
 |---|------|:----:|--------|------|
 | 1 | CL-06 UI 补齐（textbookTopic=null 占位） | ✅ | 待提交 | TDD 红→绿 |
 | 2 | CL-14 UI 补齐（audioStatus=failed 重试按钮） | ✅ | 待提交 | TDD 红→绿 |
-| 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ⬜ | — | 基础设施 |
-| 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ⬜ | — | 基础设施 |
+| 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ✅ | `9060f9e` | ⚠️ 纠正（2026-07-26）：原日志标 ⬜"不在 A-1 范围（基础设施）"与 git 历史矛盾。该 commit 在 A-1 开始前已提交（336 行实现 + 11 用例单测），属于基础设施前置。 |
+| 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ✅ | `cc18805` | ⚠️ 纠正（2026-07-26）：同上。该 commit 在 A-1 开始前已提交。 |
 | 5 | 任务 2.3：db-verifier.ts | ✅ | 待提交 | 主会话遗留文件评估后保留+测试数据修复 |
 | 6 | 任务 2.4：nana-golden-path.spec.ts | ✅ | 07b3d87 | 黄金闭环，本批次 Commit D |
 | 7 | 任务 2.5：nana-batch-path.spec.ts | ✅ | 5003d4c | 三题批量，本批次 Commit F |
@@ -276,6 +276,13 @@ execute-agent 评估决策：
 - [ ] 确认测试在安全路径运行：CI 使用 `file:./e2e.db`，`./data/dev.db` 未被触碰
 - [x] 可进入审计阶段（批次 3a 完成，批次 3b 可启动）
 
+> ⚠️ 纠正（2026-07-26）：上述"测试容器门禁交由 nightly schedule + PR/push 触发执行"在当时（2026-07-20）无法兑现。具体原因：
+> 1. ci.yml `on.push.branches: [main]` 排除 dev，dev push 不触发 CI（A-1 全部 10 个 commit 都在 dev）
+> 2. `schedule` 只在默认分支（main）生效，但 main 当时无 e2e 代码（都在 dev）
+> 3. 即使触发，假 Provider 启动 bug（`m.startFakeProvider is not a function`）让 e2e 也跑不通
+>
+> **CI 首次真实运行（PR #3）e2e 失败**，根因 + 修复见 [doc/plan/nana-test-framework-ci-fix-plan.md](../plan/nana-test-framework-ci-fix-plan.md)，修复执行见 [doc/executionlog/nana-test-framework-ci-fix-log.md](nana-test-framework-ci-fix-log.md)。本日志写作时（2026-07-20）CI 门禁尚未实际通过。
+
 ---
 
 ## 批次 3b 执行记录（2026-07-20）
@@ -471,8 +478,8 @@ execute-agent 评估决策：
 |---|------|:----:|------------|
 | 1 | CL-06 UI 补齐（textbookTopic=null 占位） | ✅ | 待提交（前批已实现） |
 | 2 | CL-14 UI 补齐（audioStatus=failed 重试按钮） | ✅ | 待提交（前批已实现） |
-| 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ⬜ | 不在 A-1 范围（基础设施前置） |
-| 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ⬜ | 不在 A-1 范围（基础设施前置） |
+| 3 | 任务 2.1：fake-provider-server.ts + register-fixture.ts | ✅ | `9060f9e` | ⚠️ 纠正（2026-07-26）：原标 ⬜"不在 A-1 范围"与 git 历史矛盾；实际已由前批提交 |
+| 4 | 任务 2.2：virtual-microphone.ts + playwright.config.ts 升级 | ✅ | `cc18805` | ⚠️ 纠正（2026-07-26）：同上 |
 | 5 | 任务 2.3：db-verifier.ts | ✅ | 待提交（主会话遗留 + 测试数据修复） |
 | 6 | 任务 2.4：nana-golden-path.spec.ts | ✅ | 07b3d87 |
 | 7 | 任务 2.5：nana-batch-path.spec.ts | ✅ | 5003d4c |
@@ -491,6 +498,8 @@ execute-agent 评估决策：
 3. **fixture-blocked 状态**：任务 2.5b 4 个 test.fixme 不会执行，Playwright 报告中显示为待办
 4. **本地 e2e 全部未跑**：所有 4 个 spec 的本地 e2e 完整运行均未跑通（依赖 Docker + ffmpeg + webServer env 联调，门禁交 CI nightly schedule）
 
+> ⚠️ 纠正（2026-07-26）：上述"门禁交 CI nightly schedule"声明在当时无法兑现。具体见文末"CI 首次运行结果（PR #3）"节。本批 commit 后实际通过 PR #3 首次触发 CI，结果 Unit/Integration/Build ✅、E2E ❌（5m22s）。E2E 失败根因为假 Provider 启动 bug + bash 就绪检查逻辑错，与本批 4 个 spec 的本地 e2e 是否跑通无关——即使本地 e2e 跑通了，CI 同样会因这两个 bug 失败。修复见 [doc/plan/nana-test-framework-ci-fix-plan.md](../plan/nana-test-framework-ci-fix-plan.md)。
+
 ### 待用户提供 fixture 项
 
 **素材组 B**（3 张脱敏数学题图，详见 `tests/fixtures/nana/cases/PLACEHOLDER.md`）：
@@ -508,5 +517,29 @@ execute-agent 评估决策：
 - 本地 Docker Desktop 状态未知，测试容器本地未跑
 - 测试容器门禁交由 GitHub Actions nightly schedule + PR/push 触发执行
 - **GitHub Actions 测试容器通过后，才允许部署**
+
+> ⚠️ 纠正（2026-07-26）：上述门禁声明在当时（2026-07-20）无法兑现。ci.yml `on.push.branches: [main]` 排除 dev；schedule 只在默认分支生效但 main 当时无此配置；假 Provider 启动 bug（`m.startFakeProvider is not a function`）让 e2e 即使触发也跑不通。CI 首次真实运行（PR #3）e2e 失败，根因 + 修复见 [doc/plan/nana-test-framework-ci-fix-plan.md](../plan/nana-test-framework-ci-fix-plan.md)，修复执行见 [doc/executionlog/nana-test-framework-ci-fix-log.md](nana-test-framework-ci-fix-log.md)。
+
+---
+
+## CI 首次运行结果（PR #3，2026-07-26 追加）
+
+A-1 完成 10 个 commit 后，因 ci.yml `on.push.branches: [main]` 排除 dev，从未触发 CI。开 PR #3（dev → main）首次真实触发：
+
+| Job | 结果 | 时间 |
+|-----|------|------|
+| Unit Tests | ✅ pass | 50s |
+| Integration Tests | ✅ pass | 46s |
+| Build Check | ✅ pass | 1m3s |
+| E2E Tests | ❌ fail | 5m22s |
+
+**E2E 失败根因（两个 bug 联合）**：
+
+1. `npx tsx -e "import(...)"` 模式下 `m.startFakeProvider is not a function`（fake-provider.log 实证）——源码 `e2e/helpers/fake-provider-server.ts:212` 确实 export 了该函数，tsx `-e` 模式对 `.ts` 文件的 dynamic import 行为不稳定
+2. bash 就绪检查 `curl -w "%{http_code}" || echo "000"` 连接失败时拼成 "000000" 误判 ready（CI 日志 "HTTP 000000" 实证）——掩盖了 bug ①，导致 e2e 跑起来后才暴露 Provider 没在的问题
+
+**修复计划**：`doc/plan/nana-test-framework-ci-fix-plan.md`
+**修复执行日志**：`doc/executionlog/nana-test-framework-ci-fix-log.md`（本批）
+**修复后预期**：推送 dev → PR #3 自动更新 → CI 重新触发 → E2E 通过后门禁实际落地
 
 
