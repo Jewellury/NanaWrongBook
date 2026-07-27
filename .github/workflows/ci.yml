@@ -188,8 +188,8 @@ jobs:
             echo "Nightly schedule: running full mobile-chrome E2E suite"
             npx playwright test --project=mobile-chrome
           else
-            echo "Push/PR: running golden-path + diagnose (诊断 spec 验证完会删)"
-            npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts e2e/ci/_diagnose-audio.spec.ts
+            echo "Push/PR: running golden-path only"
+            npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts
           fi
         env:
           CI: true
