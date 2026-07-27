@@ -50,7 +50,7 @@ export default defineConfig({
             // next dev 不做构建时优化，process.env 运行时读取，行为最可预测。
             // CI 上已先 build（Build application step）满足编译检查门禁，webServer 用 dev 跑测试。
             // 慢一些（dev 模式 on-the-fly 编译），但 CI 容忍慢，稳定性优先。
-            command: `npx next dev -p ${E2E_PORT}`,
+            command: `echo "[webServer diag] VOLCENGINE_BASE_URL=${process.env.VOLCENGINE_BASE_URL || '(unset)'} VOLCENGINE_API_KEY=${process.env.VOLCENGINE_API_KEY ? '(set)' : '(unset)'} LITE_ENDPOINT_ID=${process.env.LITE_ENDPOINT_ID || '(unset)'}" && npx next dev -p ${E2E_PORT}`,
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
             timeout: 180 * 1000, // dev 模式首屏编译慢，给 3 分钟
