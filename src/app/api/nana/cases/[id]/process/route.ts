@@ -270,10 +270,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return unauthorized();
-
-  // [DEBUG CI 2026-07-27] 临时诊断：打印 case-analyzer 需要的 env
+  // [DEBUG CI 2026-07-28] 临时诊断（阶段1 D2）：env + auth + handler 入口
+  // ⚠️ 前置到鉴权之前，用于区分"handler 没被调到（前端 aborted）" vs "被调到但 401/500"
+  // 铁律4：env 只打印 set/unset，不打印值；auth 只打印 ok/unauthorized，不打印 token/userId
   console.log("[process-route DEBUG]", {
     VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY ? "(set)" : "(unset)",
     VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || "(unset)",
@@ -281,8 +280,13 @@ export async function POST(
     DATABASE_URL: process.env.DATABASE_URL || "(unset)",
   });
 
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return unauthorized();
+  console.log(`[process-route DEBUG] auth result: ${session?.user?.id ? 'ok' : 'unauthorized'}`);
+
   try {
     const { id } = await params;
+    console.log(`[process-route DEBUG] handler executing for caseId=${id}`);
 
     const caseRecord = await prisma.case.findFirst({
       where: { id, studentId: session.user.id },

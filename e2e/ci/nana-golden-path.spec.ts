@@ -199,6 +199,32 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
     test('S1 主路径-登录到图谱完整闭环', async ({ page }) => {
         test.setTimeout(120_000); // 黄金闭环容忍 CI 慢启动
 
+        // [D1 阶段1诊断] 在点击"收好这道题"之前注册事件监听器，捕获 /process 的完整命运。
+        // 监听器只读不写，不改变请求行为。waitForRequest 只能证明"请求对象创建"，
+        // 被 abort 也能通过；requestfailed + waitForResponse 才能看到请求真实命运。
+        let chatCompletionsSeen = 0;
+        page.on('requestfinished', (req) => {
+            if (req.url().includes('/process')) {
+                console.log(`[e2e-diag] requestfinished ${req.url()} status=${req.response()?.status()}`);
+            }
+        });
+        page.on('requestfailed', (req) => {
+            if (req.url().includes('/process')) {
+                console.log(`[e2e-diag] requestfailed ${req.url()} errorText=${req.failure()?.errorText}`);
+            }
+        });
+        page.on('response', (res) => {
+            if (res.url().includes('/process')) {
+                console.log(`[e2e-diag] response ${res.url()} status=${res.status()}`);
+            }
+        });
+        page.on('request', (req) => {
+            if (req.url().includes('/chat/completions')) {
+                chatCompletionsSeen++;
+                console.log(`[e2e-diag] chat/completions request #${chatCompletionsSeen}`);
+            }
+        });
+
         // 注册 fixture → 假 Provider 映射（高置信 clear-printed → TB-010 + M2a-13）
         const disposeReg = setupFixtureRegistration(
             page,
@@ -280,10 +306,16 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
                 //             line 212: setSaveState("saved")  ← 同步显示"已收好"
                 //             line 225: await triggerCaseProcess(...)  ← AI 异步触发
                 // 因此"已收好"出现时 /process 应已触发但未返回
-                const processRequestPromise = page.waitForRequest(
-                    (req) =>
-                        req.method() === 'POST' &&
-                        /\/api\/nana\/cases\/[^/]+\/process$/.test(req.url()),
+                //
+                // [D1 阶段1诊断] 改 waitForRequest → waitForResponse：
+                // waitForRequest 只捕获"请求对象创建"事件，请求被 abort 也能通过——
+                // 这正是"CL-04 通过但 handler 不执行"的矛盾来源。waitForResponse 才能确认
+                // 请求真的到达服务端并拿到响应。若请求被前端 abort，waitForResponse 会
+                // timeout（30s）——timeout 本身就是诊断证据（铁律6：已在执行日志声明）。
+                const processResponsePromise = page.waitForResponse(
+                    (res) =>
+                        res.request().method() === 'POST' &&
+                        /\/api\/nana\/cases\/[^/]+\/process$/.test(res.url()),
                     { timeout: AI_PROCESS_TIMEOUT_MS },
                 );
 
@@ -299,8 +331,18 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
                     `[CL-04] "已收好"耗时: ${savedDuration}ms (体验目标 ≤2000 / 测试超时 ${SAVE_TOAST_TIMEOUT_MS}ms)`,
                 );
 
-                // 验证 /process 已被触发（确认 AI 异步启动；保存不等 AI = 两者解耦）
-                await processRequestPromise;
+                // [D1 阶段1诊断] 等 /process 真的返回（waitForResponse）。
+                // ⚠️ 阶段1预期：若前端 abort 了请求，这里 timeout 会导致 CL-04 失败 →
+                // 整个 golden-path 在此停。这是期望行为（采集诊断证据），不算回归。
+                const processResponse = await processResponsePromise;
+                console.log(`[e2e-diag] /process response status=${processResponse.status()}`);
+                const processBody = await processResponse.json().catch((e) => {
+                    console.log(`[e2e-diag] /process response body parse failed: ${e}`);
+                    return null;
+                });
+                if (processBody) {
+                    console.log(`[e2e-diag] /process response body.status=${processBody.status}`);
+                }
             });
 
             // 取 Case ID（capture/page.tsx 把 caseId 存 React state，不暴露 DOM；从 DB 拿）
@@ -440,6 +482,118 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
             // 完整竞态验证（连续 3 题不同延迟）在 nana-sequential-capture.spec.ts
             // 本 spec 单题保存即结束，断言已隐含在 CL-04 + CL-07 中
         } finally {
+            // [D1 阶段1诊断] test 结束前打印 chat/completions 计数
+            // （阶段2 R4 会断言 ≥1，本轮只采集；timeout 失败时也会走到这里）
+            console.log(`[e2e-diag] chat/completions total seen: ${chatCompletionsSeen}`);
+            disposeReg();
+        }
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// D4 诊断（阶段1）：APIRequestContext 直调 /process 区分前后端问题
+// 独立 describe：不被 S1 serial 失败传播影响，确保即使 CL-04 timeout
+// 也能拿到"后端是否正常"的决定性证据
+// ═══════════════════════════════════════════════════════════════
+
+test.describe.serial('nana-golden-path: D4 诊断 APIRequestContext 直调 /process', () => {
+    test.beforeAll(async () => {
+        // 共用顶层 fake-provider / prisma（若 S1 已启动则复用）
+        if (!fakeProvider) {
+            const portInUse = await fetch(`http://127.0.0.1:${FAKE_PROVIDER_PORT}/`)
+                .then(() => true)
+                .catch(() => false);
+            if (!portInUse) {
+                fakeProvider = await startFakeProvider(FAKE_PROVIDER_PORT);
+            }
+        }
+        if (!prisma) {
+            prisma = new PrismaClient();
+            verifier = createDbVerifier(prisma);
+        }
+    });
+
+    test('D4 诊断: APIRequestContext 直调 /process 区分前后端问题', async ({ page }) => {
+        test.setTimeout(120_000);
+
+        // 注册 fixture（clear-printed → TB-010 + M2a-13）
+        const disposeReg = setupFixtureRegistration(
+            page,
+            FAKE_PROVIDER_BASE_URL,
+            'clear-printed',
+        );
+        let d4UserId: string | null = null;
+
+        try {
+            // 1. 注册 + 登录（走真实 UI，确保 NextAuth cookies 写入 page.context()）
+            const { userId } = await registerAndLogin(page, 'd4');
+            d4UserId = userId;
+
+            // 2. 进入拍题页
+            await page.getByText('拍一道题').click();
+            await page.waitForURL('**/nana/capture', { timeout: NAV_TIMEOUT_MS });
+
+            // 3. 上传题图
+            await page.setInputFiles('input[type="file"]', CLEAR_PRINTED_FIXTURE);
+            await expect(
+                page.getByRole('img', { name: '刚拍的题图' }),
+            ).toBeVisible({ timeout: 10_000 });
+
+            // 4. 点"收好这道题"触发 createCase，拿真实 caseId
+            //    不关心前端 triggerCaseProcess 命运（它可能被 abort），
+            //    只要 caseId 落库即可，然后用 APIRequestContext 直调 /process。
+            const createCaseResponse = page.waitForResponse(
+                (res) =>
+                    res.request().method() === 'POST' &&
+                    /\/api\/nana\/cases$/.test(res.url()),
+                { timeout: AI_PROCESS_TIMEOUT_MS },
+            );
+            await page.getByRole('button', { name: '收好这道题' }).click();
+            await expect(page.getByText('已收好').first()).toBeVisible({
+                timeout: SAVE_TOAST_TIMEOUT_MS,
+            });
+            await createCaseResponse; // 等 createCase 返回，确保 DB 有 case
+
+            // 5. 从 DB 取 caseId
+            const caseId = await getLatestCaseId(userId);
+            console.log(`[e2e-diag D4] caseId=${caseId}`);
+
+            // 6. 用 BrowserContext 自带的 APIRequestContext（page.context().request）
+            //    直调 /process。它自动共享 page 的 cookies（NextAuth session），
+            //    无需手动注入 storageState。绕过前端 React 组件生命周期，
+            //    直接验证后端 route handler 本身是否工作。
+            const response = await page.context().request.post(
+                `/api/nana/cases/${caseId}/process`,
+            );
+            console.log(`[e2e-diag D4] direct POST status=${response.status()}`);
+
+            const body = await response.json().catch((e) => {
+                console.log(`[e2e-diag D4] body parse failed: ${e}`);
+                return null;
+            });
+            if (body) {
+                console.log(`[e2e-diag D4] direct POST body.status=${body.status}`);
+            }
+
+            // 7. 断言（区分前后端问题的决定性证据）：
+            //    - 直调 200 + body.status 非空 → 后端没问题，主路径失败是前端生命周期（aborted 实锤）
+            //    - 直调 401/500/其他 → 后端有问题，需回 /plan 重新评估根因
+            expect(
+                response.status(),
+                `D4 直调状态码应 200，实际 ${response.status()}`,
+            ).toBe(200);
+            expect(body, 'D4 直调响应应有 body').not.toBeNull();
+            expect(
+                body?.status,
+                `D4 直调 body.status 应非空，实际 ${body?.status}`,
+            ).toBeDefined();
+            console.log(
+                '[e2e-diag D4] ✅ 后端 route handler 正常；若 S1 主路径 CL-04 失败，根因是前端生命周期（aborted）',
+            );
+        } finally {
+            if (d4UserId) {
+                await cleanupUserData(d4UserId);
+            }
             disposeReg();
         }
     });
