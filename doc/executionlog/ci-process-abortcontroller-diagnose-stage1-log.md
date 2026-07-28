@@ -159,8 +159,77 @@
    - **情况 A（aborted，预期最可能）**：`[ctrl-diag] POST triggered` → `poll effect setup` → `poll effect cleanup` → `POST catch, err.name=AbortError`；route.ts 的 `[process-route DEBUG]` **完全不出现**；D4 直调 **200 + status 字段**
    - **情况 B（401）**：`[process-route DEBUG] auth result: unauthorized`；D4 直调 401
    - **情况 C（500/其他）**：`[process-route DEBUG] handler executing` 后 route 内部报错；D4 直调 500
-4. **git status 改动文件**（未 commit，留给主会话）：
+   4. **git status 改动文件**（未 commit，留给主会话）：
    - `src/app/api/nana/cases/[id]/process/route.ts`（D2：日志前置）
    - `src/app/nana/capture/page.tsx`（D3：8 处 [ctrl-diag] 日志）
    - `e2e/ci/nana-golden-path.spec.ts`（D1：监听器 + waitForResponse；D4：独立 describe 诊断用例）
    - `doc/executionlog/ci-process-abortcontroller-diagnose-stage1-log.md`（本文件）
+
+---
+
+## ➕ 追加：阶段 1 CI 跑完后的根因反转（2026-07-28，主会话追加）
+
+> commit `73bb3d1` 已推 origin/dev，CI run 30316321387 (pull_request event) E2E Tests job **失败**。
+> **本节由主会话在拉取 CI 日志分析后追加，记录根因反转——外部 AI 假设被 D4 诊断证据推翻。**
+
+### CI 证据汇总
+
+| 证据点 | 日志输出 | 出现次数 |
+|--------|----------|---------|
+| S1 主路径 /process response | `[e2e-diag] response .../process status=500` | 3 (3 retries) |
+| S1 requestfailed | `[e2e-diag] requestfailed .../process errorText=net::ERR_ABORTED` | 3 |
+| D4 直调状态码 | `[e2e-diag D4] direct POST status=500` | 3 |
+| chat/completions 计数 | `[e2e-diag] chat/completions total seen: 0` | 3 |
+| `[process-route DEBUG]` 日志 | **完全不出现** | 0 |
+| `[ctrl-diag]` 前端日志 | **完全不出现** | 0（注：未加 `page.on('console')` 转发，不能下结论） |
+| `[WebServer]` next dev 启动期输出 | baseline-browser-mapping / middleware / NextAuth 警告 | 仅启动期，test 期间无新增 |
+| Build job | ✅ 通过（57 页面全编译，路由表含 `/api/nana/cases/[id]/process` 标记 ƒ 动态） |
+| 其他 job | Unit / Integration / Build Check ✅ 全过；Docker Build skipped（CI 配置）；OCR ✅ |
+
+### 根因反转（外部 AI 假设被推翻）
+
+**原假设（外部 AI 评审）**：前端 AbortController 共用导致 POST 在 React Strict Mode effect cleanup 中被提前取消，请求 aborted，从未到达服务端。
+
+**CI 证据指向的真实根因**：**后端 route handler 返回 500，POST 函数体第一行的 console.log 都没执行到**。这指向：
+1. Next.js dev mode 第一次按需编译/加载 `/api/nana/cases/[id]/process/route.ts` 模块时崩溃
+2. Next.js 框架捕获 import-time / 模块初始化错误并返回 500
+3. route.ts POST 函数体的 console.log 因此从未执行
+4. D4 用 APIRequestContext 直调（绕过前端 React 生命周期）同样 500，证明问题在后端
+
+**为什么之前的"aborted"误判成立**：
+- `waitForRequest` 只看请求对象创建事件，500 响应也能通过 → CL-04 看起来通过，到 CL-05 才暴露
+- `requestfailed errorText=net::ERR_ABORTED` 在 500 响应后 11ms 触发，是浏览器收到 500 后的连接清理（不是前端主动 abort）
+- next dev 的 stderr 在 test 期间被 Playwright webServer 子进程吞掉（只透传启动期输出），看不到 500 真实堆栈
+- "fake provider 没收到 /chat/completions" 与 500 完全一致（route 没执行到调 provider 那步）
+
+### 看不到的关键证据（铁律 6：诚实声明）
+
+- **500 的真实 stack trace**：next dev stderr 在 test 期间没透传到 CI 日志，无法直接定位是哪个 import / 哪一行模块顶层代码崩溃
+- route.ts 顶层（line 1-36）只有 import + `const logger = createLogger(...)`，无副作用代码
+- case-analyzer.ts 顶层（line 1-31）同样只有 import + logger 定义；`new OpenAI(...)` 在函数体内（line 315）
+- **本地无法直接推断 dev mode 模块加载失败的具体原因**——需要新一轮诊断 CI 拿 stack
+
+### 上一轮 waitForRequest 的"伪通过"机制（重要教训）
+
+之前 16 轮 CI 迭代一直误判根因，是因为 CL-04 用 `page.waitForRequest(...)`：它只捕获浏览器侧"请求对象创建"事件，**请求被服务端返回 500 也能"通过"**。所以 CL-04 看似绿灯，到 CL-05 `getByText('AI 摘要')` 30s timeout 才暴露。本轮 D1 把 `waitForRequest` 改成 `waitForResponse`，CL-04 立即暴露 500——这是诊断能力的本质提升。
+
+### 决策（用户已确认）
+
+按 plan §8 开放问题 4 的用户决策「接受阶段 1 推翻阶段 2 的不确定性」：
+- **原计划阶段 2（R1-R6 AbortController 拆分）作废**，回 /plan 重新设计
+- **新阶段 1.5**：补诊断能力（next dev stderr 透传 + route try/catch 写文件 + 前端 console 转发），跑一轮 CI 拿 500 真实 stack
+- **新阶段 2**：基于真实 stack 重设计修复方向（保留"等 stack 出来再细化"的弹性）
+- 原 D2/D3/D4 临时诊断日志：等新 plan 出来后决定保留/清理/合并
+
+### 仍保留价值的部分（不要丢）
+
+- D1 改造的 `waitForResponse` + 三事件监听（requestfinished/requestfailed/response）+ chat/completions 计数器是**长期证据采集能力**，应保留
+- D4 APIRequestContext 直调用例是**区分前后端问题的标准手段**，应保留（修复后改为断言 200）
+- "Strict Mode 组件回归测试"虽不是本轮根因，但仍是值得补的护栏（独立于本轮修复）
+- AbortController 拆分本身（POST 与轮询不共用 controller）是合理的代码健康改进，**可作为独立改进项**排进未来轮次，不一定是本轮修复
+
+### Git 状态
+
+- commit `73bb3d1` 已推 origin/dev
+- 工作区干净（除上轮遗留的 untracked 临时文件 ci-status*.txt / ci-status.json / ci5.txt + doc/research/*.md，与本轮无关）
+- dev 领先 main 51 个 commit（含本轮诊断）
