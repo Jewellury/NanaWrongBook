@@ -142,6 +142,13 @@ jobs:
         run: |
           npx prisma db push
           npx prisma db seed
+          # 2026-07-28 修复：补跑知识图谱 + 课本章节 seed
+          # 根因：process route 的 loadNodesAndTopics() 依赖 KnowledgeNode + TextbookTopic
+          # + TextbookNodeMapping 三表数据；之前只跑 prisma db seed（仅创建 admin），
+          # 三表为空 → route.ts:338 业务逻辑 return 500「知识点或课本章节数据为空」
+          # 对照 integration-test job 已正确跑这两个 seed（ci.yml:70-71）
+          npx tsx prisma/seed_graph.ts
+          npx tsx prisma/seed_textbook_topics.ts
 
       - name: Build application
         run: npm run build

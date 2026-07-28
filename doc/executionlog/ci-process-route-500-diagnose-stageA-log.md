@@ -157,3 +157,91 @@
 - [x] `npm.cmd run build` 通过
 - [x] git status 改动文件清单见 §6
 - [x] 无偏离计划；无疑问留给主会话
+
+---
+
+## ➕ 追加：阶段 A CI 跑完后的根因实锤 + 微调修复（2026-07-28，主会话追加）
+
+> commit `d2ee478` 推 CI 后 run 30321873413 E2E Tests 失败。**本节由主会话在拉取 CI 日志分析后追加，记录根因彻底定位 + 微调修复决策。**
+
+### A1+A2 诊断证据汇总（彻底锁定根因）
+
+A2 stderr pipe **起作用了**（这是本轮最大的诊断胜利）——`[WebServer]` 前缀输出涌现，看到了之前 17 轮 CI 都看不到的 next dev 详细日志。
+
+| 证据点 | 输出 | 含义 |
+|--------|------|------|
+| `[process-route DEBUG] { env... }` | ✅ 出现，env 全 `(set)` | route handler 模块加载完成 |
+| `POST handler ENTERED` 文件（A1） | ✅ 写入 9 次 | POST 函数体被调到 |
+| `[process-route DEBUG] auth result: ok` | ✅ 出现 | getServerSession 成功 |
+| `[process-route DEBUG] handler executing for caseId=...` | ✅ 出现 9 次 | 进入 outer try，走过了 line 308 |
+| `POST /api/nana/cases/.../process 500 in 27ms` | render 仅 27ms | 没走到 analyzeCase（否则要几百 ms） |
+| `/tmp/process-route-error.log`（A1） | ❌ **不存在** | outer catch **没触发**——不是 throw |
+| D4 attempt 1 + attempt 2 | 都 500 | 排除冷启动（方向 2 实锤为否） |
+
+**关键推论**（结合 A1 矩阵 §6.3）：
+- module-loaded ✅ + post-entered ✅ + error.log ❌ → POST 进来了，**正常 return**（不是 throw）
+- 但 client 看到 500 + render 27ms → POST 在 analyzeCase 之前就 return 了 500
+
+读 route.ts:338 业务逻辑，**直接定位**：
+```typescript
+if (nodes.length === 0 || textbookTopics.length === 0) {
+  return NextResponse.json(
+    { error: "知识点或课本章节数据为空，请检查种子数据" },
+    { status: 500 },  // ← 这就是 500 的来源
+  );
+}
+```
+
+`loadNodesAndTopics()`（route.ts:95-111）查 KnowledgeNode + TextbookTopic + TextbookNodeMapping 三表，用 mapping 过滤后返回。**三表为空** → 过滤后空数组 → 命中 line 338 → 业务 500。
+
+### 为什么三表为空（最终根因）
+
+对比 ci.yml 两个 job 的 Setup Database step（铁律 6：诚实声明这是 17 轮 CI 一直没发现的低级配置遗漏）：
+
+| Job | seed 命令 | 三表数据 |
+|-----|----------|---------|
+| `integration-test`（line 66-71） | `prisma db push` + **`tsx seed_graph.ts`** + **`tsx seed_textbook_topics.ts`** | ✅ 齐全 |
+| `e2e-test`（line 141-144） | `prisma db push` + `prisma db seed`（仅创建 admin） | ❌ 全空 |
+
+`prisma db seed` 执行 package.json 的 `prisma.seed` 配置（`prisma/seed.ts`），**只创建 admin 用户**，不导入知识图谱和课本章节数据。
+
+### 17 轮误判的教训
+
+1. 上一轮"前端 AbortController 共用"假设被 D4 直调 500 推翻
+2. 本轮 plan §6.2 推测最高嫌疑是 `openai` 包（process route 独有 import 链）——**也错了**
+3. 真根因是 CI yaml 配置遗漏，与代码层 import 链 / native binding / Turbopack / Strict Mode **全部无关**
+4. **教训**：诊断设计应优先排除"环境/配置层"假设，再深入"代码层"假设。本轮 plan 反过来了——先怀疑代码层（openai 等），没第一时间对比 integration-test 和 e2e-test 的 yaml diff
+
+### 微调修复（用户决策：直接修，不回 /plan）
+
+按 AGENTS.md 门禁「微调记录后继续」，本轮微调：
+- **改动**：ci.yml e2e-test job Setup Database step 加 2 行 `npx tsx prisma/seed_graph.ts` + `npx tsx prisma/seed_textbook_topics.ts`
+- **保留**：所有诊断日志（A1/A2/A3/A4 + D2/D3）——等 CI 绿后再做 A5 清理，确保万一修复失败仍有诊断能力
+- **commit 标注**：`⚠️上游文件修改`（决策 5）
+
+### 本轮诊断能力的长期价值（不要丢）
+
+- **A2 stdout/stderr pipe**：让 next dev stderr 透传到 CI 日志。未来任何 dev mode 错误都能直接看到，不再"看不到"。**长期保留**
+- **A1 outer catch error.log**：未来任何 route 内部 throw 都会留 stack 证据。**改造为长期护栏后保留**（A5 任务）
+- **A3 Dump step**：`if: always()` 让任何 500 都留下证据。**长期保留**
+- **D4 APIRequestContext 直调 + retry**：区分前后端问题的标准手段。**长期保留**
+- **D1 waitForResponse + 三事件监听**：取代 waitForRequest 的伪通过陷阱。**长期保留**
+
+### A5 清理计划（CI 绿后下一轮做）
+
+临时诊断（删）：
+- route.ts 的 `[process-route DEBUG]` env/auth/handler console.log（D2 + A1 mark 部分）
+- capture/page.tsx 的 `[ctrl-diag]` 日志（D3）
+- route.ts 顶层 module-loaded mark（A1）——保留 outer catch error.log 改造为长期护栏
+
+长期护栏（保留）：
+- A2 stderr pipe
+- A3 Dump step（改名 `Dump process route error log (long-term guardrail)`）
+- A4 D4 直调 + retry
+- D1 waitForResponse + 事件监听
+
+### 偏离记录
+
+**偏离类型**：微调（AGENTS.md 允许"微调记录后继续"）
+**偏离点**：plan §2 阶段 B 任务 B0 说"5 个方向都对不上则回 /plan 二次重设计"——本根因（数据缺失）确实不在 5 个方向内，但修复极简（2 行 yaml），用户决策微调直接修，不回 /plan
+**理由**：根因清晰、修复简单、回 /plan 流程开销大于修复本身；诊断证据已在执行日志充分记录，可审计
