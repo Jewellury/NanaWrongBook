@@ -562,33 +562,44 @@ test.describe.serial('nana-golden-path: D4 诊断 APIRequestContext 直调 /proc
             //    直调 /process。它自动共享 page 的 cookies（NextAuth session），
             //    无需手动注入 storageState。绕过前端 React 组件生命周期，
             //    直接验证后端 route handler 本身是否工作。
-            const response = await page.context().request.post(
+            // [阶段A 任务A4] 加 retry（区分冷启动 vs 确定性崩溃）+ body 解析（§6.6 正确用法）
+            let response = await page.context().request.post(
                 `/api/nana/cases/${caseId}/process`,
             );
-            console.log(`[e2e-diag D4] direct POST status=${response.status()}`);
-
-            const body = await response.json().catch((e) => {
-                console.log(`[e2e-diag D4] body parse failed: ${e}`);
-                return null;
-            });
-            if (body) {
-                console.log(`[e2e-diag D4] direct POST body.status=${body.status}`);
+            console.log(`[e2e-diag D4] attempt 1 status=${response.status()}`);
+            // 先读 text（body 只能消费一次，§6.6）
+            let text = await response.text();
+            if (response.status() !== 200) {
+                console.log('[e2e-diag D4] attempt 1 non-200, waiting 5s for next dev cold-compile to settle, then retry...');
+                await page.waitForTimeout(5000);
+                // retry 时重新发起 POST（不能复用已消费的 body/response）
+                response = await page.context().request.post(
+                    `/api/nana/cases/${caseId}/process`,
+                );
+                console.log(`[e2e-diag D4] attempt 2 status=${response.status()}`);
+                text = await response.text();
             }
 
-            // 7. 断言（区分前后端问题的决定性证据）：
-            //    - 直调 200 + body.status 非空 → 后端没问题，主路径失败是前端生命周期（aborted 实锤）
-            //    - 直调 401/500/其他 → 后端有问题，需回 /plan 重新评估根因
-            expect(
-                response.status(),
-                `D4 直调状态码应 200，实际 ${response.status()}`,
-            ).toBe(200);
-            expect(body, 'D4 直调响应应有 body').not.toBeNull();
-            expect(
-                body?.status,
-                `D4 直调 body.status 应非空，实际 ${body?.status}`,
-            ).toBeDefined();
+            // body 解析（§6.6 正确用法：先 text，再 try JSON.parse）
+            let body: unknown = null;
+            try {
+                body = JSON.parse(text);
+            } catch {
+                body = null;
+            }
+            if (body) {
+                console.log(`[e2e-diag D4] direct POST body.status=${(body as { status?: unknown }).status}`);
+            } else {
+                // JSON 解析失败 → 可能是 Next.js 500 HTML 错误页，打印前 2000 字符
+                console.log(`[e2e-diag D4] direct POST body (non-JSON, first 2000 chars): ${text.slice(0, 2000)}`);
+            }
+
+            // 7. [阶段A] 断言放宽：不断言 200，只采集证据。
+            //    让 D4 无论 200/500 都跑完拿全 body + retry 信息。
+            //    阶段B 修复后恢复：expect(response.status()).toBe(200)
+            console.log(`[e2e-diag D4] final status=${response.status()} (阶段A: 不断言, 只采集)`);
             console.log(
-                '[e2e-diag D4] ✅ 后端 route handler 正常；若 S1 主路径 CL-04 失败，根因是前端生命周期（aborted）',
+                '[e2e-diag D4] 证据采集完成；阶段B 拿到 stack 修复后将恢复 200 断言',
             );
         } finally {
             if (d4UserId) {

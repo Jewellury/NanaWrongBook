@@ -54,6 +54,12 @@ export default defineConfig({
             url: E2E_HOST,
             reuseExistingServer: !process.env.CI,
             timeout: 180 * 1000, // dev 模式首屏编译慢，给 3 分钟
+            // [DEBUG CI 2026-07-28 阶段A 任务A2] 显式声明 stdout/stderr 透传
+            // Playwright 1.57 默认即 'pipe'，显式写出排除默认值不确定性 + 文档化诊断意图
+            // 若显式 pipe 后仍看不到 next dev stderr，说明问题在 Next.js 框架层（不走 stderr）
+            // 届时靠 route.ts 的 fs.appendFileSync 兜底（任务 A1）
+            stdout: 'pipe',
+            stderr: 'pipe',
             // r3.1 任务 2.9 CI 修复（2026-07-27）：
             // 显式注入 fake provider env 给 Next.js 子进程（双保险）
             env: {

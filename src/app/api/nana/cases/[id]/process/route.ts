@@ -33,6 +33,17 @@ import {
 import { parseAudioMeta } from "@/lib/nana/audio-utils";
 import { isPlaceholderTranscript } from "@/lib/nana/transcript-utils";
 
+// [DEBUG CI 2026-07-28 阶段A 任务A1] 模块加载完成标记——证明所有 import 成功
+// 不依赖 console.error 透传，直接写 CI 文件系统（铁律6：双保险拿证据）
+// 决策1：用 require 而非 import fs——require 不 hoist，放在 import 块后即按顺序执行，
+// mark 出现 = 所有 import 已完成（诊断语义见 plan §6.3 矩阵）
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require("fs");
+  fs.appendFileSync('/tmp/process-route-module-loaded.log',
+    `[${new Date().toISOString()}] route.ts module evaluation COMPLETED\n`);
+} catch { /* 模块顶层不能 throw，吞掉 */ }
+
 const logger = createLogger("api:nana:cases:process");
 
 /** 高置信阈值：>= 0.5 自动挂 tag */
@@ -280,6 +291,14 @@ export async function POST(
     DATABASE_URL: process.env.DATABASE_URL || "(unset)",
   });
 
+  // [DEBUG CI 2026-07-28 阶段A 任务A1] POST 入口文件写入（双保险，承接 D2 console.log）
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
+    fs.appendFileSync('/tmp/process-route-post-entered.log',
+      `[${new Date().toISOString()}] POST handler ENTERED\n`);
+  } catch { /* ignore */ }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return unauthorized();
   console.log(`[process-route DEBUG] auth result: ${session?.user?.id ? 'ok' : 'unauthorized'}`);
@@ -396,6 +415,14 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ error }, "POST /process 异常");
+    // [DEBUG CI 2026-07-28 阶段A 任务A1] outer catch 写 stack 到文件
+    // 铁律6：当前 internalError() 吞掉了 stack，加写文件兜底拿 500 真实堆栈
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require("fs");
+      fs.appendFileSync('/tmp/process-route-error.log',
+        `[${new Date().toISOString()}] POST outer catch:\n${error instanceof Error ? error.stack : String(error)}\n`);
+    } catch { /* ignore */ }
     return internalError();
   }
 }

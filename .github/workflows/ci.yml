@@ -194,6 +194,20 @@ jobs:
         env:
           CI: true
 
+      # [阶段A 任务A3 诊断] 打印 route.ts 诊断文件——无论 Playwright 成功失败都执行
+      # 配合任务 A1：把 route.ts 写的模块加载标记 / POST 入口 / outer catch stack 全打出来
+      # ⚠️上游文件修改：ci.yml 追踪自上游 wrong-notebook；本 step 为本项目自有增量
+      # 铁律4：cat 输出只有 timestamp + stack，不含 env 值或 token
+      - name: Dump process route diagnostic logs
+        if: always()
+        run: |
+          echo "=== /tmp/process-route-module-loaded.log ==="
+          cat /tmp/process-route-module-loaded.log 2>/dev/null || echo "(file not found — module evaluation did NOT complete)"
+          echo "=== /tmp/process-route-post-entered.log ==="
+          cat /tmp/process-route-post-entered.log 2>/dev/null || echo "(file not found — POST handler never entered)"
+          echo "=== /tmp/process-route-error.log ==="
+          cat /tmp/process-route-error.log 2>/dev/null || echo "(file not found — no outer catch triggered)"
+
       # r3.1 任务 2.9：优雅关闭 fake-provider（无论成功失败都执行）
       - name: Stop fake provider server
         if: always()
