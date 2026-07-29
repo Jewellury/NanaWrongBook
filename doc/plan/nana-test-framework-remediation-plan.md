@@ -8,6 +8,68 @@
 
 ---
 
+## r2.1 执行约束（评审二轮追加，必须遵守）
+
+> 结论：r2 已基本走出死胡同，约 80% 可执行。不需要再重写计划，但 PR-1/PR-2 阶段必须遵守以下 6 条执行级约束，否则可能再次陷入新一轮 CI 调试。
+
+### 1. 临时 DB 路径必须显式传入，脚本不随机生成
+
+- CI 在 job 级显式设置绝对路径：`DATABASE_URL=file:<repo>/data/test/<job>.db`。
+- `scripts/test-env-prepare.ts` 只负责：验证路径在白名单内、删除重建该文件、初始化 schema/seed。
+- 本地未提供 `DATABASE_URL` 时，脚本才生成固定的 profile 路径（如 `data/test/<profile>.db`）。
+- 不引入 `nanoid`，需要唯一 ID 时用 Node 内置 `crypto.randomUUID()`。
+- **关键**：Node 脚本内部修改 `process.env.DATABASE_URL` 不会自动传给后续 CI step，因此路径必须在 CI yaml 的 `env` 段显式定义。
+
+### 2. D4 直调 + retry 不得进入常规 CI
+
+- D4（`APIRequestContext` 直调 + retry）只属于诊断期工具。
+- PR-0 根因闭环后，从常规黄金路径 / UI 契约 / API 契约中移除自动 retry。
+- 可保留为独立、手动运行的诊断 spec，但不得进入正常 CI job。
+- 正式测试禁止业务请求自动 retry，避免重复写库、重复消费 Provider 队列。
+
+### 3. Canary 责任重新定义
+
+- `main` push 时合并已经完成，Canary **无法阻止合入**。
+- 正确措辞：
+  - **nightly Canary**：失败只告警。
+  - **main Canary**：作为部署前硬门禁——失败必须阻止 Docker 构建/部署继续、在 `main` 上标红、触发修复或回滚。
+- 计划全文中的“main push 失败阻塞合入”统一改为“main Canary 是部署前硬门禁”。
+
+### 4. 建立唯一的共享响应 schema
+
+- `case-analyzer.ts` 的输出结构 ≠ `/process` HTTP 响应结构。
+- 必须新建 `CaseProcessResponseSchema`（Zod），供 API client、UI mock、契约测试共同使用。
+- UI 契约拦截 `/process` 返回的 mock 必须经过该 schema 校验，否则“经过 Zod 校验”可能校验错对象。
+
+### 5. UI 契约必须同时拦截 POST 和轮询 GET
+
+- Capture 页面会发 POST，并可能并行轮询 GET `/process`。
+- `page.route('**/api/nana/cases/*/process')` 需要按 method 返回明确状态序列，例如：
+  - POST → success
+  - 或 POST 延迟，GET 第一次 → pending，GET 第二次 → success
+- 不能只拦截 POST 而漏掉 GET，否则 UI 测试仍可能因未拦截的 GET 产生随机网络请求。
+
+### 6. API 契约测试运行器定死
+
+- 真实 HTTP 测试不要放在 Vitest integration 文件里再自行启动 `next dev`。
+- 推荐：`e2e/api/process-api-contract.spec.ts`，使用 Playwright 的 `APIRequestContext`。
+- 它不启动浏览器页面，但复用 Playwright `webServer` 和登录 cookie，真实通过 HTTP 验证 Next route。
+- 现有 `src/__tests__/integration/nana/process-api.test.ts` 继续负责 mock handler / 事务边界；两者职责清楚。
+
+### 两个小修订
+
+- `tsconfig.e2e.json` + `test:e2e:types` 移到 **PR-0**（它是本次诊断 bug 的回归护栏，不必等 PR-1）。
+- `workers:1` / `retries:0` **只限制 API contract 和 Canary project**，不要全局限制 UI contract，避免无谓拖慢 CI。
+
+### 最终执行顺序
+
+1. **PR-0**：拿到当前 200 + failed 的真实 error，修根因，补回归，移除 D4 retry 和临时诊断。
+2. **PR-1**：安全绝对 DB 路径、profile、统一 seed/preflight。
+3. **PR-2**：共享响应 schema、固定队列、HTTP API contract、UI contract、开发栈 Canary。
+4. **main Canary 通过后才能继续部署。**
+
+---
+
 ## 1. 大白话概述
 
 ### 这轮要做什么
