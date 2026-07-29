@@ -205,7 +205,8 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
         let chatCompletionsSeen = 0;
         page.on('requestfinished', (req) => {
             if (req.url().includes('/process')) {
-                console.log(`[e2e-diag] requestfinished ${req.url()} status=${req.response()?.status()}`);
+                // [D1 阶段1诊断] 只记录 URL，不读 status（req.response() 是 Promise）
+                console.log(`[e2e-diag] requestfinished ${req.url()}`);
             }
         });
         page.on('requestfailed', (req) => {
