@@ -39,20 +39,28 @@ export async function logProcessOutcome(
     getCaseId: () => Promise<string>,
     opts?: { timeout?: number },
 ): Promise<ProcessOutcome> {
-    const response = await page.waitForResponse(
-        (res) =>
-            res.request().method() === 'POST' &&
-            /\/api\/nana\/cases\/[^/]+\/process$/.test(res.url()),
-        { timeout: opts?.timeout ?? 30_000 },
-    );
-
-    const status = response.status();
-    const text = await response.text();
+    const timeout = opts?.timeout ?? 30_000;
+    let status = 0;
     let body: ProcessOutcome['body'] = null;
+
     try {
-        body = JSON.parse(text) as ProcessOutcome['body'];
-    } catch {
-        // 非 JSON 响应（如 HTML 错误页）保留 null，由 status 暴露
+        const response = await page.waitForResponse(
+            (res) =>
+                res.request().method() === 'POST' &&
+                /\/api\/nana\/cases\/[^/]+\/process$/.test(res.url()),
+            { timeout },
+        );
+
+        status = response.status();
+        const text = await response.text();
+        try {
+            body = JSON.parse(text) as ProcessOutcome['body'];
+        } catch {
+            // 非 JSON 响应（如 HTML 错误页）保留 null，由 status 暴露
+        }
+    } catch (e) {
+        console.log(`[process-outcome] waitForResponse 失败: ${e instanceof Error ? e.message : String(e)}`);
+        status = 0; // 0 表示没有拿到响应（超时/网络错误）
     }
 
     let aiResult: ProcessOutcome['aiResult'] = null;
