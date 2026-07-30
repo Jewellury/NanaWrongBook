@@ -37,13 +37,6 @@ import { isPlaceholderTranscript } from "@/lib/nana/transcript-utils";
 // 不依赖 console.error 透传，直接写 CI 文件系统（铁律6：双保险拿证据）
 // 决策1：用 require 而非 import fs——require 不 hoist，放在 import 块后即按顺序执行，
 // mark 出现 = 所有 import 已完成（诊断语义见 plan §6.3 矩阵）
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require("fs");
-  fs.appendFileSync('/tmp/process-route-module-loaded.log',
-    `[${new Date().toISOString()}] route.ts module evaluation COMPLETED\n`);
-} catch { /* 模块顶层不能 throw，吞掉 */ }
-
 const logger = createLogger("api:nana:cases:process");
 
 /** 高置信阈值：>= 0.5 自动挂 tag */
@@ -281,31 +274,11 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // [DEBUG CI 2026-07-28] 临时诊断（阶段1 D2）：env + auth + handler 入口
-  // ⚠️ 前置到鉴权之前，用于区分"handler 没被调到（前端 aborted）" vs "被调到但 401/500"
-  // 铁律4：env 只打印 set/unset，不打印值；auth 只打印 ok/unauthorized，不打印 token/userId
-  console.log("[process-route DEBUG]", {
-    VOLCENGINE_API_KEY: process.env.VOLCENGINE_API_KEY ? "(set)" : "(unset)",
-    VOLCENGINE_BASE_URL: process.env.VOLCENGINE_BASE_URL || "(unset)",
-    LITE_ENDPOINT_ID: process.env.LITE_ENDPOINT_ID || "(unset)",
-    DATABASE_URL: process.env.DATABASE_URL || "(unset)",
-  });
-
-  // [DEBUG CI 2026-07-28 阶段A 任务A1] POST 入口文件写入（双保险，承接 D2 console.log）
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require("fs");
-    fs.appendFileSync('/tmp/process-route-post-entered.log',
-      `[${new Date().toISOString()}] POST handler ENTERED\n`);
-  } catch { /* ignore */ }
-
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return unauthorized();
-  console.log(`[process-route DEBUG] auth result: ${session?.user?.id ? 'ok' : 'unauthorized'}`);
 
   try {
     const { id } = await params;
-    console.log(`[process-route DEBUG] handler executing for caseId=${id}`);
 
     const caseRecord = await prisma.case.findFirst({
       where: { id, studentId: session.user.id },
@@ -415,14 +388,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ error }, "POST /process 异常");
-    // [DEBUG CI 2026-07-28 阶段A 任务A1] outer catch 写 stack 到文件
-    // 铁律6：当前 internalError() 吞掉了 stack，加写文件兜底拿 500 真实堆栈
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = require("fs");
-      fs.appendFileSync('/tmp/process-route-error.log',
-        `[${new Date().toISOString()}] POST outer catch:\n${error instanceof Error ? error.stack : String(error)}\n`);
-    } catch { /* ignore */ }
     return internalError();
   }
 }

@@ -220,20 +220,14 @@ export default function CapturePage() {
       abortControllerRef.current?.abort(); // abort 旧的飞行请求
       const ac = new AbortController();
       abortControllerRef.current = ac;
-      // [ctrl-diag 阶段1 D3] controller 创建点：保存路径
-      console.log(`[ctrl-diag] created controller for caseId=${caseRecord.id}, signal.aborted=${ac.signal.aborted}`);
       setProcessState("processing");
       try {
-        // [ctrl-diag 阶段1 D3] POST 调用前：保存路径
-        console.log(`[ctrl-diag] POST triggered, signal.aborted=${ac.signal.aborted}, caseId=${caseRecord.id}`);
         const result = await triggerCaseProcess(caseRecord.id, ac.signal);
         // P1 hotfix：caseId 不一致则丢弃（用户已"再拍一道"）
         if (currentCaseIdRef.current !== caseRecord.id) return;
         setProcessResult(result);
         setProcessState(result.status === "success" ? "done" : "error");
       } catch (err) {
-        // [ctrl-diag 阶段1 D3] POST catch：保存路径（放在 AbortError 判断之前）
-        console.log(`[ctrl-diag] POST catch, err.name=${err instanceof Error ? err.name : 'unknown'}, signal.aborted=${ac.signal.aborted}`);
         // abort 引起的 AbortError 不更新状态
         if (err instanceof DOMException && err.name === "AbortError") return;
         if (currentCaseIdRef.current !== caseRecord.id) return;
@@ -257,9 +251,6 @@ export default function CapturePage() {
     if (processResult && (processResult.status === "success" || processResult.status === "failed")) {
       return;
     }
-
-    // [ctrl-diag 阶段1 D3] 轮询 effect setup：真正进入轮询逻辑时打印
-    console.log(`[ctrl-diag] poll effect setup, processState=${processState}, savedCaseId=${savedCaseId}, ref signal.aborted=${abortControllerRef.current?.signal.aborted}`);
 
     const ac = abortControllerRef.current ?? new AbortController();
     abortControllerRef.current = ac;
@@ -291,8 +282,6 @@ export default function CapturePage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
-      // [ctrl-diag 阶段1 D3] 轮询 effect cleanup：在 ac.abort() 之前打印
-      console.log(`[ctrl-diag] poll effect cleanup, aborting controller, signal.aborted=${ac.signal.aborted}`);
       ac.abort();
     };
   }, [processState, savedCaseId, processResult]);
@@ -305,21 +294,15 @@ export default function CapturePage() {
     abortControllerRef.current?.abort();
     const ac = new AbortController();
     abortControllerRef.current = ac;
-    // [ctrl-diag 阶段1 D3] controller 创建点：重试路径
-    console.log(`[ctrl-diag] created controller for caseId=${savedCaseId}, signal.aborted=${ac.signal.aborted}`);
     setProcessState("processing");
     setProcessResult(null);
     try {
-      // [ctrl-diag 阶段1 D3] POST 调用前：重试路径
-      console.log(`[ctrl-diag] POST triggered, signal.aborted=${ac.signal.aborted}, caseId=${savedCaseId}`);
       const result = await triggerCaseProcess(savedCaseId, ac.signal);
       // P1 hotfix：caseId 不一致则丢弃
       if (currentCaseIdRef.current !== savedCaseId) return;
       setProcessResult(result);
       setProcessState(result.status === "success" ? "done" : "error");
     } catch (err) {
-      // [ctrl-diag 阶段1 D3] POST catch：重试路径（放在 AbortError 判断之前）
-      console.log(`[ctrl-diag] POST catch, err.name=${err instanceof Error ? err.name : 'unknown'}, signal.aborted=${ac.signal.aborted}`);
       if (err instanceof DOMException && err.name === "AbortError") return;
       if (currentCaseIdRef.current !== savedCaseId) return;
       setProcessState("error");
