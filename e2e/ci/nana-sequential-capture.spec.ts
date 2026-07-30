@@ -394,7 +394,7 @@ test.describe.serial('nana-sequential-capture: S7 连续拍题竞态（CL-15）'
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
-                caseTextbookTopicTags: {
+                textbookTopicTags: {
                     where: { source: 'vlm' },
                     select: { textbookTopicId: true },
                 },
@@ -410,17 +410,17 @@ test.describe.serial('nana-sequential-capture: S7 连续拍题竞态（CL-15）'
 
         // 3 题各自归入正确章节（CL-11 跨章节分组）
         const tb003Case = cases.find((c) =>
-            c.caseTextbookTopicTags.some((t) => t.textbookTopicId === Q1_TB_ID),
+            c.textbookTopicTags.some((t) => t.textbookTopicId === Q1_TB_ID),
         );
         expect(tb003Case).toBeTruthy();
 
         const tb008Case = cases.find((c) =>
-            c.caseTextbookTopicTags.some((t) => t.textbookTopicId === Q2_TB_ID),
+            c.textbookTopicTags.some((t) => t.textbookTopicId === Q2_TB_ID),
         );
         expect(tb008Case).toBeTruthy();
 
         const tb010Case = cases.find((c) =>
-            c.caseTextbookTopicTags.some((t) => t.textbookTopicId === Q3_TB_ID),
+            c.textbookTopicTags.some((t) => t.textbookTopicId === Q3_TB_ID),
         );
         expect(tb010Case).toBeTruthy();
     });

@@ -529,11 +529,11 @@ test.describe.serial('nana-batch-path: 素材组 A 三题批量验证', () => {
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
-                caseTextbookTopicTags: {
+                textbookTopicTags: {
                     where: { source: 'vlm' },
                     select: { textbookTopicId: true },
                 },
-                caseKnowledgeTags: {
+                knowledgeTags: {
                     where: { source: 'vlm' },
                     select: { nodeId: true },
                 },
@@ -548,19 +548,19 @@ test.describe.serial('nana-batch-path: 素材组 A 三题批量验证', () => {
 
         // TB-010 组：恰好 2 题挂了 vlm 课本 tag
         const tb010Cases = cases.filter((c) =>
-            c.caseTextbookTopicTags.some((t) => t.textbookTopicId === EXPECTED_TB_ID),
+            c.textbookTopicTags.some((t) => t.textbookTopicId === EXPECTED_TB_ID),
         );
         expect(tb010Cases.length).toBe(2);
 
         // M2a-13 知识节点 tag：恰好 2 题挂了（CL-12 琥珀证据前置条件）
         const m2a13Cases = cases.filter((c) =>
-            c.caseKnowledgeTags.some((t) => t.nodeId === EXPECTED_NODE_ID),
+            c.knowledgeTags.some((t) => t.nodeId === EXPECTED_NODE_ID),
         );
         expect(m2a13Cases.length).toBe(2);
 
         // 未分类组：恰好 1 题无 vlm 课本 tag
         const noTagCases = cases.filter(
-            (c) => c.caseTextbookTopicTags.length === 0,
+            (c) => c.textbookTopicTags.length === 0,
         );
         expect(noTagCases.length).toBe(1);
 

@@ -395,14 +395,14 @@ test.describe.serial('nana-cross-user: CL-16 用户隔离 + 直接接口越权',
         // ═══ DB 维度最终验证：userB 的 where studentId:userB.id 不含 userA 的 Case ═══
         await test.step('DB 维度 userB 数据完全隔离', async () => {
             const userBCases = await prisma!.case.findMany({
-                where: { studentId: userBUserId },
+                where: { studentId: userBUserId! },
             });
             // userB 刚注册，没有任何拍题行为
             expect(userBCases.length).toBe(0);
 
             // userA 的 Case 在 DB 中仍然存在（不是被删了，是 userB 看不到）
             const userACase = await prisma!.case.findUnique({
-                where: { id: userACaseId },
+                where: { id: userACaseId! },
             });
             expect(userACase).toBeTruthy();
             expect(userACase!.studentId).toBe(userAUserId);
