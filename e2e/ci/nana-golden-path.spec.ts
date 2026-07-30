@@ -50,6 +50,7 @@ import {
 } from '../helpers/fake-provider-server';
 import { setupFixtureRegistration } from '../helpers/register-fixture';
 import { createDbVerifier, type DbVerifier } from '../helpers/db-verifier';
+import { logProcessOutcome } from '../helpers/process-response-logger';
 
 // ─── 常量 ──────────────────────────────────────────────────
 
@@ -313,10 +314,10 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
                 // 这正是"CL-04 通过但 handler 不执行"的矛盾来源。waitForResponse 才能确认
                 // 请求真的到达服务端并拿到响应。若请求被前端 abort，waitForResponse 会
                 // timeout（30s）——timeout 本身就是诊断证据（铁律6：已在执行日志声明）。
-                const processResponsePromise = page.waitForResponse(
-                    (res) =>
-                        res.request().method() === 'POST' &&
-                        /\/api\/nana\/cases\/[^/]+\/process$/.test(res.url()),
+                const outcomePromise = logProcessOutcome(
+                    page,
+                    prisma!,
+                    () => getLatestCaseId(mainUserId!),
                     { timeout: AI_PROCESS_TIMEOUT_MS },
                 );
 
@@ -332,18 +333,12 @@ test.describe.serial('nana-golden-path: S1 清晰题图+录音完整成功路径
                     `[CL-04] "已收好"耗时: ${savedDuration}ms (体验目标 ≤2000 / 测试超时 ${SAVE_TOAST_TIMEOUT_MS}ms)`,
                 );
 
-                // [D1 阶段1诊断] 等 /process 真的返回（waitForResponse）。
-                // ⚠️ 阶段1预期：若前端 abort 了请求，这里 timeout 会导致 CL-04 失败 →
-                // 整个 golden-path 在此停。这是期望行为（采集诊断证据），不算回归。
-                const processResponse = await processResponsePromise;
-                console.log(`[e2e-diag] /process response status=${processResponse.status()}`);
-                const processBody = await processResponse.json().catch((e) => {
-                    console.log(`[e2e-diag] /process response body parse failed: ${e}`);
-                    return null;
-                });
-                if (processBody) {
-                    console.log(`[e2e-diag] /process response body.status=${processBody.status}`);
-                }
+                // [commit 0.3] 打印 /process 分层证据：HTTP status + body + DB 落库状态
+                const outcome = await outcomePromise;
+                // 如果 outcome 显示业务失败，这里用 expect 诚实红掉，不再 timeout 伪装
+                expect(outcome.status).toBe(200);
+                expect(outcome.body?.status).toBe('success');
+                expect(outcome.aiResult?.processingStatus).toBe('success');
             });
 
             // 取 Case ID（capture/page.tsx 把 caseId 存 React state，不暴露 DOM；从 DB 拿）
