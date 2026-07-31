@@ -46,7 +46,9 @@ jobs:
     name: Integration Tests
     needs: unit-test
     env:
-      DATABASE_URL: "file:./data/test/test.db"
+      # r2.1 约束 1：CI 用绝对路径，保证 test:env:prepare 与 vitest 进程解析到同一文件。
+      # 相对路径会被 Prisma 相对 prisma/ schema 目录解析（与仓库根不一致）。
+      DATABASE_URL: "file:${{ github.workspace }}/data/test/test.db"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -100,7 +102,7 @@ jobs:
     needs: build-check
     timeout-minutes: 60
     env:
-      DATABASE_URL: "file:./data/test/e2e.db"
+      DATABASE_URL: "file:${{ github.workspace }}/data/test/e2e.db"
       NEXTAUTH_SECRET: "ci-secret-value-123456"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
       # r3.1 任务 2.9：假豆包 Provider 配置
