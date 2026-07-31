@@ -84,3 +84,35 @@
 - [x] GitHub Actions 测试容器通过后，才允许部署
 - [x] 确认测试在安全路径运行
 - [x] 可进入 PR-1/PR-2 阶段
+
+---
+
+## PR-1 执行记录（安全的环境契约）
+
+### commit 1.1~1.2: test:env:prepare 统一入口
+- `scripts/test-env-prepare.ts`（新增）：白名单校验（仅 `<repo>/data/test/` 内）、profile（domain/api/ui/canary）、删除重建临时 DB、seed + 数量 preflight（KnowledgeNode≥48 / TextbookTopic=16 / 映射=48）、输出机器可读 JSON + errorCode/errorMessage、catch 不吞异常
+- `package.json`：注册 `test:env:prepare` 脚本
+- 本地验证：`--profile=domain` 通过（48/16/48）；外部路径 `file:./data/dev.db` exit 1 + `DATABASE_URL_NOT_IN_WHITELIST`
+
+### commit 1.3: guard-db.ts 目录包含判定
+- 从精确匹配改为目录包含判定：`file:/app/data/test.db` 精确放行 + 解析后位于 `<cwd>/data/test/` 目录内放行
+- 验证：dev.db / 游离 DB / 空值全部拒绝，data/test/ 下任意 profile 路径放行
+
+### commit 1.4: ci.yml 替换重复 seed 命令
+- `integration-test` job：手写 `prisma db push + seed_graph + seed_textbook_topics` → `npm run test:env:prepare -- --profile=domain`
+- `e2e-test` job：手写 `prisma db push + db seed + seed_graph + seed_textbook_topics` → `npm run test:env:prepare -- --profile=canary`
+- **偏离记录 3**：第一次 CI 失败（Integration Tests 500），根因是相对路径被 Prisma 相对 `prisma/` schema 目录解析，导致 vitest 连 `prisma/data/test/test.db`（无数据）
+- **修复**：CI 改用绝对路径 `file:${{ github.workspace }}/data/test/<job>.db`（r2.1 约束 1：Node 脚本改 env 不传 CI step，路径必须 job 级显式设置）
+- 本地验证：绝对路径下 314/314 集成测试全过
+
+### commit 1.5: DECISIONS.md 登记 D-16
+- 统一测试环境入口、DB 白名单、profile、禁止 `--accept-data-loss`、机器可读错误输出
+
+## PR-1 完成状态
+
+- [x] 所有任务完成（PR-1 闭环）
+- [x] 代码已提交
+  - `7f7bd22` feat(ci): 统一测试环境入口 test:env:prepare
+  - `2bbccfa` fix(ci): 用绝对 DATABASE_URL 修复相对路径解析问题
+- [x] CI 全绿：Unit / Integration / Build / E2E 全部 success
+- [x] 可进入 PR-2 阶段
