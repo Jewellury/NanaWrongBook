@@ -63,12 +63,10 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Setup test database
-        run: |
-          mkdir -p data/test
-          npx prisma db push
-          npx tsx prisma/seed_graph.ts
-          npx tsx prisma/seed_textbook_topics.ts
+      # r3.1 任务 2.9 → PR-1 统一入口：test:env:prepare（白名单 + profile + preflight）
+      # ⚠️上游文件修改：本 step 替换原本手写的 prisma db push + seed 命令组合
+      - name: Prepare test environment
+        run: npm run test:env:prepare -- --profile=domain
 
       - name: Run integration tests
         run: npm run test:integration
@@ -102,7 +100,7 @@ jobs:
     needs: build-check
     timeout-minutes: 60
     env:
-      DATABASE_URL: "file:./e2e.db"
+      DATABASE_URL: "file:./data/test/e2e.db"
       NEXTAUTH_SECRET: "ci-secret-value-123456"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
       # r3.1 任务 2.9：假豆包 Provider 配置
@@ -138,17 +136,13 @@ jobs:
           fi
           ffmpeg -version | head -1
 
-      - name: Setup Database
-        run: |
-          npx prisma db push
-          npx prisma db seed
-          # 2026-07-28 修复：补跑知识图谱 + 课本章节 seed
-          # 根因：process route 的 loadNodesAndTopics() 依赖 KnowledgeNode + TextbookTopic
-          # + TextbookNodeMapping 三表数据；之前只跑 prisma db seed（仅创建 admin），
-          # 三表为空 → route.ts:338 业务逻辑 return 500「知识点或课本章节数据为空」
-          # 对照 integration-test job 已正确跑这两个 seed（ci.yml:70-71）
-          npx tsx prisma/seed_graph.ts
-          npx tsx prisma/seed_textbook_topics.ts
+      # r3.1 任务 2.9 → PR-1 统一入口：test:env:prepare
+      # ⚠️上游文件修改：本 step 替换原本手写的 prisma db push + seed 命令组合。
+      # 根因回顾：e2e-test job 曾漏跑 seed_graph + seed_textbook_topics 导致
+      # process route loadNodesAndTopics() 三表为空 → route.ts:338 return 500。
+      # 统一入口在浏览器启动前 preflight 验证 KnowledgeNode≥48 / TextbookTopic=16 / 映射=48。
+      - name: Prepare test environment
+        run: npm run test:env:prepare -- --profile=canary
 
       - name: Build application
         run: npm run build

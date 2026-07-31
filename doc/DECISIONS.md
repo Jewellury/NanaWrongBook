@@ -25,6 +25,7 @@
 | D-13 | 2026-06-13 | process | **三代理协作框架**：/plan（计划）→ /execute（执行）→ /audit（审计）。计划未经用户确认不得执行；审计只指出问题不直接改代码 | CLAUDE.md 三代理协作开发规范 | active |
 | D-14 | 2026-06-13 | infrastructure | **AI 模型切 DeepSeek**：deepseek-chat，API Key + Base URL 配置完成。项目 AI（写代码方）用 DeepSeek，外部评审 AI（Claude/Codex）用各自模型 | [progress.md §基建轮](progress.md) | accepted |
 | D-15 | 2026-06-19 | process | **双运行时 agent 架构**：`AGENTS.md` = 全局最高权威入口；`doc/agents/` = canonical 角色正文；`.claude/agents/` + `.opencode/agents/` = 运行时加载层（由 `scripts/sync-agents.js` 机械同步，`scripts/check-agent-sync.js` 验证一致性）；`.claude/commands/` 改为 agent 委托（向后兼容斜杠命令）。不引入 Controller agent | [plan/opencode-dual-runtime-plan.md](plan/opencode-dual-runtime-plan.md)；[AGENTS.md](../AGENTS.md) | accepted |
+| D-16 | 2026-07-30 | infrastructure | **统一测试环境准备入口 `test:env:prepare`**：所有测试 job（integration/e2e/canary）共用同一入口，禁止在 workflow 中手写 `prisma db push`/`seed` 组合。脚本只允许在 `<repo>/data/test/` 白名单目录内创建/删除临时 SQLite，拒绝外部传入的非测试目录 DATABASE_URL，禁止 `--accept-data-loss`；按 profile（domain/api/ui/canary）只校验各自真实依赖的环境变量；输出机器可读 JSON（errorCode/errorMessage），异常不吞。**前置教训**：17 轮 CI 才找到 e2e job 漏跑两条 seed，根因是环境准备未契约化。**CI 使用方式**：job 级显式设置绝对 `DATABASE_URL=file:<repo>/data/test/<job>.db`（Node 脚本改 env 不传 CI step） | [plan/nana-test-framework-remediation-plan.md](plan/nana-test-framework-remediation-plan.md) r2.1；[research/2026-07-28_test-framework-design-and-debug-lessons.md](research/2026-07-28_test-framework-design-and-debug-lessons.md) | accepted |
 
 ---
 
