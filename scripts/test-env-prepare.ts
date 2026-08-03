@@ -13,9 +13,9 @@
  * - 禁止对普通 DATABASE_URL 使用 --accept-data-loss
  * - 输出 errorCode/errorMessage，catch 中不吞掉真实异常
  *
- * profile 设计（外部评审 P1-5）：
- * - domain: 只需 DATABASE_URL/NEXTAUTH_SECRET/NEXTAUTH_URL（集成/领域测试）
- * - api:    需要 Provider 变量（真实 HTTP API 契约测试）
+ * profile 设计（外部评审 P1-5 + PR-1.1）：
+ * - domain: 只需 DATABASE_URL（集成/领域测试 mock next-auth，不依赖真实会话变量）
+ * - api:    需要 NextAuth + Provider 变量（真实 HTTP API 契约测试，走真实鉴权 + LLM 调用）
  * - ui:     只需公共变量（浏览器 UI 契约测试，page.route 拦截，不需 Provider）
  * - canary: 需要 Provider 变量（开发栈全链路测试）
  */
@@ -49,13 +49,16 @@ const ALLOWED_TEST_DIR = path.resolve(REPO_ROOT, 'data', 'test');
 const COMMON_REQUIRED = ['NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
 const PROVIDER_REQUIRED = ['VOLCENGINE_API_KEY', 'VOLCENGINE_BASE_URL', 'LITE_ENDPOINT_ID'];
 
-function profileEnvRequirements(profile: string): string[] {
+// 导出供单元测试（PR-1.1）验证 profile 环境要求矩阵
+export function profileEnvRequirements(profile: string): string[] {
   switch (profile) {
     case 'domain':
       // 集成/领域测试 mock next-auth，不依赖真实会话变量
       return [];
     case 'api':
-      return [...PROVIDER_REQUIRED];
+      // PR-1.1：真实 HTTP API 契约走真实 NextAuth 鉴权 + 真实 LLM 调用链，
+      // 必须同时具备会话变量和 Provider 变量
+      return [...COMMON_REQUIRED, ...PROVIDER_REQUIRED];
     case 'ui':
       // UI 契约拦截 /process，不调 Provider；但仍需真实 NextAuth 会话
       return [...COMMON_REQUIRED];
@@ -66,8 +69,8 @@ function profileEnvRequirements(profile: string): string[] {
   }
 }
 
-function parseProfile(): string {
-  const arg = process.argv.find((a) => a.startsWith('--profile='));
+function parseProfile(argv: string[] = process.argv): string {
+  const arg = argv.find((a) => a.startsWith('--profile='));
   const profile = arg ? arg.split('=')[1] : 'domain';
   if (!['domain', 'api', 'ui', 'canary'].includes(profile)) {
     throw new Error(`INVALID_PROFILE: ${profile}`);
@@ -75,8 +78,8 @@ function parseProfile(): string {
   return profile;
 }
 
-function resolveDbPath(profile: string): string {
-  const envUrl = (process.env.DATABASE_URL ?? '').trim();
+export function resolveDbPath(profile: string, dbUrl: string | undefined): string {
+  const envUrl = (dbUrl ?? '').trim();
   if (envUrl) {
     // CI 显式传入路径：只校验 + 使用，不生成
     const filePath = envUrl.replace(/^file:/, '');
@@ -88,7 +91,7 @@ function resolveDbPath(profile: string): string {
   return path.join(ALLOWED_TEST_DIR, `${profile}.db`);
 }
 
-function validateDbPath(abs: string): void {
+export function validateDbPath(abs: string): void {
   const allowedAbs = path.resolve(ALLOWED_TEST_DIR);
   const relative = path.relative(allowedAbs, abs);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -117,7 +120,7 @@ async function main(): Promise<void> {
     report.profile = profile;
 
     // 1. 确定 DB 路径（CI 显式传入 → 校验；本地 → 固定 profile 路径）
-    const dbPath = resolveDbPath(profile);
+    const dbPath = resolveDbPath(profile, process.env.DATABASE_URL);
     report.dbPath = dbPath;
     // 写回环境变量，让后续 prisma/tsx 命令使用同一路径
     process.env.DATABASE_URL = `file:${dbPath}`;
@@ -179,4 +182,7 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+// 直接运行时才执行 main()；被测试 import 时不执行（PR-1.1 负向测试用）
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main();
+}
