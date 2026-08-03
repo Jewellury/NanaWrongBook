@@ -116,3 +116,38 @@
   - `2bbccfa` fix(ci): 用绝对 DATABASE_URL 修复相对路径解析问题
 - [x] CI 全绿：Unit / Integration / Build / E2E 全部 success
 - [x] 可进入 PR-2 阶段
+
+---
+
+## PR-1.1 执行记录（评审补强）
+
+### 评审要求
+1. api profile 同时要求 NextAuth 和 Provider 变量
+2. 数据库白名单负向测试：指向 data/dev.db 必须拒绝且文件不变
+3. 非法 profile 必须返回 INVALID_PROFILE
+4. domain profile 缺少 Provider 变量仍可通过
+
+### commit: feat(test): PR-1.1 补齐 test:env:prepare 负向测试
+- `scripts/test-env-prepare.ts`：
+  - `case 'api'` 改为 `[...COMMON_REQUIRED, ...PROVIDER_REQUIRED]`
+  - 导出纯函数 `profileEnvRequirements` / `resolveDbPath` / `validateDbPath` 供测试
+  - `main()` 加守卫：被 import 时不执行（`process.argv[1] === __filename`）
+- 新增 `src/__tests__/unit/nana/test-env-prepare.test.ts`（9 个测试）：
+  - api 同时要求 NextAuth + Provider
+  - domain 不要求 Provider（缺 Provider 仍通过）
+  - ui 只要求 NextAuth
+  - canary 同时要求 NextAuth + Provider
+  - 非法 profile 抛 INVALID_PROFILE
+  - 未指定 profile 默认 domain
+  - data/dev.db 拒绝且文件不变（mtime 未变）
+  - data/test/ 内路径放行
+  - 仓库外路径拒绝
+- 本地验证：9/9 通过；直接运行脚本仍正常（main() 守卫生效）
+- 本地全量 unit 618/618 通过（原 2 个失败为 config.test.ts 环境相关 flaky，stash 对照确认与本次改动无关）
+
+## PR-1.1 完成状态
+
+- [x] 所有任务完成（PR-1.1 闭环）
+- [x] 代码已提交：`5b7da97`
+- [x] CI 全绿：Unit / Integration / Build / E2E 全部 success
+- [x] 可进入 PR-2a（固定响应队列）
