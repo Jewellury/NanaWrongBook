@@ -82,6 +82,7 @@ upload_test_output*.txt
 # Real audio samples (privacy: child's voice, not committed)
 /tests/fixtures/nana/audio/*
 !/tests/fixtures/nana/audio/README.md
+!/tests/fixtures/nana/audio/math-voice-sample.wav
 
 # Personal study materials (AI engineer exam, isolated from project)
 /study/

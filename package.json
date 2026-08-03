@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:types": "tsc --noEmit -p tsconfig.e2e.json",
+    "test:env:prepare": "tsx scripts/test-env-prepare.ts",
     "test:report": "playwright show-report --host 0.0.0.0",
     "seed": "tsx prisma/seed_graph.ts",
     "test:graph:unit": "vitest run src/__tests__/unit/graph.test.ts",

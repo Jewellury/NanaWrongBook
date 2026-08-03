@@ -33,6 +33,10 @@ import {
 import { parseAudioMeta } from "@/lib/nana/audio-utils";
 import { isPlaceholderTranscript } from "@/lib/nana/transcript-utils";
 
+// [DEBUG CI 2026-07-28 阶段A 任务A1] 模块加载完成标记——证明所有 import 成功
+// 不依赖 console.error 透传，直接写 CI 文件系统（铁律6：双保险拿证据）
+// 决策1：用 require 而非 import fs——require 不 hoist，放在 import 块后即按顺序执行，
+// mark 出现 = 所有 import 已完成（诊断语义见 plan §6.3 矩阵）
 const logger = createLogger("api:nana:cases:process");
 
 /** 高置信阈值：>= 0.5 自动挂 tag */

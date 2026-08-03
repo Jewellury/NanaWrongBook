@@ -89,7 +89,39 @@ Last updated: 2026-07-07 | Updated by: execute-agent (Stage 3 部署 r2 完成)
 
 ---
 
-## 当前活跃任务：Stage 3 部署 r2 — seed 自动化 + CI 双绿 + 生产部署 ✅
+## 当前活跃任务：Quality OS v1 · Phase A · A-1 测试框架 CI 修复（进行中，卡 /process 静默失败）
+
+> ⚠️ 本段更新于 2026-07-27（会话收尾）。完整交接见 `doc/research/2026-07-27_ci-process-route-silent-failure-consult.md`。
+> 上一个"Stage 3 部署 r2"任务已完成，下方保留其历史记录。
+
+### 当前状态（2026-07-27）
+
+- **dev 领先 main 49 个 commit**（A-1 测试框架 10 个 + CI 修复 16 个 + 计划/审计/日志等）
+- **PR #3 开着**（dev → main，CI E2E fail）
+- **CI 状态**：Unit/Integration/Build/ai-review ✅ 全过，E2E ❌ 卡 /process route 静默失败
+- **根因未定位**：Next.js 16 + `output: 'standalone'` + Playwright webServer 在 CI 上 route handler 不执行
+
+### 下一步
+
+**等外部 AI 反馈**（问题征询报告已写好：`doc/research/2026-07-27_ci-process-route-silent-failure-consult.md`）。
+
+5 个候选方案（详见报告 §八）：
+- X：继续在 CI 用 `next start`
+- Y：E2E 跳过 /process 相关断言
+- Z：vitest 集成测试替代
+- W：next.config.ts 环境变量切换 output
+- V：移除 standalone，Dockerfile 改回传统模式
+
+### 必读交接文件
+
+1. `doc/research/2026-07-27_ci-process-route-silent-failure-consult.md` — 问题全貌
+2. `doc/executionlog/nana-test-framework-ci-fix-log.md` — 完整执行日志（v1 + v2）
+3. `doc/plan/nana-test-framework-ci-fix-plan.md` — 修复计划 v1 + v2
+4. `git log origin/main..origin/dev --oneline` — 49 个 commit
+
+---
+
+## 历史任务：Stage 3 部署 r2 — seed 自动化 + CI 双绿 + 生产部署 ✅
 
 **目标**：审计 Dockerfile/entrypoint 的 seed 顺序和失败策略，修复 CI，合 main 部署，只读验证。**已全部完成**。
 

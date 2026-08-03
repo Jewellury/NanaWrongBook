@@ -2,11 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # C1 决策（用户 2026-07-27 确认）：忠实 r3.1 §3 任务 2.9「黄金路径每次 push 跑」原文意图
+    # 仓库 Public，Actions 额度无限；dev push 也跑 CI，问题早暴露不等开 PR
+    branches: [main, dev]
     tags:
       - 'v*'
   pull_request:
     branches: [main]
+  # r3.1 任务 2.9：nightly schedule 跑完整 E2E 套件（含批量路径、连续拍题等）
+  # 默认 push/PR 只跑黄金路径，避免拖慢 CI
+  schedule:
+    - cron: '0 18 * * *'  # UTC 18:00 = 北京时间 02:00
 
 jobs:
   # ============================================
@@ -40,7 +46,9 @@ jobs:
     name: Integration Tests
     needs: unit-test
     env:
-      DATABASE_URL: "file:./data/test/test.db"
+      # r2.1 约束 1：CI 用绝对路径，保证 test:env:prepare 与 vitest 进程解析到同一文件。
+      # 相对路径会被 Prisma 相对 prisma/ schema 目录解析（与仓库根不一致）。
+      DATABASE_URL: "file:${{ github.workspace }}/data/test/test.db"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,12 +65,10 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Setup test database
-        run: |
-          mkdir -p data/test
-          npx prisma db push
-          npx tsx prisma/seed_graph.ts
-          npx tsx prisma/seed_textbook_topics.ts
+      # r3.1 任务 2.9 → PR-1 统一入口：test:env:prepare（白名单 + profile + preflight）
+      # ⚠️上游文件修改：本 step 替换原本手写的 prisma db push + seed 命令组合
+      - name: Prepare test environment
+        run: npm run test:env:prepare -- --profile=domain
 
       - name: Run integration tests
         run: npm run test:integration
@@ -96,9 +102,15 @@ jobs:
     needs: build-check
     timeout-minutes: 60
     env:
-      DATABASE_URL: "file:./e2e.db"
+      DATABASE_URL: "file:${{ github.workspace }}/data/test/e2e.db"
       NEXTAUTH_SECRET: "ci-secret-value-123456"
       NEXTAUTH_URL: "http://127.0.0.1:3000"
+      # r3.1 任务 2.9：假豆包 Provider 配置
+      # webServer.command 启动 Next.js 时，子进程继承父 env，case-analyzer.ts 通过
+      # process.env.VOLCENGINE_BASE_URL 找到假 Provider（http://127.0.0.1:3999）
+      VOLCENGINE_API_KEY: "fake-key"
+      VOLCENGINE_BASE_URL: "http://127.0.0.1:3999"
+      LITE_ENDPOINT_ID: "fake-endpoint"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -115,21 +127,120 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Setup Database
+      # r3.1 任务 2.9：显式 ffmpeg 检查
+      # 音频转码链路依赖 ffmpeg（webm→wav）；ubuntu-latest 默认预装，
+      # 但显式 sanity check + install fallback 避免预装缺失时静默失败
+      - name: Ensure ffmpeg available
         run: |
-          npx prisma db push
-          npx prisma db seed
+          if ! command -v ffmpeg &> /dev/null; then
+            echo "ffmpeg not pre-installed, installing..."
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      # r3.1 任务 2.9 → PR-1 统一入口：test:env:prepare
+      # ⚠️上游文件修改：本 step 替换原本手写的 prisma db push + seed 命令组合。
+      # 根因回顾：e2e-test job 曾漏跑 seed_graph + seed_textbook_topics 导致
+      # process route loadNodesAndTopics() 三表为空 → route.ts:338 return 500。
+      # 统一入口在浏览器启动前 preflight 验证 KnowledgeNode≥48 / TextbookTopic=16 / 映射=48。
+      - name: Prepare test environment
+        run: npm run test:env:prepare -- --profile=canary
 
       - name: Build application
         run: npm run build
 
+      # r3.1 任务 2.9：启动本地假豆包 Provider（监听 127.0.0.1:3999）
+      # 必须在 Next.js webServer 启动前 ready，因为 case-analyzer.ts 会请求它
+      # 用 nohup + & 后台运行，PID 写入文件供后续关闭 step 使用
+      # ⚠️上游文件修改：ci.yml 追踪自上游 wrong-notebook；本 step 为本项目自有增量
+      # （f43eda5 引入；2026-07-27 修订：换独立启动脚本绕开 tsx -e 不稳定）
+      # 启动方式：用独立脚本 scripts/start-fake-provider.ts，不再用 `npx tsx -e`
+      #   原因：PR #3 CI 实测 `tsx -e` 模式下 dynamic import 报 `m.startFakeProvider is not a function`
+      #   （源码 e2e/helpers/fake-provider-server.ts:212 确实 export 了该函数）
+      #   换独立脚本文件后 tsx 走正常文件加载路径，行为可预测
+      # 就绪检查：用 curl 退出码（方案 A），不再用 `-w "%{http_code}" || echo "000"`
+      #   原因：连接失败时旧逻辑把 "000" + "000" 拼成 "000000" 误判 ready
+      #   curl 拿到任何 HTTP 响应（含 404，fake-provider-server.ts:312-313 对 `/` 返回 404）= 退出码 0 = 服务器已启动
+      - name: Start fake provider server
+        run: |
+          nohup npx tsx scripts/start-fake-provider.ts > /tmp/fake-provider.log 2>&1 &
+          echo $! > /tmp/fake-provider.pid
+          # 用 curl 退出码判断就绪：拿到任何 HTTP 响应（含 404）= 服务器已启动
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null http://127.0.0.1:3999/ 2>/dev/null; then
+              echo "fake provider ready (responded on attempt $i)"
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::fake provider failed to start within 30s"
+            echo "--- fake-provider.log ---"
+            cat /tmp/fake-provider.log 2>/dev/null || true
+            exit 1
+          fi
+
+      # r3.1 任务 2.9：触发策略
+      # - push/PR：只跑黄金路径 spec（快路径，验证主功能闭环）
+      # - schedule（nightly）：跑完整 mobile-chrome 套件（含批量路径、跨用户、连续拍题等）
       - name: Run Playwright tests
-        run: npx playwright test
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            echo "Nightly schedule: running full mobile-chrome E2E suite"
+            npx playwright test --project=mobile-chrome
+          else
+            echo "Push/PR: running golden-path only"
+            npx playwright test --project=mobile-chrome e2e/ci/nana-golden-path.spec.ts
+          fi
         env:
           CI: true
 
+      # [阶段A 任务A3 诊断] 打印 route.ts 诊断文件——无论 Playwright 成功失败都执行
+      # 配合任务 A1：把 route.ts 写的模块加载标记 / POST 入口 / outer catch stack 全打出来
+      # ⚠️上游文件修改：ci.yml 追踪自上游 wrong-notebook；本 step 为本项目自有增量
+      # 铁律4：cat 输出只有 timestamp + stack，不含 env 值或 token
+      - name: Dump process route diagnostic logs
+        if: always()
+        run: |
+          echo "=== /tmp/process-route-module-loaded.log ==="
+          cat /tmp/process-route-module-loaded.log 2>/dev/null || echo "(file not found — module evaluation did NOT complete)"
+          echo "=== /tmp/process-route-post-entered.log ==="
+          cat /tmp/process-route-post-entered.log 2>/dev/null || echo "(file not found — POST handler never entered)"
+          echo "=== /tmp/process-route-error.log ==="
+          cat /tmp/process-route-error.log 2>/dev/null || echo "(file not found — no outer catch triggered)"
+
+      # r3.1 任务 2.9：优雅关闭 fake-provider（无论成功失败都执行）
+      - name: Stop fake provider server
+        if: always()
+        run: |
+          if [ -f /tmp/fake-provider.pid ]; then
+            PID=$(cat /tmp/fake-provider.pid)
+            if kill -0 "$PID" 2>/dev/null; then
+              kill "$PID" || true
+              echo "killed fake provider PID=$PID"
+            fi
+            rm -f /tmp/fake-provider.pid
+          fi
+          # 打印日志供失败排查
+          if [ -f /tmp/fake-provider.log ]; then
+            echo "--- fake-provider.log (tail) ---"
+            tail -50 /tmp/fake-provider.log || true
+          fi
+
+      # r3.1 任务 2.9：证据包上传（含截图/trace/video/json report）
+      # always() 上传：成功时也保留供对照；retention 14 天控制存储成本
+      - name: Upload evidence pack
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nana-evidence-pack
+          path: test-results/
+          retention-days: 14
+
       - name: Upload Playwright Report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

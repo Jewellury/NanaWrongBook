@@ -1,0 +1,88 @@
+name: AI Code Review (OCR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # OCR 需要完整 git 历史做 diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Open Code Review
+        run: npm install -g @alibaba-group/open-code-review@1.7.7
+
+      - name: Configure & Test LLM
+        id: llm-test
+        continue-on-error: true
+        env:
+          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_USE_ANTHROPIC: 'false'
+        run: ocr llm test
+
+      - name: Fetch base branch
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: git fetch origin "${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+
+      - name: Run AI Code Review
+        id: review
+        env:
+          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_USE_ANTHROPIC: 'false'
+          PR_HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          ocr review \
+            --from "origin/${BASE_REF}" \
+            --to "origin/${PR_HEAD_REF}" \
+            --format text \
+            --exclude "node_modules/**,.next/**,data/**,playwright-report/**,test-results/**,study/**" \
+            --audience human \
+            > review-output.txt 2>review-errors.txt
+          cat review-output.txt
+          if [ -s review-errors.txt ]; then
+            echo "::warning::Review tool produced stderr output (redacted, see review-errors.txt)"
+          fi
+
+      - name: Post review as PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ -s review-output.txt ]; then
+            {
+              echo "## 🤖 AI Code Review (OCR)"
+              echo ""
+              echo "Automated review by [Open Code Review](https://github.com/alibaba/open-code-review) powered by DeepSeek."
+              echo ""
+              cat review-output.txt
+            } | gh pr comment "${PR_NUMBER}" \
+              --body-file - \
+              --repo "${GH_REPO}"
+          fi

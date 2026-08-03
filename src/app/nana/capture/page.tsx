@@ -604,7 +604,10 @@ export default function CapturePage() {
 
             {processState === "done" && processResult && (
               <div className="mb-3 max-h-[40vh] overflow-y-auto rounded-xl bg-[#FAFAF7] p-3">
-                <AiResultCard result={processResult} />
+                <AiResultCard
+                  result={processResult}
+                  onRetryAudioTranscribe={handleRetryProcess}
+                />
               </div>
             )}
 
@@ -613,6 +616,7 @@ export default function CapturePage() {
                 <AiResultCard
                   result={processResult ?? { status: "failed", audioStatus: "skipped", questionSummary: null, textbookTopic: null, feedback: null, possibleMistakeReason: null, nextActionSuggestion: null, transcript: null, error: null }}
                   onRetry={handleRetryProcess}
+                  onRetryAudioTranscribe={handleRetryProcess}
                 />
               </div>
             )}
